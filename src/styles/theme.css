@@ -1,0 +1,203 @@
+/**
+ * Legacy Design System - Theme Variables
+ * Used by non-migrated AV* components.
+ * New components should use Tailwind classes + shadcn variables from tailwind.css.
+ *
+ * IMPORTANT: Do NOT define --color-primary, --color-secondary, --radius-sm/md/lg/xl
+ * or utility classes like .text-primary, .bg-primary here — they conflict with Tailwind.
+ */
+
+/* ============================================================================
+   Legacy Theme Variables (for AV* components)
+   ============================================================================ */
+:root {
+  /*
+   * NOTE: --color-primary, --color-secondary, --color-success, --color-warning,
+   * --color-info are now defined in tailwind.css via @theme.
+   * Only legacy sub-variants (-hover, -light, -dark, -rgb, -bg) are kept here
+   * for AV* components that reference them.
+   */
+
+  /* Brand Color sub-variants (legacy) */
+  --color-primary-hover: #6d28d9;
+  --color-primary-light: #a78bfa;
+  --color-primary-dark: #5b21b6;
+  --color-primary-rgb: 124, 58, 237;
+  --color-primary-bg: rgba(124, 58, 237, 0.1);
+
+  --color-secondary-hover: #4b5563;
+  --color-secondary-light: #9ca3af;
+  --color-secondary-dark: #374151;
+  --color-secondary-rgb: 107, 114, 128;
+
+  /* Semantic Color sub-variants (legacy) */
+  --color-success-hover: #047857;
+  --color-success-light: #10b981;
+  --color-success-dark: #065f46;
+  --color-success-rgb: 5, 150, 105;
+  --color-success-bg: rgba(5, 150, 105, 0.1);
+
+  --color-warning-hover: #b45309;
+  --color-warning-light: #f59e0b;
+  --color-warning-dark: #92400e;
+  --color-warning-rgb: 217, 119, 6;
+  --color-warning-bg: rgba(217, 119, 6, 0.1);
+
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-light: #ef4444;
+  --color-danger-dark: #991b1b;
+  --color-danger-rgb: 220, 38, 38;
+  --color-danger-bg: rgba(220, 38, 38, 0.1);
+
+  --color-info-hover: #0369a1;
+  --color-info-light: #0ea5e9;
+  --color-info-dark: #075985;
+  --color-info-rgb: 2, 132, 199;
+  --color-info-bg: rgba(2, 132, 199, 0.1);
+
+  /* Neutral Colors */
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* Gray Scale */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+
+  /* Background Colors (legacy) */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-bg-tertiary: #f3f4f6;
+  --color-bg-hover: #f3f4f6;
+  --color-bg-active: #e5e7eb;
+  --color-bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Text Colors (legacy) */
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-text-disabled: #d1d5db;
+  --color-text-inverse: #ffffff;
+
+  /* Link Colors */
+  --color-link: #7c3aed;
+  --color-link-hover: #6d28d9;
+  --color-link-visited: #5b21b6;
+
+  /* Border Colors (legacy) */
+  --color-border-primary: #e5e7eb;
+  --color-border-secondary: #d1d5db;
+  --color-border-tertiary: #9ca3af;
+  --color-border-focus: #7c3aed;
+
+  /* Selection Colors */
+  --color-selection: rgba(var(--color-primary-rgb), 0.3);
+
+  /* Shadow Colors */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-focus: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+  --shadow-focus-danger: 0 0 0 3px rgba(var(--color-danger-rgb), 0.1);
+
+  /* Spacing Scale (legacy — use Tailwind spacing for new code) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Courier New', monospace;
+
+  /* Font Sizes */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --font-size-5xl: 3rem;
+
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  --line-height-loose: 2;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  /* Z-Index Scale */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+}
+
+/* ============================================================================
+   Global Styles (minimal — Tailwind handles base reset)
+   ============================================================================ */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-secondary);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-tertiary);
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(var(--color-primary-rgb), 0.2);
+  color: var(--color-text-primary);
+}

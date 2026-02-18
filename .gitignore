@@ -1,0 +1,82 @@
+# =========================
+# Fichiers sensibles / secrets
+# =========================
+
+# Scripts de déploiement avec credentials
+upload.py
+deploy.py
+deploy*.sh
+CLAUDE.md
+
+# Fichiers d'environnement (contiennent URLs API, tokens, etc.)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.env.staging
+
+# Clés et certificats
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+*.jks
+
+# Fichiers de credentials
+credentials.json
+secrets.json
+service-account*.json
+*.secret
+
+# =========================
+# Dependencies
+# =========================
+node_modules
+
+# =========================
+# Build output
+# =========================
+dist
+dist-ssr
+
+# =========================
+# Logs
+# =========================
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# =========================
+# Editor directories and files
+# =========================
+.vscode/*
+.claude/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =========================
+# Misc
+# =========================
+*.local
+*.bak
+*.tmp
+*.vue.b

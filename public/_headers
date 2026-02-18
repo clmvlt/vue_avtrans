@@ -1,0 +1,11 @@
+# Headers pour Netlify, Cloudflare Pages, et autres hébergeurs compatibles
+
+# Configuration pour les fichiers .well-known
+/.well-known/*
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *
+
+# Configuration spécifique pour apple-app-site-association (pas d'extension .json)
+/.well-known/apple-app-site-association
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *

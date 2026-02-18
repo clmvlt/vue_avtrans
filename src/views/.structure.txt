@@ -1,0 +1,47 @@
+views/
+│
+├── 🔐 auth/                   Authentication & Account Management
+│   ├── Login.vue              User login page
+│   ├── Register.vue           User registration page
+│   ├── Verify.vue             Email verification page
+│   ├── ForgotPassword.vue     Password recovery request
+│   └── ResetPassword.vue      Password reset page
+│
+├── 👥 users/                  User Management (Admin Only)
+│   ├── Users.vue              User list and CRUD operations
+│   ├── UserEdit.vue           Edit user profile and settings
+│   └── UserServices.vue       User service records, hours tracking
+│
+├── 📅 absences/               Absence Management (Admin Only)
+│   ├── Absences.vue           Absence requests and approvals
+│   └── AbsenceTypes.vue       Configure absence types
+│
+├── ⏰ hours/                  Time Tracking (Admin Only)
+│   ├── Planning.vue           Weekly planning calendar
+│   ├── Heures.vue             Hours overview and reports
+│   └── ExportHours.vue        Export hours to CSV/Excel
+│
+├── 🚗 vehicles/               Vehicle Management
+│   ├── Vehicules.vue          Vehicle fleet list
+│   └── VehiculeDetail.vue     Vehicle details, history, documents
+│
+├── 🔧 maintenance/            Maintenance Management
+│   ├── Entretiens.vue         Maintenance records list
+│   ├── EntretiensVehicule.vue Vehicle-specific maintenance
+│   └── TypesEntretien.vue     Configure maintenance types
+│
+├── 💰 acomptes/               Payroll Advances (Admin Only)
+│   └── Acomptes.vue           Manage employee advances
+│
+├── ✍️ signatures/              Digital Signatures (Admin Only)
+│   └── Signatures.vue         Signature collection and verification
+│
+└── 📋 common/                 Common & Utility Views
+    ├── Home.vue               Application dashboard/home
+    ├── Notifications.vue      Notification center
+    ├── ServicesMonitoring.vue System monitoring (admin)
+    ├── TestDesign.vue         Design system showcase
+    ├── Unauthorized.vue       403 error page
+    └── NotFound.vue           404 error page
+
+Total: 9 domains, 26 views
