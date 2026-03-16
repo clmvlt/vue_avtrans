@@ -97,3 +97,7 @@ export { stockItemsService } from './stockItems'
 
 export * from './stockCategories'
 export { stockCategoriesService } from './stockCategories'
+
+// Vehicle equipment service
+export * from './vehiculeEquipements'
+export { vehiculeEquipementsService } from './vehiculeEquipements'

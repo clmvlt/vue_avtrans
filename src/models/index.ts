@@ -1,11 +1,13 @@
 // User and Role models
 export * from './RoleDTO';
 export * from './UserDTO';
+export * from './AddressDTO';
 export * from './UpdateUserRequest';
 export * from './UpdateProfileRequest';
 export * from './ChangePasswordRequest';
 export * from './UserWithStatusDTO';
 export * from './UserHoursDTO';
+export * from './UserContractComparisonDTO';
 
 // Vehicule models
 export * from './VehiculeDTO';
@@ -13,6 +15,7 @@ export * from './VehiculeKilometrageDTO';
 export * from './VehiculePictureDTO';
 export * from './VehiculeFileDTO';
 export * from './VehiculeAdjustInfoDTO';
+export * from './VehiculeEquipementDTO';
 
 // Service models
 export * from './ServiceDTO';
