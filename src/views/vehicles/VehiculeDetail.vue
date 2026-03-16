@@ -56,6 +56,10 @@
                     <ClipboardList class="size-4" />
                     <span class="hidden sm:inline">Rapports</span>
                   </TabsTrigger>
+                  <TabsTrigger value="equipements" class="gap-2 rounded-b-none rounded-t-lg border border-transparent px-5 py-2.5 text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=inactive]:bg-transparent dark:data-[state=active]:border-primary/40 dark:data-[state=active]:border-b-transparent dark:data-[state=active]:bg-primary/10">
+                    <Wrench class="size-4" />
+                    <span class="hidden sm:inline">Équipements</span>
+                  </TabsTrigger>
                 </TabsList>
               </div>
 
@@ -71,7 +75,7 @@
                   :upload-total-files="uploadTotalFiles"
                   :upload-current-index="uploadCurrentIndex"
                   @files-selected="handleFilesSelected"
-                  @view-image="openImageFullscreen"
+                  @view-image="openFileImageFullscreen"
                   @view-pdf="openPdfViewer"
                   @download="downloadFile"
                   @delete-file="deleteFile"
@@ -119,6 +123,17 @@
                   @view-pictures="openRapportPicturesModal"
                   @load-all="loadAllRapports"
                   @update:page="goToRapportsPage"
+                />
+              </TabsContent>
+
+              <TabsContent value="equipements" class="mt-0 bg-background p-6">
+                <VehiculeEquipementsTab
+                  :equipements="equipements"
+                  :loading="loadingEquipements"
+                  :is-mecanicien="isMecanicien"
+                  @add="openEquipementCreate"
+                  @edit="openEquipementEdit"
+                  @delete="openEquipementDelete"
                 />
               </TabsContent>
             </div>
@@ -235,13 +250,17 @@
           <p class="text-sm text-muted-foreground">Aucune photo pour cet ajustement</p>
         </div>
         <div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <div v-for="picture in currentAdjustPictures" :key="picture.id" class="space-y-2">
+          <div v-for="(picture, idx) in currentAdjustPictures" :key="picture.id" class="space-y-2">
             <div class="aspect-square overflow-hidden rounded-lg border bg-muted">
               <img
                 :src="picture.pictureUrl ?? ''"
                 :alt="'Photo de l\'ajustement'"
                 class="size-full cursor-pointer object-cover transition-transform hover:scale-105"
-                @click="openImageFullscreen(picture.pictureUrl ?? '')"
+                @click="openImageFullscreen(
+                  picture.pictureUrl ?? '',
+                  currentAdjustPictures.filter(p => p.pictureUrl).map(p => p.pictureUrl!),
+                  idx
+                )"
               />
             </div>
             <p class="text-xs text-muted-foreground">{{ formatDate(picture.createdAt) }}</p>
@@ -341,13 +360,17 @@
           <DialogDescription class="sr-only">Galerie de photos du rapport</DialogDescription>
         </DialogHeader>
         <div v-if="selectedRapport?.pictures && selectedRapport.pictures.length > 0" class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <div v-for="picture in selectedRapport.pictures" :key="picture.id" class="space-y-2">
+          <div v-for="(picture, idx) in selectedRapport.pictures" :key="picture.id" class="space-y-2">
             <div class="aspect-square overflow-hidden rounded-lg border bg-muted">
               <img
                 :src="picture.pictureUrl ?? ''"
                 :alt="'Photo du rapport'"
                 class="size-full cursor-pointer object-cover transition-transform hover:scale-105"
-                @click="openImageFullscreen(picture.pictureUrl ?? '')"
+                @click="openImageFullscreen(
+                  picture.pictureUrl ?? '',
+                  selectedRapport!.pictures!.filter(p => p.pictureUrl).map(p => p.pictureUrl!),
+                  idx
+                )"
               />
             </div>
             <p class="text-xs text-muted-foreground">{{ formatDate(picture.createdAt) }}</p>
@@ -361,6 +384,21 @@
         </div>
       </DialogContent>
     </Dialog>
+
+    <!-- Modal equipement create/edit -->
+    <VehiculeEquipementModal
+      v-model="showEquipementModal"
+      :vehicule-id="vehiculeId"
+      :equipement="editingEquipement"
+      @saved="onEquipementSaved"
+    />
+
+    <!-- Modal equipement delete -->
+    <VehiculeEquipementDeleteModal
+      v-model="showEquipementDeleteModal"
+      :equipement="deletingEquipement"
+      @deleted="onEquipementDeleted"
+    />
 
     <!-- PDF viewer overlay -->
     <div v-if="showPdfViewer" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" @click.self="closePdfViewer">
@@ -384,7 +422,12 @@
     </div>
 
     <!-- Image fullscreen overlay -->
-    <ImageLightbox v-model:open="showImageFullscreen" :src="fullscreenImageUrl ?? ''" alt="Image plein ecran" />
+    <ImageLightbox
+      v-model:open="showImageFullscreen"
+      :images="fullscreenImages"
+      :initial-index="fullscreenIndex"
+      alt="Image plein ecran"
+    />
   </div>
 </template>
 
@@ -392,8 +435,9 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { vehiclesService, rapportsService } from '@/services'
-import type { VehiculeDTO, VehiculeKilometrageDTO, VehiculePictureDTO, VehiculeFileDTO, VehiculeAdjustInfoDTO, RapportVehiculeDTO } from '@/models'
+import { vehiclesService, rapportsService, vehiculeEquipementsService } from '@/services'
+import { isImage } from '@/utils/fileUtils'
+import type { VehiculeDTO, VehiculeKilometrageDTO, VehiculePictureDTO, VehiculeFileDTO, VehiculeAdjustInfoDTO, RapportVehiculeDTO, VehiculeEquipementDTO } from '@/models'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -404,9 +448,12 @@ import VehiculeFilesTab from '@/components/vehicles/VehiculeFilesTab.vue'
 import VehiculeKilometragesTab from '@/components/vehicles/VehiculeKilometragesTab.vue'
 import VehiculeCommentsTab from '@/components/vehicles/VehiculeCommentsTab.vue'
 import VehiculeRapportsTab from '@/components/vehicles/VehiculeRapportsTab.vue'
+import VehiculeEquipementsTab from '@/components/vehicles/VehiculeEquipementsTab.vue'
+import VehiculeEquipementModal from '@/components/vehicles/VehiculeEquipementModal.vue'
+import VehiculeEquipementDeleteModal from '@/components/vehicles/VehiculeEquipementDeleteModal.vue'
 import {
   LoaderCircle, Gauge, X, Check, Camera, MessageSquare,
-  FolderOpen, ClipboardList, Images, Download, User
+  FolderOpen, ClipboardList, Images, Download, User, Wrench
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -432,7 +479,16 @@ const editFormData = ref({
   brand: '',
   model: '',
   comment: '',
-  pictureBase64: '' as string | null
+  pictureBase64: '' as string | null,
+  vin: '',
+  numeroCarteGrise: '',
+  dateMiseEnCirculation: '',
+  typeCarburant: '',
+  ptac: null as number | null,
+  numeroContratAssurance: '',
+  assureur: '',
+  dateExpirationAssurance: '',
+  dateProchainControleTechnique: '',
 })
 const editPicturePreview = ref<string | null>(null)
 const removePictureOnSave = ref(false)
@@ -456,7 +512,8 @@ const currentPdfFile = ref<VehiculeFileDTO | null>(null)
 const currentPdfUrl = ref<string | null>(null)
 
 // Image fullscreen
-const fullscreenImageUrl = ref<string | null>(null)
+const fullscreenImages = ref<string[]>([])
+const fullscreenIndex = ref(0)
 const showImageFullscreen = ref(false)
 
 // Kilometrages
@@ -487,6 +544,14 @@ const rapportsSize = ref(10)
 const rapportsTotalPages = ref(0)
 const rapportsTotalElements = ref(0)
 const rapportsShowAll = ref(false)
+
+// Equipements
+const equipements = ref<VehiculeEquipementDTO[]>([])
+const loadingEquipements = ref(false)
+const showEquipementModal = ref(false)
+const editingEquipement = ref<VehiculeEquipementDTO | null>(null)
+const showEquipementDeleteModal = ref(false)
+const deletingEquipement = ref<VehiculeEquipementDTO | null>(null)
 
 // Modal kilometrage (creation)
 const showKmModal = ref(false)
@@ -549,7 +614,16 @@ const startEditing = () => {
     brand: vehicule.value.brand || '',
     model: vehicule.value.model || '',
     comment: vehicule.value.comment || '',
-    pictureBase64: null
+    pictureBase64: null,
+    vin: vehicule.value.vin || '',
+    numeroCarteGrise: vehicule.value.numeroCarteGrise || '',
+    dateMiseEnCirculation: vehicule.value.dateMiseEnCirculation || '',
+    typeCarburant: vehicule.value.typeCarburant || '',
+    ptac: vehicule.value.ptac ?? null,
+    numeroContratAssurance: vehicule.value.numeroContratAssurance || '',
+    assureur: vehicule.value.assureur || '',
+    dateExpirationAssurance: vehicule.value.dateExpirationAssurance || '',
+    dateProchainControleTechnique: vehicule.value.dateProchainControleTechnique || '',
   }
   editPicturePreview.value = null
   removePictureOnSave.value = false
@@ -571,17 +645,20 @@ const saveEditing = async () => {
   savingEdit.value = true
 
   try {
-    const updateData: {
-      immat?: string
-      brand?: string
-      model?: string
-      comment?: string
-      pictureBase64?: string
-    } = {
+    const updateData: Record<string, unknown> = {
       immat: editFormData.value.immat,
       brand: editFormData.value.brand,
       model: editFormData.value.model,
-      comment: editFormData.value.comment
+      comment: editFormData.value.comment,
+      vin: editFormData.value.vin || null,
+      numeroCarteGrise: editFormData.value.numeroCarteGrise || null,
+      dateMiseEnCirculation: editFormData.value.dateMiseEnCirculation || null,
+      typeCarburant: editFormData.value.typeCarburant || null,
+      ptac: editFormData.value.ptac ?? null,
+      numeroContratAssurance: editFormData.value.numeroContratAssurance || null,
+      assureur: editFormData.value.assureur || null,
+      dateExpirationAssurance: editFormData.value.dateExpirationAssurance || null,
+      dateProchainControleTechnique: editFormData.value.dateProchainControleTechnique || null,
     }
 
     // Ajouter la photo si elle a ete modifiee
@@ -745,6 +822,42 @@ const loadAllRapports = () => {
   loadRapports(0, true)
 }
 
+// Equipements
+const loadEquipements = async () => {
+  try {
+    loadingEquipements.value = true
+    const response = await vehiculeEquipementsService.getByVehicule(vehiculeId)
+    equipements.value = response.equipements || []
+  } catch {
+    // Erreur silencieuse pour le chargement des equipements
+  } finally {
+    loadingEquipements.value = false
+  }
+}
+
+const openEquipementCreate = () => {
+  editingEquipement.value = null
+  showEquipementModal.value = true
+}
+
+const openEquipementEdit = (equipement: VehiculeEquipementDTO) => {
+  editingEquipement.value = equipement
+  showEquipementModal.value = true
+}
+
+const openEquipementDelete = (equipement: VehiculeEquipementDTO) => {
+  deletingEquipement.value = equipement
+  showEquipementDeleteModal.value = true
+}
+
+const onEquipementSaved = () => {
+  loadEquipements()
+}
+
+const onEquipementDeleted = () => {
+  loadEquipements()
+}
+
 const openRapportPicturesModal = (rapport: RapportVehiculeDTO) => {
   selectedRapport.value = rapport
   showRapportPicturesModal.value = true
@@ -766,6 +879,9 @@ watch(activeTab, async (newTab) => {
   }
   if (newTab === 'rapports') {
     await loadRapports()
+  }
+  if (newTab === 'equipements') {
+    await loadEquipements()
   }
 })
 
@@ -1091,9 +1207,23 @@ const closePdfViewer = () => {
   currentPdfUrl.value = null
 }
 
-const openImageFullscreen = (url: string) => {
-  fullscreenImageUrl.value = url
+const openImageFullscreen = (url: string, images?: string[], index?: number) => {
+  if (images && images.length > 0) {
+    fullscreenImages.value = images
+    fullscreenIndex.value = index ?? 0
+  } else {
+    fullscreenImages.value = [url]
+    fullscreenIndex.value = 0
+  }
   showImageFullscreen.value = true
+}
+
+/** Open fullscreen for a file image — builds gallery from all image files */
+const openFileImageFullscreen = (url: string) => {
+  const imageFiles = files.value.filter(f => isImage(f))
+  const imageUrls = imageFiles.map(f => getFileUrl(f))
+  const idx = imageUrls.indexOf(url)
+  openImageFullscreen(url, imageUrls, idx >= 0 ? idx : 0)
 }
 
 onMounted(async () => {

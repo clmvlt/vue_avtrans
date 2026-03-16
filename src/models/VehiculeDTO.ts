@@ -20,6 +20,24 @@ export interface VehiculeDTO {
   latestKmDate?: Date | string;
   /** URL de la photo de profil du véhicule */
   pictureUrl?: string;
+  /** Numéro de série / VIN (17 caractères max) */
+  vin?: string;
+  /** N° certificat d'immatriculation */
+  numeroCarteGrise?: string;
+  /** Date de première mise en circulation (YYYY-MM-DD) */
+  dateMiseEnCirculation?: string;
+  /** Type de carburant (Diesel, Essence, Électrique, Hybride, GNV) */
+  typeCarburant?: string;
+  /** Poids Total Autorisé en Charge (kg) */
+  ptac?: number;
+  /** N° contrat d'assurance */
+  numeroContratAssurance?: string;
+  /** Compagnie d'assurance */
+  assureur?: string;
+  /** Date d'expiration de l'assurance (YYYY-MM-DD) */
+  dateExpirationAssurance?: string;
+  /** Date du prochain contrôle technique (YYYY-MM-DD) */
+  dateProchainControleTechnique?: string;
 }
 
 /**
@@ -36,6 +54,15 @@ export interface VehiculeCreateRequest {
   comment?: string;
   /** Photo de profil en base64 */
   pictureBase64?: string;
+  vin?: string;
+  numeroCarteGrise?: string;
+  dateMiseEnCirculation?: string;
+  typeCarburant?: string;
+  ptac?: number;
+  numeroContratAssurance?: string;
+  assureur?: string;
+  dateExpirationAssurance?: string;
+  dateProchainControleTechnique?: string;
 }
 
 /**
@@ -52,4 +79,13 @@ export interface VehiculeUpdateRequest {
   comment?: string;
   /** Photo de profil en base64 */
   pictureBase64?: string;
+  vin?: string;
+  numeroCarteGrise?: string;
+  dateMiseEnCirculation?: string;
+  typeCarburant?: string;
+  ptac?: number;
+  numeroContratAssurance?: string;
+  assureur?: string;
+  dateExpirationAssurance?: string;
+  dateProchainControleTechnique?: string;
 }

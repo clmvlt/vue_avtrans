@@ -222,7 +222,7 @@
 
     <!-- Dialog de création -->
     <Dialog v-model:open="showFormModal">
-      <DialogContent class="sm:max-w-lg">
+      <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle class="flex items-center gap-2">
             <div class="flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary">
@@ -314,6 +314,126 @@
                 <Camera class="size-7" />
                 <span class="text-sm">Ajouter une photo</span>
               </label>
+            </div>
+          </div>
+
+          <!-- Separator: Informations techniques -->
+          <div class="relative">
+            <div class="absolute inset-0 flex items-center"><span class="w-full border-t" /></div>
+            <div class="relative flex justify-center text-xs uppercase">
+              <span class="bg-background px-2 text-muted-foreground">Informations techniques</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label for="create-vin" class="text-sm font-medium text-muted-foreground">VIN</label>
+              <Input
+                id="create-vin"
+                :model-value="formData.vin"
+                @update:model-value="formData.vin = ($event as string).toUpperCase()"
+                :disabled="saving"
+                placeholder="WF0XXXGCDX1234567"
+                maxlength="17"
+                class="font-mono"
+              />
+            </div>
+            <div class="space-y-2">
+              <label for="create-carte-grise" class="text-sm font-medium text-muted-foreground">N° carte grise</label>
+              <Input
+                id="create-carte-grise"
+                v-model="formData.numeroCarteGrise"
+                :disabled="saving"
+                placeholder="2024AB12345"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <div class="space-y-2">
+              <label for="create-date-circ" class="text-sm font-medium text-muted-foreground">Mise en circulation</label>
+              <Input
+                id="create-date-circ"
+                v-model="formData.dateMiseEnCirculation"
+                type="date"
+                :disabled="saving"
+              />
+            </div>
+            <div class="space-y-2">
+              <label for="create-carburant" class="text-sm font-medium text-muted-foreground">Carburant</label>
+              <Select
+                v-model="formData.typeCarburant"
+                :teleport="false"
+                :options="carburantOptions"
+                placeholder="Sélectionner"
+                :disabled="saving"
+                :searchable="false"
+                clearable
+                id="create-carburant"
+              />
+            </div>
+            <div class="space-y-2">
+              <label for="create-ptac" class="text-sm font-medium text-muted-foreground">PTAC (kg)</label>
+              <Input
+                id="create-ptac"
+                :model-value="formData.ptac ?? undefined"
+                @update:model-value="formData.ptac = $event ? Number($event) : null"
+                type="number"
+                inputmode="numeric"
+                :disabled="saving"
+                placeholder="3500"
+                min="0"
+              />
+            </div>
+          </div>
+
+          <!-- Separator: Assurance & CT -->
+          <div class="relative">
+            <div class="absolute inset-0 flex items-center"><span class="w-full border-t" /></div>
+            <div class="relative flex justify-center text-xs uppercase">
+              <span class="bg-background px-2 text-muted-foreground">Assurance & Contrôle technique</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label for="create-assureur" class="text-sm font-medium text-muted-foreground">Assureur</label>
+              <Input
+                id="create-assureur"
+                v-model="formData.assureur"
+                :disabled="saving"
+                placeholder="AXA"
+              />
+            </div>
+            <div class="space-y-2">
+              <label for="create-contrat" class="text-sm font-medium text-muted-foreground">N° contrat assurance</label>
+              <Input
+                id="create-contrat"
+                v-model="formData.numeroContratAssurance"
+                :disabled="saving"
+                placeholder="ASS-2025-123456"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label for="create-exp-assurance" class="text-sm font-medium text-muted-foreground">Expiration assurance</label>
+              <Input
+                id="create-exp-assurance"
+                v-model="formData.dateExpirationAssurance"
+                type="date"
+                :disabled="saving"
+              />
+            </div>
+            <div class="space-y-2">
+              <label for="create-ct" class="text-sm font-medium text-muted-foreground">Prochain contrôle technique</label>
+              <Input
+                id="create-ct"
+                v-model="formData.dateProchainControleTechnique"
+                type="date"
+                :disabled="saving"
+              />
             </div>
           </div>
         </form>
@@ -455,6 +575,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Select } from '@/components/ui/select'
 
 // Lucide icons
 import {
@@ -616,8 +737,25 @@ const formData = ref({
   brand: '',
   model: '',
   comment: '',
-  pictureBase64: ''
+  pictureBase64: '',
+  vin: '',
+  numeroCarteGrise: '',
+  dateMiseEnCirculation: '',
+  typeCarburant: '',
+  ptac: null as number | null,
+  numeroContratAssurance: '',
+  assureur: '',
+  dateExpirationAssurance: '',
+  dateProchainControleTechnique: '',
 })
+
+const carburantOptions = [
+  { value: 'Diesel', label: 'Diesel' },
+  { value: 'Essence', label: 'Essence' },
+  { value: 'Électrique', label: 'Électrique' },
+  { value: 'Hybride', label: 'Hybride' },
+  { value: 'GNV', label: 'GNV' },
+]
 const formPicturePreview = ref<string | null>(null)
 
 // Modal de suppression
@@ -667,7 +805,16 @@ const openCreateModal = () => {
     brand: '',
     model: '',
     comment: '',
-    pictureBase64: ''
+    pictureBase64: '',
+    vin: '',
+    numeroCarteGrise: '',
+    dateMiseEnCirculation: '',
+    typeCarburant: '',
+    ptac: null,
+    numeroContratAssurance: '',
+    assureur: '',
+    dateExpirationAssurance: '',
+    dateProchainControleTechnique: '',
   }
   formPicturePreview.value = null
   formError.value = ''
@@ -718,7 +865,20 @@ const handleFormSubmit = async () => {
   try {
     saving.value = true
 
-    const response = await vehiclesService.createVehicle(formData.value)
+    const createData = {
+      ...formData.value,
+      vin: formData.value.vin || undefined,
+      numeroCarteGrise: formData.value.numeroCarteGrise || undefined,
+      dateMiseEnCirculation: formData.value.dateMiseEnCirculation || undefined,
+      typeCarburant: formData.value.typeCarburant || undefined,
+      ptac: formData.value.ptac ?? undefined,
+      numeroContratAssurance: formData.value.numeroContratAssurance || undefined,
+      assureur: formData.value.assureur || undefined,
+      dateExpirationAssurance: formData.value.dateExpirationAssurance || undefined,
+      dateProchainControleTechnique: formData.value.dateProchainControleTechnique || undefined,
+      pictureBase64: formData.value.pictureBase64 || undefined,
+    }
+    const response = await vehiclesService.createVehicle(createData)
     if (response.vehicule) {
       vehicules.value.push(response.vehicule)
     }

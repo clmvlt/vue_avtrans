@@ -46,3 +46,17 @@ export interface UserLastKilometrageResponse {
   /** Indique si l'utilisateur a déjà saisi un kilométrage aujourd'hui */
   hasEnteredToday: boolean;
 }
+
+/**
+ * Dernier véhicule utilisé par un utilisateur (endpoint admin)
+ */
+export interface UserLastVehicleDTO {
+  /** UUID de l'utilisateur */
+  userUuid: string;
+  /** ID du véhicule */
+  vehiculeId: string;
+  /** Immatriculation du véhicule */
+  vehiculeImmat: string;
+  /** Date de la dernière utilisation */
+  date: string;
+}

@@ -16,6 +16,16 @@ export interface VehiculeCreateRequest {
   model: string
   brand: string
   comment?: string
+  pictureBase64?: string
+  vin?: string
+  numeroCarteGrise?: string
+  dateMiseEnCirculation?: string
+  typeCarburant?: string
+  ptac?: number
+  numeroContratAssurance?: string
+  assureur?: string
+  dateExpirationAssurance?: string
+  dateProchainControleTechnique?: string
 }
 
 /**
@@ -26,6 +36,16 @@ export interface VehiculeUpdateRequest {
   model?: string
   brand?: string
   comment?: string
+  pictureBase64?: string
+  vin?: string
+  numeroCarteGrise?: string
+  dateMiseEnCirculation?: string
+  typeCarburant?: string
+  ptac?: number
+  numeroContratAssurance?: string
+  assureur?: string
+  dateExpirationAssurance?: string
+  dateProchainControleTechnique?: string
 }
 
 /**

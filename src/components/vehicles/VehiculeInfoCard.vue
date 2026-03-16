@@ -137,8 +137,84 @@
       </div>
     </div>
 
-    <!-- Comment - display mode -->
-    <div v-if="!isEditing" class="border-t px-5 py-4">
+    <!-- Vehicle details - display mode -->
+    <div v-if="!isEditing" class="border-t px-5 py-4 space-y-3">
+      <!-- Informations techniques -->
+      <div v-if="vehicule.vin || vehicule.numeroCarteGrise || vehicule.dateMiseEnCirculation || vehicule.typeCarburant || vehicule.ptac" class="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+        <div v-if="vehicule.vin" class="rounded-md bg-muted/50 px-3 py-2">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Hash class="size-3.5" />
+            <span>VIN</span>
+          </div>
+          <p class="mt-0.5 text-sm font-medium text-foreground font-mono">{{ vehicule.vin }}</p>
+        </div>
+        <div v-if="vehicule.numeroCarteGrise" class="rounded-md bg-muted/50 px-3 py-2">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <FileText class="size-3.5" />
+            <span>Carte grise</span>
+          </div>
+          <p class="mt-0.5 text-sm font-medium text-foreground">{{ vehicule.numeroCarteGrise }}</p>
+        </div>
+        <div v-if="vehicule.dateMiseEnCirculation" class="rounded-md bg-muted/50 px-3 py-2">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Calendar class="size-3.5" />
+            <span>Mise en circulation</span>
+          </div>
+          <p class="mt-0.5 text-sm font-medium text-foreground">{{ formatDateShort(vehicule.dateMiseEnCirculation) }}</p>
+        </div>
+        <div v-if="vehicule.typeCarburant" class="rounded-md bg-muted/50 px-3 py-2">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Fuel class="size-3.5" />
+            <span>Carburant</span>
+          </div>
+          <p class="mt-0.5 text-sm font-medium text-foreground">{{ vehicule.typeCarburant }}</p>
+        </div>
+        <div v-if="vehicule.ptac" class="rounded-md bg-muted/50 px-3 py-2">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Weight class="size-3.5" />
+            <span>PTAC</span>
+          </div>
+          <p class="mt-0.5 text-sm font-medium text-foreground">{{ formatNumber(vehicule.ptac) }} kg</p>
+        </div>
+      </div>
+
+      <!-- Assurance & Contrôle technique -->
+      <div v-if="vehicule.numeroContratAssurance || vehicule.assureur || vehicule.dateExpirationAssurance || vehicule.dateProchainControleTechnique" class="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+        <div v-if="vehicule.assureur" class="rounded-md bg-muted/50 px-3 py-2">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Shield class="size-3.5" />
+            <span>Assureur</span>
+          </div>
+          <p class="mt-0.5 text-sm font-medium text-foreground">{{ vehicule.assureur }}</p>
+        </div>
+        <div v-if="vehicule.numeroContratAssurance" class="rounded-md bg-muted/50 px-3 py-2">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <FileText class="size-3.5" />
+            <span>N° contrat</span>
+          </div>
+          <p class="mt-0.5 text-sm font-medium text-foreground">{{ vehicule.numeroContratAssurance }}</p>
+        </div>
+        <div v-if="vehicule.dateExpirationAssurance" class="rounded-md bg-muted/50 px-3 py-2">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <CalendarClock class="size-3.5" />
+            <span>Expiration assurance</span>
+          </div>
+          <p class="mt-0.5 text-sm font-medium" :class="isExpiringSoon(vehicule.dateExpirationAssurance) ? 'text-orange-500' : isExpired(vehicule.dateExpirationAssurance) ? 'text-destructive' : 'text-foreground'">
+            {{ formatDateShort(vehicule.dateExpirationAssurance) }}
+          </p>
+        </div>
+        <div v-if="vehicule.dateProchainControleTechnique" class="rounded-md bg-muted/50 px-3 py-2">
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <ClipboardCheck class="size-3.5" />
+            <span>Prochain CT</span>
+          </div>
+          <p class="mt-0.5 text-sm font-medium" :class="isExpiringSoon(vehicule.dateProchainControleTechnique) ? 'text-orange-500' : isExpired(vehicule.dateProchainControleTechnique) ? 'text-destructive' : 'text-foreground'">
+            {{ formatDateShort(vehicule.dateProchainControleTechnique) }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Commentaire -->
       <div class="rounded-md bg-muted/50 px-3 py-2">
         <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
           <MessageSquare class="size-3.5" />
@@ -202,6 +278,137 @@
           ></textarea>
         </div>
 
+        <!-- Separator -->
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center"><span class="w-full border-t" /></div>
+          <div class="relative flex justify-center text-xs uppercase">
+            <span class="bg-card px-2 text-muted-foreground">Informations techniques</span>
+          </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="space-y-2">
+            <label for="vin" class="text-sm font-medium text-muted-foreground">VIN</label>
+            <Input
+              id="vin"
+              :model-value="editFormData.vin"
+              @update:model-value="updateEditFormData({ ...editFormData, vin: ($event as string).toUpperCase() })"
+              type="text"
+              placeholder="WF0XXXGCDX1234567"
+              maxlength="17"
+              :disabled="savingEdit"
+              class="font-mono"
+            />
+          </div>
+          <div class="space-y-2">
+            <label for="numeroCarteGrise" class="text-sm font-medium text-muted-foreground">N° carte grise</label>
+            <Input
+              id="numeroCarteGrise"
+              :model-value="editFormData.numeroCarteGrise"
+              @update:model-value="updateEditFormData({ ...editFormData, numeroCarteGrise: $event as string })"
+              type="text"
+              placeholder="2024AB12345"
+              :disabled="savingEdit"
+            />
+          </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div class="space-y-2">
+            <label for="dateMiseEnCirculation" class="text-sm font-medium text-muted-foreground">Mise en circulation</label>
+            <Input
+              id="dateMiseEnCirculation"
+              :model-value="editFormData.dateMiseEnCirculation"
+              @update:model-value="updateEditFormData({ ...editFormData, dateMiseEnCirculation: $event as string })"
+              type="date"
+              :disabled="savingEdit"
+            />
+          </div>
+          <div class="space-y-2">
+            <label for="typeCarburant" class="text-sm font-medium text-muted-foreground">Carburant</label>
+            <Select
+              :model-value="editFormData.typeCarburant || undefined"
+              @update:model-value="updateEditFormData({ ...editFormData, typeCarburant: $event as string })"
+              :teleport="false"
+              :options="carburantOptions"
+              placeholder="Sélectionner"
+              :disabled="savingEdit"
+              :searchable="false"
+              clearable
+              id="typeCarburant"
+            />
+          </div>
+          <div class="space-y-2">
+            <label for="ptac" class="text-sm font-medium text-muted-foreground">PTAC (kg)</label>
+            <Input
+              id="ptac"
+              :model-value="editFormData.ptac ?? undefined"
+              @update:model-value="updateEditFormData({ ...editFormData, ptac: $event ? Number($event) : null })"
+              type="number"
+              inputmode="numeric"
+              placeholder="3500"
+              min="0"
+              :disabled="savingEdit"
+            />
+          </div>
+        </div>
+
+        <!-- Separator -->
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center"><span class="w-full border-t" /></div>
+          <div class="relative flex justify-center text-xs uppercase">
+            <span class="bg-card px-2 text-muted-foreground">Assurance & Contrôle technique</span>
+          </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="space-y-2">
+            <label for="assureur" class="text-sm font-medium text-muted-foreground">Assureur</label>
+            <Input
+              id="assureur"
+              :model-value="editFormData.assureur"
+              @update:model-value="updateEditFormData({ ...editFormData, assureur: $event as string })"
+              type="text"
+              placeholder="AXA"
+              :disabled="savingEdit"
+            />
+          </div>
+          <div class="space-y-2">
+            <label for="numeroContratAssurance" class="text-sm font-medium text-muted-foreground">N° contrat assurance</label>
+            <Input
+              id="numeroContratAssurance"
+              :model-value="editFormData.numeroContratAssurance"
+              @update:model-value="updateEditFormData({ ...editFormData, numeroContratAssurance: $event as string })"
+              type="text"
+              placeholder="ASS-2025-123456"
+              :disabled="savingEdit"
+            />
+          </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="space-y-2">
+            <label for="dateExpirationAssurance" class="text-sm font-medium text-muted-foreground">Expiration assurance</label>
+            <Input
+              id="dateExpirationAssurance"
+              :model-value="editFormData.dateExpirationAssurance"
+              @update:model-value="updateEditFormData({ ...editFormData, dateExpirationAssurance: $event as string })"
+              type="date"
+              :disabled="savingEdit"
+            />
+          </div>
+          <div class="space-y-2">
+            <label for="dateProchainControleTechnique" class="text-sm font-medium text-muted-foreground">Prochain contrôle technique</label>
+            <Input
+              id="dateProchainControleTechnique"
+              :model-value="editFormData.dateProchainControleTechnique"
+              @update:model-value="updateEditFormData({ ...editFormData, dateProchainControleTechnique: $event as string })"
+              type="date"
+              :disabled="savingEdit"
+            />
+          </div>
+        </div>
+
         <!-- Action buttons -->
         <div class="flex justify-end gap-2">
           <Button variant="outline" size="sm" @click="emit('cancel-editing')" :disabled="savingEdit">
@@ -227,6 +434,7 @@
 import type { VehiculeDTO } from '@/models'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 import {
   Truck,
   Pencil,
@@ -235,8 +443,24 @@ import {
   X,
   Check,
   LoaderCircle,
-  ArrowLeft
+  ArrowLeft,
+  Hash,
+  FileText,
+  Calendar,
+  Fuel,
+  Weight,
+  Shield,
+  CalendarClock,
+  ClipboardCheck,
 } from 'lucide-vue-next'
+
+const carburantOptions = [
+  { value: 'Diesel', label: 'Diesel' },
+  { value: 'Essence', label: 'Essence' },
+  { value: 'Électrique', label: 'Électrique' },
+  { value: 'Hybride', label: 'Hybride' },
+  { value: 'GNV', label: 'GNV' },
+]
 
 interface Props {
   vehicule: VehiculeDTO
@@ -250,6 +474,15 @@ interface Props {
     model: string
     comment: string
     pictureBase64: string | null
+    vin: string
+    numeroCarteGrise: string
+    dateMiseEnCirculation: string
+    typeCarburant: string
+    ptac: number | null
+    numeroContratAssurance: string
+    assureur: string
+    dateExpirationAssurance: string
+    dateProchainControleTechnique: string
   }
   editPicturePreview: string | null
   removePictureOnSave: boolean
@@ -286,5 +519,27 @@ const formatDate = (dateString: string | Date | undefined) => {
     month: 'short',
     day: 'numeric'
   })
+}
+
+const formatDateShort = (dateString: string | undefined) => {
+  if (!dateString) return '-'
+  return new Date(dateString + 'T00:00:00').toLocaleDateString('fr-FR', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+const isExpired = (dateString: string | undefined) => {
+  if (!dateString) return false
+  return new Date(dateString + 'T00:00:00') < new Date()
+}
+
+const isExpiringSoon = (dateString: string | undefined) => {
+  if (!dateString) return false
+  const date = new Date(dateString + 'T00:00:00')
+  const now = new Date()
+  const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+  return date >= now && date <= thirtyDaysFromNow
 }
 </script>
