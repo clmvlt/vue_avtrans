@@ -1,6 +1,6 @@
 <template>
   <Dialog v-model:open="localOpen">
-    <DialogContent class="sm:max-w-lg" @interact-outside.prevent>
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>{{ isCreating ? 'Créer une carte' : 'Modifier la carte' }}</DialogTitle>
         <DialogDescription>
@@ -67,6 +67,17 @@
             />
             <p class="text-xs text-muted-foreground">Code à 4 chiffres</p>
           </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label for="carteDateExpiration" class="text-sm font-medium text-foreground">Date d'expiration</label>
+          <Input
+            id="carteDateExpiration"
+            v-model="formData.dateExpiration"
+            type="date"
+            :disabled="saving"
+          />
+          <p class="text-xs text-muted-foreground">Date d'expiration de la carte (optionnel)</p>
         </div>
 
         <div class="flex flex-col gap-2">
@@ -184,6 +195,7 @@ const formData = ref({
   description: '',
   code: '',
   numero: '',
+  dateExpiration: '',
   userUuid: '' as string | undefined,
   typeCarteUuid: '' as string | undefined
 })
@@ -259,6 +271,7 @@ const loadCarteData = async () => {
         description: carte.description || '',
         code: carte.code || '',
         numero: carte.numero || '',
+        dateExpiration: carte.dateExpiration || '',
         userUuid: carte.userUuid || carte.user?.uuid || '',
         typeCarteUuid: carte.typeCarteUuid || carte.typeCarte?.uuid || ''
       }
@@ -279,6 +292,7 @@ const resetForm = () => {
     description: '',
     code: '',
     numero: '',
+    dateExpiration: '',
     userUuid: '',
     typeCarteUuid: ''
   }
@@ -307,7 +321,8 @@ const handleSubmit = async () => {
         typeCarteUuid: formData.value.typeCarteUuid,
         description: formData.value.description.trim() || undefined,
         numero: formData.value.numero.trim() || undefined,
-        userUuid: formData.value.userUuid || undefined
+        userUuid: formData.value.userUuid || undefined,
+        dateExpiration: formData.value.dateExpiration || undefined
       }
       const response = await cartesService.createCarte(createData)
       emit('saved', response.carte)
@@ -318,7 +333,8 @@ const handleSubmit = async () => {
         code: formData.value.code.trim(),
         typeCarteUuid: formData.value.typeCarteUuid,
         description: formData.value.description.trim() || undefined,
-        numero: formData.value.numero.trim() || undefined
+        numero: formData.value.numero.trim() || undefined,
+        dateExpiration: formData.value.dateExpiration || undefined
       }
       // Gestion de l'utilisateur
       if (formData.value.userUuid) {

@@ -1,6 +1,6 @@
 <template>
   <Dialog v-model:open="localOpen">
-    <DialogContent class="sm:max-w-md" @interact-outside.prevent>
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-md">
       <DialogHeader>
         <DialogTitle>{{ isCreating ? 'Créer un type de carte' : 'Modifier le type de carte' }}</DialogTitle>
         <DialogDescription>

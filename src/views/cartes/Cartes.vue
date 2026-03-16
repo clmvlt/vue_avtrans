@@ -122,6 +122,22 @@
                 </div>
               </div>
 
+              <!-- Expiration -->
+              <div v-if="item.dateExpiration" class="mt-3 space-y-2 text-sm">
+                <div class="flex items-center justify-between">
+                  <span class="text-muted-foreground">Expiration</span>
+                  <div class="flex items-center gap-1.5">
+                    <CalendarClock class="size-3.5" :class="getExpirationStatus(item.dateExpiration)?.class" />
+                    <Badge v-if="getExpirationStatus(item.dateExpiration)?.badge" :variant="getExpirationStatus(item.dateExpiration)!.badge!">
+                      {{ getExpirationStatus(item.dateExpiration)!.label }}
+                    </Badge>
+                    <span v-else class="text-sm" :class="getExpirationStatus(item.dateExpiration)?.class">
+                      {{ formatExpirationDate(item.dateExpiration) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <!-- Badges row -->
               <div class="mt-3 flex flex-wrap items-center gap-2">
                 <Badge v-if="item.typeCarte" variant="secondary">
@@ -144,13 +160,14 @@
                   <TableHead>Numéro</TableHead>
                   <TableHead>Code</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>Expiration</TableHead>
                   <TableHead>Utilisateur</TableHead>
                   <TableHead class="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow v-if="filteredCartes.length === 0">
-                  <TableCell colspan="6" class="text-center text-muted-foreground">
+                  <TableCell colspan="7" class="text-center text-muted-foreground">
                     Aucune carte configurée
                   </TableCell>
                 </TableRow>
@@ -206,6 +223,22 @@
                     <Badge v-if="item.typeCarte" variant="secondary">
                       {{ item.typeCarte.nom }}
                     </Badge>
+                    <span v-else class="text-muted-foreground">-</span>
+                  </TableCell>
+
+                  <!-- Expiration -->
+                  <TableCell>
+                    <template v-if="item.dateExpiration">
+                      <div class="flex items-center gap-1.5">
+                        <CalendarClock class="size-3.5" :class="getExpirationStatus(item.dateExpiration)?.class" />
+                        <Badge v-if="getExpirationStatus(item.dateExpiration)?.badge" :variant="getExpirationStatus(item.dateExpiration)!.badge!">
+                          {{ getExpirationStatus(item.dateExpiration)!.label }}
+                        </Badge>
+                        <span v-else :class="getExpirationStatus(item.dateExpiration)?.class">
+                          {{ formatExpirationDate(item.dateExpiration) }}
+                        </span>
+                      </div>
+                    </template>
                     <span v-else class="text-muted-foreground">-</span>
                   </TableCell>
 
@@ -320,7 +353,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Search, Plus, Tags, CreditCard, Eye, EyeOff, LoaderCircle, MoreVertical, Pencil, Trash2 } from 'lucide-vue-next'
+import { Search, Plus, Tags, CreditCard, Eye, EyeOff, LoaderCircle, MoreVertical, Pencil, Trash2, CalendarClock } from 'lucide-vue-next'
 
 // DropdownMenu for mobile actions
 import {
@@ -384,6 +417,31 @@ const handleContextAction = (carte: CarteDTO, action: string) => {
       openDeleteModal(carte)
       break
   }
+}
+
+// Helper pour le statut d'expiration
+const getExpirationStatus = (dateExpiration?: string) => {
+  if (!dateExpiration) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const expDate = new Date(dateExpiration)
+  expDate.setHours(0, 0, 0, 0)
+  const diffDays = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+  if (diffDays < 0) {
+    return { class: 'text-destructive', badge: 'destructive' as const, label: 'Expirée' }
+  }
+  if (diffDays < 30) {
+    return { class: 'text-orange-600', badge: 'warning' as const, label: 'Expire bientôt' }
+  }
+  const formatted = expDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+  return { class: 'text-muted-foreground', badge: null, label: formatted }
+}
+
+const formatExpirationDate = (dateExpiration?: string) => {
+  if (!dateExpiration) return '-'
+  const date = new Date(dateExpiration)
+  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 // Filtrage sur tous les champs

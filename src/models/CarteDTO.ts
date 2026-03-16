@@ -14,6 +14,7 @@ export interface CarteDTO {
   user?: UserDTO
   typeCarteUuid?: string
   typeCarte?: TypeCarteDTO
+  dateExpiration?: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -28,6 +29,7 @@ export interface CarteCreateRequest {
   numero?: string
   userUuid?: string
   typeCarteUuid: string
+  dateExpiration?: string
 }
 
 /**
@@ -40,6 +42,7 @@ export interface CarteUpdateRequest {
   numero?: string
   userUuid?: string
   typeCarteUuid?: string
+  dateExpiration?: string
   clearUser?: boolean
 }
 
