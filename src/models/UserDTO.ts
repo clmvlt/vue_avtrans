@@ -1,5 +1,6 @@
 import { RoleDTO } from './RoleDTO';
 import { NotificationPreferencesDTO } from './NotificationPreferencesDTO';
+import { AddressDTO } from './AddressDTO';
 import { UserStatus } from '../enums';
 
 /**
@@ -22,6 +23,12 @@ export interface UserDTO {
   notificationPreferences?: NotificationPreferencesDTO;
   /** Statut de présence de l'utilisateur */
   status?: UserStatus;
+  /** Adresse de l'utilisateur */
+  address?: AddressDTO;
+  /** Numéro de permis de conduire */
+  driverLicenseNumber?: string;
+  /** Heures mensuelles du contrat */
+  heureContrat?: number | null;
 }
 
 /**
