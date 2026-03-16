@@ -121,9 +121,8 @@
                   <span class="truncate text-sm font-medium text-foreground">{{ user.firstName }} {{ user.lastName }}</span>
                   <span
                     v-if="user.role"
-                    class="text-xs font-medium"
-                    :style="{ color: user.role.color }"
-                  >{{ user.role.nom }}</span>
+                    class="text-xs font-medium text-muted-foreground"
+                  >{{ user.role.name }}</span>
                 </div>
                 <router-link
                   :to="`/absences?userUuid=${user.uuid}`"

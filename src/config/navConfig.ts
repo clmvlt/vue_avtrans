@@ -19,6 +19,7 @@ import {
   FileUp,
   PenLine,
   Download,
+  Scale,
 } from 'lucide-vue-next'
 
 /**
@@ -92,6 +93,12 @@ export const mainNavLinks: NavLinkConfig[] = [
     to: '/heures',
     label: 'Heures',
     lucideIcon: Clock,
+    requiredRoles: [UserRole.ADMINISTRATEUR]
+  },
+  {
+    to: '/contract-hours',
+    label: 'Contrats',
+    lucideIcon: Scale,
     requiredRoles: [UserRole.ADMINISTRATEUR]
   },
   {
@@ -231,6 +238,12 @@ export const fullNavSections: NavSectionConfig[] = [
         to: '/heures',
         label: 'Heures',
         lucideIcon: Clock,
+        requiredRoles: [UserRole.ADMINISTRATEUR]
+      },
+      {
+        to: '/contract-hours',
+        label: 'Heures contrat',
+        lucideIcon: Scale,
         requiredRoles: [UserRole.ADMINISTRATEUR]
       },
       {

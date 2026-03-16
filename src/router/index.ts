@@ -155,6 +155,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
+    path: '/contract-hours',
+    name: 'ContractHours',
+    component: () => import('../views/hours/ContractHours.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
     path: '/pointage',
     name: 'Pointage',
     component: () => import('../views/hours/Pointage.vue'),

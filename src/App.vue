@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { Messages } from '@/components/ui/messages'
 import { UpdateBanner } from '@/components/ui/update-banner'
 import { ChangelogDialog } from '@/components/ui/changelog'
+import { ProfileCompletionDialog } from '@/components/ui/profile-completion'
 import { useChangelog } from '@/composables/useChangelog'
 import { setMessagesInstance } from '@/composables/useMessages'
 import { useVersionCheck } from '@/composables/useVersionCheck'
@@ -23,6 +24,18 @@ const { newVersionAvailable, newVersion, performUpdate, dismissUpdate } = useVer
 // Changelog
 const { latestEntry, hasUnseenChanges, markAsSeen } = useChangelog()
 const showChangelog = ref(false)
+
+// Profil incomplet
+const showProfileCompletion = ref(false)
+
+const needsProfileCompletion = computed(() => {
+  const user = authStore.user
+  if (!user) return false
+  if (!authStore.isEmailVerified || !authStore.isActive) return false
+  const hasAddress = !!(user.address?.street && user.address?.city && user.address?.postalCode)
+  const hasLicense = !!user.driverLicenseNumber
+  return !hasAddress || !hasLicense
+})
 
 // Pages qui ne doivent pas afficher la navbar
 const pagesWithoutNavbar = ['login', 'register', 'verify', 'forgot-password', 'reset-password', 'unauthorized', 'NotFound']
@@ -59,6 +72,11 @@ onMounted(() => {
   // Afficher le changelog si nouvelles mises à jour non vues
   if (hasUnseenChanges.value && authStore.isAuthenticated) {
     showChangelog.value = true
+  }
+
+  // Afficher le popup de complétion de profil
+  if (authStore.isAuthenticated && needsProfileCompletion.value) {
+    showProfileCompletion.value = true
   }
 })
 
@@ -102,6 +120,13 @@ const handleChangelogClose = () => {
       v-model:open="showChangelog"
       :entry="latestEntry"
       @close="handleChangelogClose"
+    />
+
+    <!-- Dialog de complétion de profil -->
+    <ProfileCompletionDialog
+      v-if="authStore.isAuthenticated && needsProfileCompletion"
+      :open="showProfileCompletion"
+      @update:open="showProfileCompletion = $event"
     />
   </div>
 </template>
