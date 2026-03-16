@@ -1,39 +1,39 @@
 <template>
-  <div class="reset-password-container">
-    <div class="reset-password-card">
-      <div class="header">
-        <div class="icon-container">
-          <img src="/src/assets/favicon.png" alt="Logo" class="header-icon" />
+  <div class="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-muted">
+    <div class="w-full max-w-[480px] bg-card border border-border rounded-lg p-6 sm:p-8 shadow-lg">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center size-16 sm:size-20 rounded-full mb-4 overflow-hidden">
+          <img src="/src/assets/favicon.png" alt="Logo" class="size-full object-cover rounded-full" />
         </div>
-        <h1>Réinitialiser le mot de passe</h1>
-        <p class="subtitle">
+        <h1 class="text-xl sm:text-2xl font-bold text-foreground mb-2 mt-0">Réinitialiser le mot de passe</h1>
+        <p class="text-muted-foreground text-sm leading-relaxed m-0">
           Entrez votre nouveau mot de passe.
         </p>
       </div>
 
-      <div v-if="successMessage" class="success-alert">
-        <font-awesome-icon :icon="['fas', 'check-circle']" class="success-icon" />
+      <div v-if="successMessage" class="flex items-start gap-3 p-4 mb-6 bg-success/10 border border-success/30 rounded-md text-success">
+        <font-awesome-icon :icon="['fas', 'check-circle']" class="text-xl flex-shrink-0 mt-0.5" />
         <div>
-          <p class="alert-title">Mot de passe réinitialisé</p>
-          <p class="alert-message">{{ successMessage }}</p>
-          <p class="redirect-info">
+          <p class="font-semibold m-0 mb-1 text-base">Mot de passe réinitialisé</p>
+          <p class="m-0 mb-2 text-sm leading-relaxed">{{ successMessage }}</p>
+          <p class="flex items-center gap-2 text-sm m-0">
             <font-awesome-icon :icon="['fas', 'clock']" />
             Redirection vers la page de connexion...
           </p>
         </div>
       </div>
 
-      <div v-if="errorMessage" class="error-alert">
-        <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="error-icon" />
+      <div v-if="errorMessage" class="flex items-center gap-3 p-4 mb-6 bg-destructive/10 border border-destructive/30 rounded-md text-destructive text-sm">
+        <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="text-lg flex-shrink-0" />
         <span>{{ errorMessage }}</span>
       </div>
 
-      <div v-if="!token" class="error-alert">
-        <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="error-icon" />
+      <div v-if="!token" class="flex items-center gap-3 p-4 mb-6 bg-destructive/10 border border-destructive/30 rounded-md text-destructive text-sm">
+        <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="text-lg flex-shrink-0" />
         <span>Token de réinitialisation manquant ou invalide.</span>
       </div>
 
-      <form @submit.prevent="handleSubmit" v-if="!successMessage && token" class="form">
+      <form @submit.prevent="handleSubmit" v-if="!successMessage && token" class="flex flex-col gap-5 mb-6">
         <InputField
           v-model="password"
           label="Nouveau mot de passe"
@@ -69,8 +69,8 @@
         </Button>
       </form>
 
-      <div class="footer">
-        <RouterLink to="/login" class="back-link inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium hover:underline">
+      <div class="text-center">
+        <RouterLink to="/login" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium hover:underline">
           <font-awesome-icon :icon="['fas', 'arrow-left']" />
           Retour à la connexion
         </RouterLink>
@@ -143,160 +143,3 @@ const handleSubmit = async () => {
   }
 }
 </script>
-
-<style scoped>
-.reset-password-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-6);
-  background-color: var(--color-bg-secondary);
-}
-
-.reset-password-card {
-  width: 100%;
-  max-width: 480px;
-  background-color: var(--color-bg-primary);
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-8);
-  box-shadow: var(--shadow-lg);
-}
-
-.header {
-  text-align: center;
-  margin-bottom: var(--space-8);
-}
-
-.icon-container {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  border-radius: var(--radius-full);
-  margin-bottom: var(--space-4);
-}
-
-.header-icon {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: var(--radius-full);
-}
-
-.header h1 {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  margin-bottom: var(--space-2);
-  margin-top: 0;
-}
-
-.subtitle {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.success-alert {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  margin-bottom: var(--space-6);
-  background-color: var(--color-success-bg);
-  border: 1px solid var(--color-success);
-  border-radius: var(--radius-md);
-  color: var(--color-success);
-}
-
-.success-icon {
-  font-size: var(--font-size-xl);
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.alert-title {
-  font-weight: var(--font-weight-semibold);
-  margin: 0 0 var(--space-1) 0;
-  font-size: var(--font-size-base);
-}
-
-.alert-message {
-  margin: 0 0 var(--space-2) 0;
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-}
-
-.redirect-info {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-sm);
-  margin: 0;
-}
-
-.error-alert {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  margin-bottom: var(--space-6);
-  background-color: var(--color-danger-bg);
-  border: 1px solid var(--color-danger);
-  border-radius: var(--radius-md);
-  color: var(--color-danger);
-  font-size: var(--font-size-sm);
-}
-
-.error-icon {
-  font-size: var(--font-size-lg);
-  flex-shrink: 0;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  margin-bottom: var(--space-6);
-}
-
-.footer {
-  text-align: center;
-}
-
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-sm);
-}
-
-@media (max-width: 640px) {
-  .reset-password-container {
-    padding: var(--space-4);
-  }
-
-  .reset-password-card {
-    padding: var(--space-6);
-  }
-
-  .icon-container {
-    width: 64px;
-    height: 64px;
-  }
-
-  .header-icon {
-    width: 100%;
-    height: 100%;
-  }
-
-  .header h1 {
-    font-size: var(--font-size-xl);
-  }
-}
-</style>

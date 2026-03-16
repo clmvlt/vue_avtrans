@@ -1,27 +1,27 @@
 <template>
-  <div class="not-found">
-    <div class="content">
-      <div class="error-section">
-        <h1 class="error-code">404</h1>
-        <div class="error-text">
-          <h2>Page non trouvée</h2>
-          <p class="message">
+  <div class="flex justify-center items-center min-h-screen bg-background p-4 sm:p-6">
+    <div class="max-w-[600px] w-full text-center">
+      <div class="flex flex-col items-center gap-6 mb-8">
+        <h1 class="text-[80px] sm:text-[120px] font-extrabold text-primary m-0 leading-none">404</h1>
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-bold text-foreground mb-3 mt-0">Page non trouvée</h2>
+          <p class="text-base sm:text-lg text-muted-foreground m-0 leading-relaxed">
             La page que vous recherchez n'existe pas ou a été déplacée.
           </p>
         </div>
       </div>
 
-      <div class="details">
-        <h3>Suggestions :</h3>
-        <ul>
-          <li>Vérifiez l'URL dans la barre d'adresse</li>
-          <li>Retournez à la page précédente</li>
-          <li v-if="isAuthenticated">Accédez au tableau de bord</li>
-          <li v-else>Connectez-vous à votre compte</li>
+      <div class="bg-muted border border-border rounded-md p-4 sm:p-6 mb-8 text-left">
+        <h3 class="text-lg font-semibold text-foreground mb-4 mt-0">Suggestions :</h3>
+        <ul class="list-none p-0 m-0 flex flex-col gap-2">
+          <li class="text-base text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-3 before:text-primary before:font-bold">Vérifiez l'URL dans la barre d'adresse</li>
+          <li class="text-base text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-3 before:text-primary before:font-bold">Retournez à la page précédente</li>
+          <li v-if="isAuthenticated" class="text-base text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-3 before:text-primary before:font-bold">Accédez au tableau de bord</li>
+          <li v-else class="text-base text-muted-foreground pl-6 relative before:content-['•'] before:absolute before:left-3 before:text-primary before:font-bold">Connectez-vous à votre compte</li>
         </ul>
       </div>
 
-      <div class="actions">
+      <div class="flex gap-3 justify-center flex-wrap max-sm:flex-col max-sm:w-full">
         <Button
           @click="handleGoBack"
         >
@@ -70,128 +70,3 @@ const handleGoBack = () => {
   }
 }
 </script>
-
-<style scoped>
-.not-found {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: var(--color-bg-primary);
-  padding: var(--space-6);
-}
-
-.content {
-  max-width: 600px;
-  width: 100%;
-  text-align: center;
-}
-
-.error-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-6);
-  margin-bottom: var(--space-8);
-}
-
-.error-code {
-  font-size: 120px;
-  font-weight: var(--font-weight-extrabold);
-  color: var(--color-primary);
-  margin: 0;
-  line-height: 1;
-}
-
-.error-text h2 {
-  font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  margin: 0 0 var(--space-3) 0;
-}
-
-.message {
-  font-size: var(--font-size-lg);
-  color: var(--color-text-secondary);
-  margin: 0;
-  line-height: 1.6;
-}
-
-.details {
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-md);
-  padding: var(--space-6);
-  margin-bottom: var(--space-8);
-  text-align: left;
-}
-
-.details h3 {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  margin: 0 0 var(--space-4) 0;
-}
-
-.details ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.details li {
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-  padding-left: var(--space-6);
-  position: relative;
-}
-
-.details li::before {
-  content: '•';
-  position: absolute;
-  left: var(--space-3);
-  color: var(--color-primary);
-  font-weight: var(--font-weight-bold);
-}
-
-.actions {
-  display: flex;
-  gap: var(--space-3);
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-@media (max-width: 768px) {
-  .not-found {
-    padding: var(--space-4);
-  }
-
-  .error-code {
-    font-size: 80px;
-  }
-
-  .error-text h2 {
-    font-size: var(--font-size-2xl);
-  }
-
-  .message {
-    font-size: var(--font-size-base);
-  }
-
-  .details {
-    padding: var(--space-4);
-  }
-
-  .actions {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .actions :deep(button) {
-    width: 100%;
-  }
-}
-</style>

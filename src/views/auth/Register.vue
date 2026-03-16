@@ -1,68 +1,68 @@
 <template>
-  <div class="register-container">
-    <div class="register-card">
-      <div class="header">
-        <div class="icon-container">
-          <img src="/src/assets/favicon.png" alt="Logo" class="header-icon" />
+  <div class="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-muted">
+    <div class="w-full max-w-[520px] bg-card border border-border rounded-lg p-6 sm:p-8 shadow-lg">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center size-16 sm:size-20 rounded-full mb-4 overflow-hidden">
+          <img src="/src/assets/favicon.png" alt="Logo" class="size-full object-cover rounded-full" />
         </div>
-        <h1>Inscription</h1>
-        <p class="subtitle">
+        <h1 class="text-xl sm:text-2xl font-bold text-foreground mb-2 mt-0">Inscription</h1>
+        <p class="text-muted-foreground text-sm leading-relaxed m-0">
           Créez votre compte pour accéder à l'application de pointage
         </p>
       </div>
 
-      <div v-if="successMessage" class="success-state">
-        <div class="success-icon-container">
-          <font-awesome-icon :icon="['fas', 'check-circle']" class="success-icon-large" />
+      <div v-if="successMessage" class="text-center">
+        <div class="inline-flex items-center justify-center size-[100px] bg-gradient-to-br from-success to-success/80 rounded-full mb-5">
+          <font-awesome-icon :icon="['fas', 'check-circle']" class="text-[56px] text-white" />
         </div>
-        <h2 class="success-title">Inscription réussie !</h2>
+        <h2 class="text-2xl font-bold text-foreground mb-6 mt-0">Inscription réussie !</h2>
 
-        <div class="success-steps">
-          <div class="step">
-            <div class="step-number">1</div>
-            <div class="step-content">
-              <h3 class="step-title">
+        <div class="flex flex-col gap-4 mb-6 text-left">
+          <div class="flex gap-4 p-4 bg-muted border border-border rounded-md transition-colors hover:border-primary hover:shadow-sm">
+            <div class="flex items-center justify-center size-8 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-full font-bold text-sm flex-shrink-0">1</div>
+            <div class="flex-1">
+              <h3 class="flex items-center gap-2 text-base font-semibold text-foreground mb-2 mt-0">
                 <font-awesome-icon :icon="['fas', 'envelope']" />
                 Vérifiez votre email
               </h3>
-              <p class="step-description">
-                Un email de vérification a été envoyé à <strong>{{ email }}</strong>
+              <p class="text-sm text-muted-foreground leading-relaxed m-0">
+                Un email de vérification a été envoyé à <strong class="text-primary font-semibold">{{ email }}</strong>
               </p>
             </div>
           </div>
 
-          <div class="step">
-            <div class="step-number">2</div>
-            <div class="step-content">
-              <h3 class="step-title">
+          <div class="flex gap-4 p-4 bg-muted border border-border rounded-md transition-colors hover:border-primary hover:shadow-sm">
+            <div class="flex items-center justify-center size-8 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-full font-bold text-sm flex-shrink-0">2</div>
+            <div class="flex-1">
+              <h3 class="flex items-center gap-2 text-base font-semibold text-foreground mb-2 mt-0">
                 <font-awesome-icon :icon="['fas', 'mouse-pointer']" />
                 Activez votre compte
               </h3>
-              <p class="step-description">
+              <p class="text-sm text-muted-foreground leading-relaxed m-0">
                 Cliquez sur le lien de vérification dans l'email pour confirmer votre adresse
               </p>
             </div>
           </div>
 
-          <div class="step">
-            <div class="step-number">3</div>
-            <div class="step-content">
-              <h3 class="step-title">
+          <div class="flex gap-4 p-4 bg-muted border border-border rounded-md transition-colors hover:border-primary hover:shadow-sm">
+            <div class="flex items-center justify-center size-8 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-full font-bold text-sm flex-shrink-0">3</div>
+            <div class="flex-1">
+              <h3 class="flex items-center gap-2 text-base font-semibold text-foreground mb-2 mt-0">
                 <font-awesome-icon :icon="['fas', 'user-shield']" />
                 Attendez l'activation par l'administrateur
               </h3>
-              <p class="step-description">
+              <p class="text-sm text-muted-foreground leading-relaxed m-0">
                 Après vérification de votre email, un administrateur doit activer votre compte pour vous permettre de vous connecter
               </p>
             </div>
           </div>
         </div>
 
-        <div class="info-box">
-          <font-awesome-icon :icon="['fas', 'info-circle']" class="info-icon" />
-          <div class="info-content">
-            <p class="info-title">Email non reçu ?</p>
-            <p class="info-text">Vérifiez votre dossier spam ou courrier indésirable</p>
+        <div class="flex gap-3 p-4 bg-info/10 border border-info/30 rounded-md mb-6 text-left">
+          <font-awesome-icon :icon="['fas', 'info-circle']" class="text-xl text-info flex-shrink-0 mt-0.5" />
+          <div class="flex-1">
+            <p class="font-semibold text-info text-sm m-0 mb-1">Email non reçu ?</p>
+            <p class="text-sm text-muted-foreground m-0 leading-relaxed">Vérifiez votre dossier spam ou courrier indésirable</p>
           </div>
         </div>
 
@@ -71,13 +71,13 @@
         </Button>
       </div>
 
-      <div v-if="errorMessage" class="error-alert">
-        <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="error-icon" />
+      <div v-if="errorMessage" class="flex items-center gap-3 p-4 mb-6 bg-destructive/10 border border-destructive/30 rounded-md text-destructive text-sm">
+        <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="text-lg flex-shrink-0" />
         <span>{{ errorMessage }}</span>
       </div>
 
-      <form @submit.prevent="handleRegister" v-if="!successMessage" class="form" name="register">
-        <div class="name-row">
+      <form @submit.prevent="handleRegister" v-if="!successMessage" class="flex flex-col gap-5 mb-6" name="register">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-4">
           <InputField
             v-model="firstName"
             label="Prénom"
@@ -149,8 +149,8 @@
         </Button>
       </form>
 
-      <div class="footer" v-if="!successMessage">
-        <p class="login-prompt">
+      <div class="text-center pt-4 border-t border-border" v-if="!successMessage">
+        <p class="text-muted-foreground text-sm m-0">
           Déjà un compte ?
           <RouterLink to="/login" class="text-sm font-medium text-primary hover:text-primary/80 transition-colors hover:underline">Se connecter</RouterLink>
         </p>
@@ -222,261 +222,3 @@ const handleRegister = async () => {
   }
 }
 </script>
-
-<style scoped>
-.register-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-6);
-  background-color: var(--color-bg-secondary);
-}
-
-.register-card {
-  width: 100%;
-  max-width: 520px;
-  background-color: var(--color-bg-primary);
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-8);
-  box-shadow: var(--shadow-lg);
-}
-
-.header {
-  text-align: center;
-  margin-bottom: var(--space-8);
-}
-
-.icon-container {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  border-radius: var(--radius-full);
-  margin-bottom: var(--space-4);
-}
-
-.header-icon {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: var(--radius-full);
-}
-
-.header h1 {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  margin-bottom: var(--space-2);
-  margin-top: 0;
-}
-
-.subtitle {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-  margin: 0;
-}
-
-/* Success State */
-.success-state {
-  text-align: center;
-}
-
-.success-icon-container {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100px;
-  height: 100px;
-  background: linear-gradient(135deg, var(--color-success), var(--color-success-hover));
-  border-radius: var(--radius-full);
-  margin-bottom: var(--space-5);
-}
-
-.success-icon-large {
-  font-size: 56px;
-  color: var(--color-white);
-}
-
-.success-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  margin: 0 0 var(--space-6) 0;
-}
-
-.success-steps {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
-  text-align: left;
-}
-
-.step {
-  display: flex;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-md);
-  transition: all var(--transition-base);
-}
-
-.step:hover {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.step-number {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  color: var(--color-white);
-  border-radius: var(--radius-full);
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-sm);
-  flex-shrink: 0;
-}
-
-.step-content {
-  flex: 1;
-}
-
-.step-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  margin: 0 0 var(--space-2) 0;
-}
-
-.step-description {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.step-description strong {
-  color: var(--color-primary);
-  font-weight: var(--font-weight-semibold);
-}
-
-.info-box {
-  display: flex;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  background-color: var(--color-info-bg);
-  border: 1px solid var(--color-info);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-6);
-  text-align: left;
-}
-
-.info-icon {
-  font-size: var(--font-size-xl);
-  color: var(--color-info);
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.info-content {
-  flex: 1;
-}
-
-.info-title {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-info);
-  font-size: var(--font-size-sm);
-  margin: 0 0 var(--space-1) 0;
-}
-
-.info-text {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.error-alert {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  margin-bottom: var(--space-6);
-  background-color: var(--color-danger-bg);
-  border: 1px solid var(--color-danger);
-  border-radius: var(--radius-md);
-  color: var(--color-danger);
-  font-size: var(--font-size-sm);
-}
-
-.error-icon {
-  font-size: var(--font-size-lg);
-  flex-shrink: 0;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  margin-bottom: var(--space-6);
-}
-
-.name-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-4);
-}
-
-.footer {
-  text-align: center;
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border-primary);
-}
-
-.login-prompt {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  margin: 0;
-}
-
-@media (max-width: 640px) {
-  .register-container {
-    padding: var(--space-4);
-  }
-
-  .register-card {
-    padding: var(--space-6);
-  }
-
-  .icon-container {
-    width: 64px;
-    height: 64px;
-  }
-
-  .header-icon {
-    width: 100%;
-    height: 100%;
-  }
-
-  .header h1 {
-    font-size: var(--font-size-xl);
-  }
-
-  .name-row {
-    grid-template-columns: 1fr;
-    gap: var(--space-5);
-  }
-}
-</style>

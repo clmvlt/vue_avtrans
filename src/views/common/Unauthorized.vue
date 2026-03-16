@@ -1,44 +1,45 @@
 <template>
-  <div class="unauthorized-container">
-    <div class="unauthorized-card">
-      <div class="icon-container">
-        <span class="icon">🚫</span>
+  <div class="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-muted">
+    <div class="w-full max-w-[480px] bg-card border border-border rounded-xl p-6 sm:p-10 shadow-xl text-center">
+      <div class="mb-6">
+        <span class="text-[48px] sm:text-[64px] inline-block">🚫</span>
       </div>
 
-      <h1>Accès refusé</h1>
+      <h1 class="text-2xl sm:text-3xl text-destructive mb-4 font-semibold">Accès refusé</h1>
 
-      <p class="error-message">
+      <p class="text-muted-foreground text-lg mb-6 leading-relaxed">
         Vous n'avez pas les permissions nécessaires pour accéder à cette application.
       </p>
 
-      <div v-if="userRole" class="role-badge">
-        <span class="role-label">Votre rôle actuel</span>
-        <span class="role-value">{{ userRole }}</span>
+      <div v-if="userRole" class="inline-flex flex-col items-center gap-2 bg-warning/10 border border-warning/30 rounded-lg px-6 py-4 mb-6">
+        <span class="text-sm text-muted-foreground uppercase tracking-wider">Votre rôle actuel</span>
+        <span class="text-lg text-warning font-semibold">{{ userRole }}</span>
       </div>
 
-      <div class="info-section">
-        <p class="info-text">
-          Seuls les <strong>Administrateurs</strong> et les <strong>Mécaniciens</strong> peuvent accéder à ce site.
+      <div class="mb-8">
+        <p class="text-muted-foreground text-base leading-relaxed mb-3">
+          Seuls les <strong class="text-foreground font-medium">Administrateurs</strong> et les <strong class="text-foreground font-medium">Mécaniciens</strong> peuvent accéder à ce site.
         </p>
-        <p class="info-text">
-          Si vous êtes un <strong>Utilisateur</strong>, veuillez utiliser l'application mobile pour accéder à vos pointages.
+        <p class="text-muted-foreground text-base leading-relaxed mb-3">
+          Si vous êtes un <strong class="text-foreground font-medium">Utilisateur</strong>, veuillez utiliser l'application mobile pour accéder à vos pointages.
         </p>
-        <p class="info-text muted">
+        <p class="text-muted-foreground/70 text-sm mt-4">
           Si vous pensez qu'il s'agit d'une erreur, veuillez contacter votre administrateur système.
         </p>
       </div>
 
-      <button @click="handleLogout" class="btn-logout">
+      <Button @click="handleLogout" class="w-full">
         Se déconnecter
-      </button>
+      </Button>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { Button } from '@/components/ui/button'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -50,137 +51,3 @@ const handleLogout = () => {
   router.push('/login')
 }
 </script>
-
-<style scoped>
-.unauthorized-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-6);
-  background: linear-gradient(135deg, var(--bg-primary) 0%, #1a1d2e 100%);
-}
-
-.unauthorized-card {
-  width: 100%;
-  max-width: 480px;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-xl);
-  padding: var(--space-10);
-  box-shadow: var(--shadow-xl);
-  text-align: center;
-}
-
-.icon-container {
-  margin-bottom: var(--space-6);
-}
-
-.icon {
-  font-size: 64px;
-  display: inline-block;
-  filter: grayscale(20%);
-}
-
-h1 {
-  font-size: var(--font-size-3xl);
-  color: var(--error);
-  margin-bottom: var(--space-4);
-  font-weight: 600;
-}
-
-.error-message {
-  color: var(--text-secondary);
-  font-size: var(--font-size-lg);
-  margin-bottom: var(--space-6);
-  line-height: 1.5;
-}
-
-.role-badge {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  background-color: var(--warning-bg);
-  border: 1px solid var(--warning);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4) var(--space-6);
-  margin-bottom: var(--space-6);
-}
-
-.role-label {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.role-value {
-  font-size: var(--font-size-lg);
-  color: var(--warning);
-  font-weight: 600;
-}
-
-.info-section {
-  margin-bottom: var(--space-8);
-}
-
-.info-text {
-  color: var(--text-secondary);
-  font-size: var(--font-size-base);
-  line-height: 1.6;
-  margin-bottom: var(--space-3);
-}
-
-.info-text:last-child {
-  margin-bottom: 0;
-}
-
-.info-text strong {
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.info-text.muted {
-  color: var(--text-muted);
-  font-size: var(--font-size-sm);
-  margin-top: var(--space-4);
-}
-
-.btn-logout {
-  width: 100%;
-  padding: var(--space-4) var(--space-6);
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-base);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-
-.btn-logout:hover {
-  background-color: var(--primary-light);
-  transform: scale(1.02);
-}
-
-.btn-logout:active {
-  background-color: var(--primary-dark);
-  transform: scale(0.98);
-}
-
-@media (max-width: 480px) {
-  .unauthorized-card {
-    padding: var(--space-6);
-  }
-
-  .icon {
-    font-size: 48px;
-  }
-
-  h1 {
-    font-size: var(--font-size-2xl);
-  }
-}
-</style>

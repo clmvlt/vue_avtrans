@@ -1,19 +1,19 @@
 <template>
-  <div class="login-container">
-    <div class="login-card">
-      <div class="login-header">
-        <div class="logo-container">
-          <img src="/src/assets/favicon.png" alt="Logo" class="logo-icon" />
+  <div class="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-muted">
+    <div class="w-full max-w-[440px] bg-card border border-border rounded-lg p-6 sm:p-8 shadow-lg">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center size-16 sm:size-20 rounded-full mb-4 overflow-hidden">
+          <img src="/src/assets/favicon.png" alt="Logo" class="size-full object-cover rounded-full" />
         </div>
-        <h1>Connexion</h1>
+        <h1 class="text-xl sm:text-2xl font-bold text-foreground mb-2 mt-0">Connexion</h1>
       </div>
 
-      <div v-if="errorMessage" class="error-alert">
-        <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="error-icon" />
+      <div v-if="errorMessage" class="flex items-center gap-3 p-4 mb-6 bg-destructive/10 border border-destructive/30 rounded-md text-destructive text-sm">
+        <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="text-lg flex-shrink-0" />
         <span>{{ errorMessage }}</span>
       </div>
 
-      <form @submit.prevent="handleLogin" class="login-form" name="login">
+      <form @submit.prevent="handleLogin" class="flex flex-col gap-5 mb-6" name="login">
         <InputField
           v-model="email"
           label="Adresse email"
@@ -47,15 +47,15 @@
         </Button>
       </form>
 
-      <div class="login-footer">
-        <RouterLink to="/forgot-password" class="forgot-link inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium hover:underline">
+      <div class="flex flex-col items-center gap-4">
+        <RouterLink to="/forgot-password" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium hover:underline">
           <font-awesome-icon :icon="['fas', 'key']" />
           Mot de passe oublié ?
         </RouterLink>
 
-        <div class="divider"></div>
+        <div class="w-full h-px bg-border"></div>
 
-        <p class="register-prompt">
+        <p class="text-muted-foreground text-sm m-0">
           Pas encore de compte ?
           <RouterLink to="/register" class="text-sm font-medium text-primary hover:text-primary/80 transition-colors hover:underline">S'inscrire</RouterLink>
         </p>
@@ -157,136 +157,3 @@ const handlePromptDismiss = () => {
   router.push('/')
 }
 </script>
-
-<style scoped>
-.login-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-6);
-  background-color: var(--color-bg-secondary);
-}
-
-.login-card {
-  width: 100%;
-  max-width: 440px;
-  background-color: var(--color-bg-primary);
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-8);
-  box-shadow: var(--shadow-lg);
-}
-
-.login-header {
-  text-align: center;
-  margin-bottom: var(--space-8);
-}
-
-.logo-container {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  border-radius: var(--radius-full);
-  margin-bottom: var(--space-4);
-}
-
-.logo-icon {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: var(--radius-full);
-}
-
-.login-header h1 {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  margin-bottom: var(--space-2);
-  margin-top: 0;
-}
-
-.subtitle {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-base);
-  margin: 0;
-}
-
-.error-alert {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  margin-bottom: var(--space-6);
-  background-color: var(--color-danger-bg);
-  border: 1px solid var(--color-danger);
-  border-radius: var(--radius-md);
-  color: var(--color-danger);
-  font-size: var(--font-size-sm);
-}
-
-.error-icon {
-  font-size: var(--font-size-lg);
-  flex-shrink: 0;
-}
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  margin-bottom: var(--space-6);
-}
-
-.login-footer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.forgot-link {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-sm);
-}
-
-.divider {
-  width: 100%;
-  height: 1px;
-  background-color: var(--color-border-primary);
-}
-
-.register-prompt {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  margin: 0;
-}
-
-@media (max-width: 640px) {
-  .login-container {
-    padding: var(--space-4);
-  }
-
-  .login-card {
-    padding: var(--space-6);
-  }
-
-  .logo-container {
-    width: 64px;
-    height: 64px;
-  }
-
-  .logo-icon {
-    width: 100%;
-    height: 100%;
-  }
-
-  .login-header h1 {
-    font-size: var(--font-size-xl);
-  }
-}
-</style>
