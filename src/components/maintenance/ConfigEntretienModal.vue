@@ -1,6 +1,6 @@
 <template>
   <Dialog v-model:open="localOpen">
-    <DialogContent class="sm:max-w-md">
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-md">
       <DialogHeader>
         <DialogTitle>{{ isEdit ? 'Modifier la configuration' : 'Nouvelle configuration' }}</DialogTitle>
         <DialogDescription>
@@ -57,13 +57,16 @@
           />
         </div>
 
-        <div v-if="isEdit" class="flex flex-col gap-2">
-          <label class="flex cursor-pointer items-center gap-2 text-sm">
+        <div v-if="isEdit">
+          <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-accent/50 has-[[data-state=checked]]:border-primary/30 has-[[data-state=checked]]:bg-primary/5">
             <Checkbox
               :checked="formData.actif"
               @update:checked="(v: boolean) => formData.actif = v"
             />
-            <span class="text-foreground">Configuration active</span>
+            <div class="flex flex-col gap-0.5">
+              <span class="text-sm font-medium leading-none">Configuration active</span>
+              <span class="text-xs text-muted-foreground">Activer le suivi de cet entretien</span>
+            </div>
           </label>
         </div>
 

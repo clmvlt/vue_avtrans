@@ -1,6 +1,6 @@
 <template>
   <Dialog v-model:open="localOpen">
-    <DialogContent class="sm:max-w-lg" @interact-outside.prevent>
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>Détails de la couchette</DialogTitle>
         <DialogDescription class="sr-only">Informations détaillées de la couchette</DialogDescription>

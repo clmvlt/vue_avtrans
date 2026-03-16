@@ -1,6 +1,6 @@
 <template>
   <Dialog :open="modelValue" @update:open="(val: boolean) => emit('update:modelValue', val)">
-    <DialogContent class="sm:max-w-lg">
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <Tags class="size-5" />

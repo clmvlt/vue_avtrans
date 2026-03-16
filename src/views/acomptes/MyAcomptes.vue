@@ -253,7 +253,7 @@
 
     <!-- Modal d'annulation -->
     <Dialog v-model:open="showCancelModal">
-      <DialogContent class="sm:max-w-md" @interact-outside.prevent>
+      <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Annuler la demande</DialogTitle>
           <DialogDescription>Cette action est irréversible.</DialogDescription>

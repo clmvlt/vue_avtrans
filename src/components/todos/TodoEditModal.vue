@@ -1,6 +1,6 @@
 <template>
   <Dialog :open="modelValue" @update:open="(val: boolean) => emit('update:modelValue', val)">
-    <DialogContent class="sm:max-w-md">
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-md">
       <DialogHeader>
         <DialogTitle>{{ isCreating ? 'Nouvelle tâche' : 'Modifier la tâche' }}</DialogTitle>
         <DialogDescription class="sr-only">

@@ -1,6 +1,6 @@
 <template>
   <Dialog v-model:open="localOpen">
-    <DialogContent class="sm:max-w-md" @interact-outside.prevent>
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-md">
       <DialogHeader>
         <DialogTitle>Nouvel acompte</DialogTitle>
         <DialogDescription>Créer un nouvel acompte pour un employé</DialogDescription>
@@ -59,13 +59,16 @@
         </div>
 
         <!-- Approuver directement -->
-        <label class="flex items-center gap-2 cursor-pointer text-sm">
+        <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-accent/50 has-[[data-state=checked]]:border-primary/30 has-[[data-state=checked]]:bg-primary/5">
           <Checkbox
             :checked="formData.approved"
             @update:checked="(val: boolean) => formData.approved = val"
             :disabled="saving"
           />
-          <span>Approuver directement</span>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-sm font-medium leading-none">Approuver directement</span>
+            <span class="text-xs text-muted-foreground">L'acompte sera validé sans attente</span>
+          </div>
         </label>
 
         <DialogFooter>

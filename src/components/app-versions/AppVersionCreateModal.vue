@@ -1,6 +1,6 @@
 <template>
   <Dialog :open="modelValue" @update:open="handleOpenChange">
-    <DialogContent class="sm:max-w-lg">
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>Nouvelle version</DialogTitle>
         <DialogDescription>Uploadez un fichier APK et renseignez les informations de la version.</DialogDescription>

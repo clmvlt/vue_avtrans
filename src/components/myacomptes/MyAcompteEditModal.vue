@@ -1,6 +1,6 @@
 <template>
   <Dialog v-model:open="localOpen">
-    <DialogContent class="sm:max-w-lg" @interact-outside.prevent>
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>Nouvelle demande d'acompte</DialogTitle>
         <DialogDescription>Envoyer une demande d'acompte à votre responsable</DialogDescription>

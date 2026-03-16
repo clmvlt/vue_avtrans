@@ -1,6 +1,6 @@
 <template>
   <Dialog :open="isOpen" @update:open="val => { if (!val) close() }">
-    <DialogContent class="sm:max-w-2xl">
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
       <DialogHeader>
         <div class="flex items-center gap-4">
           <div class="flex size-14 items-center justify-center rounded-full bg-violet-500/10 text-violet-500">

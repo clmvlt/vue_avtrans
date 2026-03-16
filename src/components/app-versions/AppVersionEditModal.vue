@@ -1,6 +1,6 @@
 <template>
   <Dialog :open="modelValue" @update:open="handleOpenChange">
-    <DialogContent class="sm:max-w-lg">
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>Modifier la version</DialogTitle>
         <DialogDescription>Modifiez les informations de la version.</DialogDescription>
@@ -46,18 +46,17 @@
         </div>
 
         <!-- Statut actif -->
-        <div class="flex items-center gap-2">
+        <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-accent/50 has-[[data-state=checked]]:border-primary/30 has-[[data-state=checked]]:bg-primary/5">
           <Checkbox
-            id="editIsActive"
             :checked="formData.isActive"
             :disabled="saving"
             @update:checked="formData.isActive = $event as boolean"
           />
-          <div>
-            <label for="editIsActive" class="text-sm font-medium text-foreground cursor-pointer">Version active</label>
-            <p class="text-xs text-muted-foreground">Les versions inactives ne sont pas visibles publiquement</p>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-sm font-medium leading-none">Version active</span>
+            <span class="text-xs text-muted-foreground">Les versions inactives ne sont pas visibles publiquement</span>
           </div>
-        </div>
+        </label>
 
         <!-- Changelog -->
         <div class="space-y-2">

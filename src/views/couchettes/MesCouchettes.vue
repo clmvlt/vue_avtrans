@@ -161,7 +161,7 @@
 
     <!-- Delete Dialog -->
     <Dialog v-model:open="showDeleteModal">
-      <DialogContent class="sm:max-w-md" @interact-outside.prevent>
+      <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Supprimer la couchette</DialogTitle>
           <DialogDescription>Cette action est irréversible.</DialogDescription>
