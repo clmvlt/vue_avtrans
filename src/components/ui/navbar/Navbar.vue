@@ -1,23 +1,23 @@
 <template>
-  <nav class="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-sm">
-    <div class="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-6 py-2">
-      <!-- Left: Logo/Brand + Navigation Links -->
-      <div ref="leftSection" class="flex min-w-0 flex-1 items-center gap-6 overflow-hidden">
-        <slot name="brand">
-          <router-link v-if="brandLink" :to="brandLink" class="flex shrink-0 items-center gap-2.5 no-underline transition-opacity hover:opacity-80">
-            <img :src="faviconUrl" alt="AVTRANS" class="size-8 rounded-lg" />
-            <span v-if="brandText" class="hidden text-lg font-bold tracking-wide text-foreground sm:inline">{{ brandText }}</span>
-          </router-link>
-          <div v-else class="flex shrink-0 items-center gap-2.5">
-            <img :src="faviconUrl" alt="AVTRANS" class="size-8 rounded-lg" />
-            <span v-if="brandText" class="hidden text-lg font-bold tracking-wide text-foreground sm:inline">{{ brandText }}</span>
+  <nav v-if="authStore.user" class="sticky top-0 z-50 h-14 border-b" :class="navClasses">
+    <div class="mx-auto flex h-full max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6">
+      <!-- ZONE GAUCHE — Logo + liens de navigation -->
+      <div ref="leftSection" class="flex min-w-0 flex-1 items-center gap-4 overflow-hidden">
+        <!-- Logo AVTRANS -->
+        <router-link :to="defaultRoute" class="flex shrink-0 items-center gap-2.5 no-underline transition-opacity hover:opacity-80">
+          <div class="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+            <img :src="faviconUrl" alt="AVTRANS" class="size-7 rounded-md" />
           </div>
-        </slot>
+          <span class="hidden text-lg font-bold tracking-wide text-foreground md:inline">AVTRANS</span>
+        </router-link>
 
-        <!-- Navigation Links -->
-        <div v-if="!hideNav && links.length > 0" ref="linksContainer" class="flex items-center gap-1">
+        <!-- Séparateur vertical -->
+        <div class="hidden h-6 w-px bg-border sm:block" />
+
+        <!-- Liens de navigation dynamiques -->
+        <div v-if="filteredMainLinks.length > 0" class="flex items-center gap-1">
           <router-link
-            v-for="(link, index) in links"
+            v-for="(link, index) in filteredMainLinks"
             :key="link.to"
             v-show="index < visibleLinksCount"
             :to="link.to"
@@ -25,92 +25,121 @@
             active-class="!bg-primary/10 !text-primary !font-semibold"
           >
             <component v-if="link.lucideIcon" :is="link.lucideIcon" class="size-4 shrink-0" />
-            <span v-else-if="link.icon" class="shrink-0 text-base">{{ link.icon }}</span>
             <span v-show="showLabels">{{ link.label }}</span>
           </router-link>
         </div>
       </div>
 
-      <!-- Right: Actions + User Dropdown + Hamburger Menu -->
+      <!-- ZONE DROITE — Notifications + Menu -->
       <div class="flex shrink-0 items-center gap-1.5">
-        <!-- Actions (notifications, hidden on small screens) -->
-        <div class="hidden items-center gap-1.5 sm:flex">
-          <slot name="actions"></slot>
+        <!-- Notifications (masqué sur mobile) -->
+        <div class="hidden sm:block">
+          <Notifications />
         </div>
 
-        <!-- User Avatar Dropdown -->
-        <DropdownMenu>
-          <DropdownMenuTrigger as-child>
-            <Button variant="ghost" size="icon" class="rounded-full ring-offset-background transition-colors hover:ring-2 hover:ring-ring hover:ring-offset-2">
-              <Avatar class="size-8">
-                <AvatarImage v-if="userImage" :src="userImage" :alt="userName" class="object-cover" />
-                <AvatarFallback class="bg-primary text-xs font-bold text-primary-foreground">
-                  {{ userInitials || '?' }}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" class="w-56">
-            <DropdownMenuLabel class="font-normal">
-              <div class="flex flex-col gap-1">
-                <p class="text-sm font-medium leading-none">{{ userName }}</p>
-                <p class="text-xs leading-none text-muted-foreground">{{ userEmail }}</p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem as-child>
-              <router-link to="/profile" class="flex cursor-pointer items-center gap-2">
-                <UserPen class="size-4" />
-                Mon profil
-              </router-link>
-            </DropdownMenuItem>
-            <DropdownMenuItem @click="toggleTheme">
-              <Sun v-if="isDark" class="size-4" />
-              <Moon v-else class="size-4" />
-              {{ isDark ? 'Mode clair' : 'Mode sombre' }}
-            </DropdownMenuItem>
-            <DropdownMenuItem v-if="showViewModeToggle" @click="emit('toggle-view-mode')">
-              <ArrowLeftRight class="size-4" />
-              {{ isViewingAsUser ? 'Vue Admin' : 'Vue Utilisateur' }}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem @click="emit('show-changelog')" class="relative">
-              <Sparkles class="size-4" />
-              Nouveautés
-              <Badge
-                v-if="hasUnseenChanges"
-                variant="default"
-                class="ml-auto size-2 min-w-0 rounded-full p-0"
-              />
-            </DropdownMenuItem>
-            <DropdownMenuItem as-child>
-              <router-link to="/add-to-homescreen" class="flex cursor-pointer items-center gap-2">
-                <Smartphone class="size-4" />
-                Ajouter à l'écran d'accueil
-              </router-link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem class="text-destructive focus:text-destructive" @click="emit('logout')">
-              <LogOut class="size-4" />
-              Se déconnecter
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <!-- Sheet Trigger -->
-        <Sheet v-model:open="showFullNav">
+        <!-- Bouton Menu (Sheet trigger) -->
+        <Sheet v-model:open="sheetOpen">
           <SheetTrigger as-child>
-            <Button variant="ghost" size="icon" class="size-9 shrink-0" title="Navigation">
-              <PanelRight class="size-5" />
+            <Button variant="ghost" size="icon" class="size-9 shrink-0" title="Menu">
+              <Menu class="size-5" />
             </Button>
           </SheetTrigger>
 
-          <SheetContent side="right" class="!inset-y-auto !right-[4%] !top-4 !h-auto !w-[92vw] !max-w-[1200px] !max-h-[90dvh] overflow-y-auto !rounded-xl !border p-6 pt-12 shadow-2xl">
+          <SheetContent side="right" class="flex w-[85vw] max-w-[448px] flex-col p-0">
             <SheetHeader class="sr-only">
-              <SheetTitle>Navigation</SheetTitle>
-              <SheetDescription>Menu de navigation principal</SheetDescription>
+              <SheetTitle>Menu de navigation</SheetTitle>
+              <SheetDescription>Navigation principale AVTRANS</SheetDescription>
             </SheetHeader>
-            <slot name="full-nav"></slot>
+
+            <!-- PANNEAU LATÉRAL — En-tête utilisateur -->
+            <div class="border-b p-6">
+              <div class="flex items-center gap-3">
+                <Avatar class="size-10">
+                  <AvatarImage v-if="userImage" :src="userImage" :alt="userName" class="object-cover" />
+                  <AvatarFallback class="bg-primary text-sm font-bold text-primary-foreground">
+                    {{ userInitials || '?' }}
+                  </AvatarFallback>
+                </Avatar>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold leading-tight">{{ userName }}</p>
+                  <p class="truncate text-xs text-muted-foreground">{{ userEmail }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contenu scrollable -->
+            <div class="flex-1 overflow-y-auto">
+              <!-- Notifications (mobile uniquement) -->
+              <div class="border-b p-4 sm:hidden">
+                <Notifications />
+              </div>
+
+              <!-- Sections de navigation -->
+              <div v-for="section in filteredNavSections" :key="section.title" class="border-b px-4 py-3">
+                <p class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <component :is="section.lucideIcon" class="size-3.5" />
+                  {{ section.title }}
+                </p>
+                <div class="space-y-0.5">
+                  <router-link
+                    v-for="link in section.links"
+                    :key="link.to"
+                    :to="link.to"
+                    class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                    :class="isActiveRoute(link.to) && 'bg-accent text-primary font-semibold'"
+                    @click="sheetOpen = false"
+                  >
+                    <component v-if="link.lucideIcon" :is="link.lucideIcon" class="size-4 shrink-0 text-muted-foreground" />
+                    <span>{{ link.label }}</span>
+                  </router-link>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer compact -->
+            <div class="flex items-center justify-between border-t px-4 py-3">
+              <div class="flex items-center gap-1">
+                <!-- Mon profil -->
+                <Button variant="ghost" size="icon" class="size-9" title="Mon profil" as-child>
+                  <router-link to="/profile" @click="sheetOpen = false">
+                    <UserPen class="size-4" />
+                  </router-link>
+                </Button>
+
+                <!-- Toggle dark/light mode -->
+                <Button variant="ghost" size="icon" class="size-9" :title="isDark ? 'Mode clair' : 'Mode sombre'" @click="toggleTheme">
+                  <Sun v-if="isDark" class="size-4" />
+                  <Moon v-else class="size-4" />
+                </Button>
+
+                <!-- Toggle vue admin/utilisateur -->
+                <Button v-if="showViewModeToggle" variant="ghost" size="icon" class="size-9" :title="isViewingAsUser ? 'Vue Admin' : 'Vue Utilisateur'" @click="emit('toggle-view-mode')">
+                  <ArrowLeftRight class="size-4" />
+                </Button>
+
+                <!-- Nouveautés -->
+                <Button variant="ghost" size="icon" class="relative size-9" title="Nouveautés" @click="sheetOpen = false; emit('show-changelog')">
+                  <Sparkles class="size-4" />
+                  <span
+                    v-if="hasUnseenChanges"
+                    class="absolute right-1.5 top-1.5 size-2 rounded-full bg-primary"
+                  />
+                </Button>
+
+                <!-- Ajouter à l'écran d'accueil -->
+                <Button variant="ghost" size="icon" class="size-9" title="Ajouter à l'écran d'accueil" as-child>
+                  <router-link to="/add-to-homescreen" @click="sheetOpen = false">
+                    <Smartphone class="size-4" />
+                  </router-link>
+                </Button>
+              </div>
+
+              <!-- Déconnexion -->
+              <Button variant="destructive" size="sm" @click="emit('logout')">
+                <LogOut class="size-4" />
+                Déconnexion
+              </Button>
+            </div>
           </SheetContent>
         </Sheet>
       </div>
@@ -119,30 +148,33 @@
 </template>
 
 <script setup lang="ts">
-import type { Component } from 'vue'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { PanelRight, UserPen, LogOut, Smartphone, ArrowLeftRight, Moon, Sun, Sparkles } from 'lucide-vue-next'
+import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { usePermissions } from '@/composables/usePermissions'
 import { useTheme } from '@/composables/useTheme'
+import { mainNavLinks, fullNavSections } from '@/config/navConfig'
 import faviconUrl from '@/assets/favicon.png'
+
+// shadcn components
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
+import { Notifications } from '@/components/ui/notifications'
 
-interface NavLink {
-  to: string
-  label: string
-  icon?: string
-  lucideIcon?: Component
-}
+// Lucide icons
+import {
+  Menu,
+  UserPen,
+  LogOut,
+  Smartphone,
+  ArrowLeftRight,
+  Moon,
+  Sun,
+  Sparkles,
+} from 'lucide-vue-next'
 
 interface Props {
-  brandText?: string
-  brandLogo?: string
-  brandLink?: string
-  links?: NavLink[]
-  hideNav?: boolean
   userName?: string
   userEmail?: string
   userInitials?: string
@@ -152,15 +184,11 @@ interface Props {
   hasUnseenChanges?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  links: () => [],
-  hideNav: false,
+withDefaults(defineProps<Props>(), {
   showViewModeToggle: false,
   isViewingAsUser: false,
   hasUnseenChanges: false,
 })
-
-const { isDark, toggleTheme } = useTheme()
 
 const emit = defineEmits<{
   (e: 'logout'): void
@@ -168,90 +196,126 @@ const emit = defineEmits<{
   (e: 'show-changelog'): void
 }>()
 
-const showFullNav = ref(false)
+const route = useRoute()
+const authStore = useAuthStore()
+const { canAccess } = usePermissions()
+const { isDark, toggleTheme } = useTheme()
+
+const sheetOpen = ref(false)
 const leftSection = ref<HTMLElement | null>(null)
-const linksContainer = ref<HTMLElement | null>(null)
 const availableWidth = ref(0)
 const isMobile = ref(false)
 
-// Constantes pour le calcul des tailles
-const ICON_ONLY_WIDTH = 40 // icône 16px + padding 24px
-const CHAR_WIDTH = 7.5 // largeur moyenne d'un caractère en px (text-sm)
-const LINK_GAP = 8 // gap-2 entre icône et label
-const LINKS_GAP = 4 // gap-1 entre les liens
-const BRAND_WIDTH_DESKTOP = 140 // logo + texte approximatif
-const BRAND_WIDTH_MOBILE = 40 // logo uniquement
-const SECTION_GAP = 24 // gap-6 entre brand et liens
-const SM_BREAKPOINT = 640 // Tailwind sm breakpoint
+// Route par défaut selon le rôle
+const defaultRoute = computed(() => {
+  if (authStore.isAdmin) return '/users'
+  if (authStore.isMechanic) return '/vehicules'
+  return '/pointage'
+})
 
-// Largeur effective du brand selon le mode
+// Classes CSS de la navbar
+const navClasses = computed(() => 'bg-background/80 backdrop-blur-sm')
+
+// Liens de navigation filtrés par permissions
+const filteredMainLinks = computed(() => {
+  const userEmail = authStore.user?.email
+  return mainNavLinks.filter(link => {
+    if (!canAccess(link.requiredRoles, link.requiredPermissions)) return false
+    if (link.requiredEmails?.length) {
+      return !!userEmail && link.requiredEmails.includes(userEmail)
+    }
+    return true
+  })
+})
+
+// Sections de navigation filtrées (pour le Sheet)
+const filteredNavSections = computed(() => {
+  const userEmail = authStore.user?.email
+  return fullNavSections
+    .map(section => ({
+      ...section,
+      links: section.links.filter(link => {
+        if (!canAccess(link.requiredRoles, link.requiredPermissions)) return false
+        if (link.requiredEmails?.length) {
+          return !!userEmail && link.requiredEmails.includes(userEmail)
+        }
+        return true
+      })
+    }))
+    .filter(section => section.links.length > 0)
+})
+
+// Route active
+const isActiveRoute = (to: string) => {
+  return route.path === to || route.path.startsWith(to + '/')
+}
+
+// Fermer le Sheet au changement de route
+watch(() => route.path, () => {
+  sheetOpen.value = false
+})
+
+// --- Calcul responsive des liens visibles ---
+
+const ICON_ONLY_WIDTH = 40
+const CHAR_WIDTH = 7.5
+const LINK_GAP = 8
+const LINKS_GAP = 4
+const BRAND_WIDTH_DESKTOP = 140
+const BRAND_WIDTH_MOBILE = 40
+const SECTION_GAP = 24
+const SM_BREAKPOINT = 640
+
 const effectiveBrandWidth = computed(() => isMobile.value ? BRAND_WIDTH_MOBILE : BRAND_WIDTH_DESKTOP)
 
-// Calcule la largeur estimée d'un lien
-const getLinkWidth = (link: NavLink, withLabel: boolean): number => {
+const getLinkWidth = (link: typeof mainNavLinks[0], withLabel: boolean): number => {
   if (!withLabel) return ICON_ONLY_WIDTH + LINKS_GAP
   return ICON_ONLY_WIDTH + LINK_GAP + (link.label.length * CHAR_WIDTH) + LINKS_GAP
 }
 
-// Calcule combien de liens peuvent tenir avec labels
 const getVisibleCountWithLabels = (width: number): number => {
   let usedWidth = 0
   let count = 0
-  for (const link of props.links) {
+  for (const link of filteredMainLinks.value) {
     const linkWidth = getLinkWidth(link, true)
     if (usedWidth + linkWidth <= width) {
       usedWidth += linkWidth
       count++
-    } else {
-      break
-    }
+    } else break
   }
   return count
 }
 
-// Calcule combien de liens peuvent tenir sans labels (icônes seules)
 const getVisibleCountIconsOnly = (width: number): number => {
   let usedWidth = 0
   let count = 0
-  for (const link of props.links) {
+  for (const link of filteredMainLinks.value) {
     const linkWidth = getLinkWidth(link, false)
     if (usedWidth + linkWidth <= width) {
       usedWidth += linkWidth
       count++
-    } else {
-      break
-    }
+    } else break
   }
   return count
 }
 
-// Détermine si on affiche les labels
 const showLabels = computed(() => {
-  // Sur mobile, toujours afficher en mode icônes uniquement
   if (isMobile.value) return false
-
   const spaceForLinks = availableWidth.value - effectiveBrandWidth.value - SECTION_GAP
   const countWithLabels = getVisibleCountWithLabels(spaceForLinks)
   const countIconsOnly = getVisibleCountIconsOnly(spaceForLinks)
-
-  // Afficher les labels si on peut montrer au moins autant de liens qu'avec icônes seules
-  // ou si on a assez de place pour au moins 2 liens avec labels
   return countWithLabels >= Math.min(countIconsOnly, 2) || spaceForLinks > 300
 })
 
-// Nombre de liens visibles
 const visibleLinksCount = computed(() => {
   const spaceForLinks = availableWidth.value - effectiveBrandWidth.value - SECTION_GAP
   if (spaceForLinks <= 0) return 0
-
-  if (showLabels.value) {
-    return getVisibleCountWithLabels(spaceForLinks)
-  } else {
-    return getVisibleCountIconsOnly(spaceForLinks)
-  }
+  return showLabels.value
+    ? getVisibleCountWithLabels(spaceForLinks)
+    : getVisibleCountIconsOnly(spaceForLinks)
 })
 
-// Observer pour détecter les changements de taille
+// ResizeObserver
 let resizeObserver: ResizeObserver | null = null
 let mediaQuery: MediaQueryList | null = null
 
@@ -269,15 +333,11 @@ onMounted(() => {
   updateAvailableWidth()
   updateMobileState()
 
-  resizeObserver = new ResizeObserver(() => {
-    updateAvailableWidth()
-  })
-
+  resizeObserver = new ResizeObserver(() => updateAvailableWidth())
   if (leftSection.value) {
     resizeObserver.observe(leftSection.value)
   }
 
-  // Écouter les changements de breakpoint
   mediaQuery = window.matchMedia(`(max-width: ${SM_BREAKPOINT - 1}px)`)
   mediaQuery.addEventListener('change', updateMobileState)
 })
@@ -287,15 +347,5 @@ onUnmounted(() => {
   mediaQuery?.removeEventListener('change', updateMobileState)
 })
 
-// Recalculer quand les liens changent
-watch(() => props.links, updateAvailableWidth, { deep: true })
-
-const closeFullNav = () => {
-  showFullNav.value = false
-}
-
-defineExpose({
-  closeFullNav,
-  showFullNav
-})
+watch(() => filteredMainLinks.value, updateAvailableWidth, { deep: true })
 </script>
