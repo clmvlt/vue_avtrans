@@ -1,6 +1,6 @@
 <template>
   <Dialog v-model:open="localOpen">
-    <DialogContent class="sm:max-w-lg" @interact-outside.prevent>
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <div class="flex size-10 items-center justify-center rounded-full bg-destructive/15 text-destructive">
@@ -67,6 +67,10 @@
               {{ absence.customType }}
             </span>
           </div>
+          <div v-if="isHalfDay(absence.period)" class="flex flex-col gap-1">
+            <span class="text-xs uppercase tracking-wider text-muted-foreground">Période</span>
+            <span class="font-medium text-foreground">{{ getPeriodLabel(absence.period) }}</span>
+          </div>
           <div class="flex flex-col gap-1">
             <span class="text-xs uppercase tracking-wider text-muted-foreground">Statut</span>
             <Badge :variant="getStatusVariant(absence.status)" :class="getStatusClasses(absence.status)">
@@ -95,6 +99,7 @@ import { Button } from '@/components/ui/button'
 import { Badge, type BadgeVariants } from '@/components/ui/badge'
 import { Trash2 } from 'lucide-vue-next'
 import type { AbsenceDTO } from '@/models'
+import { isHalfDay, getPeriodLabel } from '@/utils/absenceFormatters'
 
 interface Props {
   modelValue: boolean

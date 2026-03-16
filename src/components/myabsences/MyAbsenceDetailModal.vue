@@ -1,6 +1,6 @@
 <template>
   <Dialog v-model:open="localOpen">
-    <DialogContent class="max-h-[85dvh] overflow-y-auto sm:max-w-lg" @interact-outside.prevent>
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>Détails de la demande</DialogTitle>
         <DialogDescription class="sr-only">Informations détaillées de votre demande d'absence</DialogDescription>
@@ -39,7 +39,11 @@
           </div>
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Durée</span>
-            <span class="text-sm font-semibold text-primary">{{ calculateDuration(absence.startDate, absence.endDate) }}</span>
+            <span class="text-sm font-semibold text-primary">{{ calculateAbsenceDuration(absence.startDate, absence.endDate, absence.period) }}</span>
+          </div>
+          <div v-if="isHalfDay(absence.period)" class="flex flex-col gap-1">
+            <span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Période</span>
+            <span class="text-sm font-medium text-foreground">{{ getPeriodLabel(absence.period) }}</span>
           </div>
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Statut</span>
@@ -111,6 +115,7 @@ import { Button } from '@/components/ui/button'
 import { Badge, type BadgeVariants } from '@/components/ui/badge'
 import { Clock } from 'lucide-vue-next'
 import type { AbsenceDTO } from '@/models'
+import { calculateAbsenceDuration, isHalfDay, getPeriodLabel } from '@/utils/absenceFormatters'
 
 interface Props {
   modelValue: boolean
@@ -150,15 +155,6 @@ const formatDateTime = (dateString?: string | Date): string => {
     hour: '2-digit',
     minute: '2-digit'
   })
-}
-
-const calculateDuration = (startDate?: string | Date, endDate?: string | Date): string => {
-  if (!startDate || !endDate) return '-'
-  const start = new Date(startDate)
-  const end = new Date(endDate)
-  const diffTime = Math.abs(end.getTime() - start.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
-  return `${diffDays} jour${diffDays > 1 ? 's' : ''}`
 }
 
 const getStatusVariant = (status?: string): BadgeVariants['variant'] => {

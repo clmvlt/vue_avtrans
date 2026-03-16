@@ -12,6 +12,7 @@ export interface AbsenceDTO {
   reason?: string;
   absenceType?: AbsenceTypeDTO;
   customType?: string;
+  period?: string;
   status?: string;
   validatedBy?: UserDTO;
   validatedAt?: Date | string;
@@ -29,6 +30,7 @@ export interface AbsenceCreateRequest {
   reason?: string;
   absenceTypeUuid?: string;
   customType?: string;
+  period?: string;
 }
 
 /**
@@ -41,6 +43,7 @@ export interface AdminAbsenceCreateRequest {
   reason?: string;
   absenceTypeUuid?: string;
   customType?: string;
+  period?: string;
   approved?: boolean;
 }
 

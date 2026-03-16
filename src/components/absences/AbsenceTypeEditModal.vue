@@ -1,6 +1,6 @@
 <template>
   <Dialog v-model:open="localOpen">
-    <DialogContent class="sm:max-w-md" @interact-outside.prevent>
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-md">
       <DialogHeader>
         <DialogTitle>{{ isEditing ? 'Modifier le type' : 'Nouveau type d\'absence' }}</DialogTitle>
         <DialogDescription>
@@ -90,6 +90,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { absenceTypesService } from '@/services'
+import type { AbsenceTypeResponse } from '@/services/absenceTypes'
 import { useMessages } from '@/composables/useMessages'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -177,15 +178,15 @@ const handleSubmit = async () => {
       color: formData.value.color
     }
 
-    let response: AbsenceTypeDTO
+    let response: AbsenceTypeResponse
 
     if (isEditing.value && props.absenceType?.uuid) {
-      response = await absenceTypesService.updateType(props.absenceType.uuid, data) as AbsenceTypeDTO
+      response = await absenceTypesService.updateType(props.absenceType.uuid, data)
     } else {
-      response = await absenceTypesService.createType(data) as AbsenceTypeDTO
+      response = await absenceTypesService.createType(data)
     }
 
-    emit('saved', response)
+    emit('saved', response.absenceType)
     messages.success(
       isEditing.value ? 'Type d\'absence modifié avec succès' : 'Type d\'absence créé avec succès',
       'Succès'

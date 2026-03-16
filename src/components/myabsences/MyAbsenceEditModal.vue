@@ -1,6 +1,6 @@
 <template>
   <Dialog v-model:open="localOpen">
-    <DialogContent class="max-h-[85dvh] overflow-y-auto sm:max-w-lg" @interact-outside.prevent>
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
       <DialogHeader>
         <DialogTitle>Nouvelle demande d'absence</DialogTitle>
         <DialogDescription>Envoyer une demande d'absence à votre responsable</DialogDescription>
@@ -41,6 +41,28 @@
           </div>
         </div>
 
+        <!-- Période -->
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-foreground">Période</label>
+          <div class="flex gap-2">
+            <Button type="button" size="sm"
+              :variant="formData.period === 'FULL_DAY' ? 'default' : 'outline'"
+              @click="formData.period = 'FULL_DAY'"
+              :disabled="saving"
+            >Journée entière</Button>
+            <Button type="button" size="sm"
+              :variant="formData.period === 'MORNING' ? 'default' : 'outline'"
+              @click="formData.period = 'MORNING'"
+              :disabled="saving"
+            >Matin</Button>
+            <Button type="button" size="sm"
+              :variant="formData.period === 'AFTERNOON' ? 'default' : 'outline'"
+              @click="formData.period = 'AFTERNOON'"
+              :disabled="saving"
+            >Après-midi</Button>
+          </div>
+        </div>
+
         <!-- Type d'absence -->
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-foreground">Type d'absence *</label>
@@ -50,6 +72,7 @@
             placeholder="Sélectionner un type"
             :searchable="true"
             :disabled="saving"
+            :teleport="false"
             search-placeholder="Rechercher un type..."
             @update:model-value="(val: string) => formData.absenceTypeUuid = val"
           />
@@ -99,6 +122,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { absencesService, absenceTypesService } from '@/services'
+import type { AbsenceTypeListResponse } from '@/services/absenceTypes'
 import { useMessages } from '@/composables/useMessages'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -142,6 +166,7 @@ const absenceTypes = ref<AbsenceTypeDTO[]>([])
 const formData = ref({
   startDate: '',
   endDate: '',
+  period: 'FULL_DAY' as string,
   absenceTypeUuid: '',
   customType: '',
   reason: ''
@@ -188,8 +213,8 @@ const loadData = async () => {
   error.value = ''
 
   try {
-    const typesResponse = await absenceTypesService.getAbsenceTypes()
-    absenceTypes.value = (typesResponse as any).types || []
+    const typesResponse: AbsenceTypeListResponse = await absenceTypesService.getAbsenceTypes()
+    absenceTypes.value = typesResponse.types || []
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Erreur lors du chargement'
   } finally {
@@ -202,6 +227,7 @@ const resetForm = () => {
   formData.value = {
     startDate: today,
     endDate: today,
+    period: 'FULL_DAY',
     absenceTypeUuid: '',
     customType: '',
     reason: ''
@@ -216,18 +242,18 @@ const handleSubmit = async () => {
     saving.value = true
     error.value = ''
 
-    const absenceTypeUuid = formData.value.absenceTypeUuid === 'custom'
-      ? ''
-      : formData.value.absenceTypeUuid
+    const isCustom = formData.value.absenceTypeUuid === 'custom'
 
     const response = await absencesService.createAbsenceRequest({
       startDate: formData.value.startDate,
       endDate: formData.value.endDate,
-      absenceTypeUuid,
-      comment: formData.value.reason || undefined
+      period: formData.value.period,
+      absenceTypeUuid: isCustom ? undefined : formData.value.absenceTypeUuid,
+      customType: isCustom ? formData.value.customType.trim() : undefined,
+      reason: formData.value.reason || undefined
     })
 
-    emit('saved', response as unknown as AbsenceDTO)
+    emit('saved', response.absence)
     messages.success('Demande d\'absence envoyée avec succès', 'Succès')
     handleClose()
   } catch (err: unknown) {

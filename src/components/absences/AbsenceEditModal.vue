@@ -1,6 +1,6 @@
 <template>
   <Dialog v-model:open="localOpen">
-    <DialogContent class="sm:max-w-md" @interact-outside.prevent>
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-md">
       <DialogHeader>
         <DialogTitle>Nouvelle absence</DialogTitle>
         <DialogDescription>Créer une nouvelle absence pour un employé</DialogDescription>
@@ -26,6 +26,7 @@
             placeholder="Sélectionner un employé"
             :searchable="true"
             :disabled="saving"
+            :teleport="false"
             search-placeholder="Rechercher un employé..."
             @update:model-value="(val: string) => formData.userUuid = val"
           />
@@ -55,6 +56,28 @@
           </div>
         </div>
 
+        <!-- Période -->
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-foreground">Période</label>
+          <div class="flex gap-2">
+            <Button type="button" size="sm"
+              :variant="formData.period === 'FULL_DAY' ? 'default' : 'outline'"
+              @click="formData.period = 'FULL_DAY'"
+              :disabled="saving"
+            >Journée entière</Button>
+            <Button type="button" size="sm"
+              :variant="formData.period === 'MORNING' ? 'default' : 'outline'"
+              @click="formData.period = 'MORNING'"
+              :disabled="saving"
+            >Matin</Button>
+            <Button type="button" size="sm"
+              :variant="formData.period === 'AFTERNOON' ? 'default' : 'outline'"
+              @click="formData.period = 'AFTERNOON'"
+              :disabled="saving"
+            >Après-midi</Button>
+          </div>
+        </div>
+
         <!-- Type d'absence -->
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-foreground">Type d'absence *</label>
@@ -64,6 +87,7 @@
             placeholder="Sélectionner un type"
             :searchable="true"
             :disabled="saving"
+            :teleport="false"
             search-placeholder="Rechercher un type..."
             @update:model-value="(val: string) => formData.absenceTypeUuid = val"
           />
@@ -81,26 +105,29 @@
           />
         </div>
 
-        <!-- Commentaire -->
+        <!-- Motif -->
         <div class="flex flex-col gap-2">
-          <label for="createComment" class="text-sm font-medium text-foreground">Commentaire</label>
+          <label for="createReason" class="text-sm font-medium text-foreground">Motif</label>
           <Textarea
-            id="createComment"
-            v-model="formData.comment"
-            placeholder="Commentaire sur l'absence..."
+            id="createReason"
+            v-model="formData.reason"
+            placeholder="Motif de l'absence..."
             :disabled="saving"
             class="min-h-20"
           />
         </div>
 
         <!-- Approuver directement -->
-        <label class="flex items-center gap-2 cursor-pointer text-sm">
+        <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-accent/50 has-[[data-state=checked]]:border-primary/30 has-[[data-state=checked]]:bg-primary/5">
           <Checkbox
             :checked="formData.approved"
             @update:checked="(val: boolean) => formData.approved = val"
             :disabled="saving"
           />
-          <span>Approuver directement</span>
+          <div class="flex flex-col gap-0.5">
+            <span class="text-sm font-medium leading-none">Approuver directement</span>
+            <span class="text-xs text-muted-foreground">L'absence sera validée sans attente</span>
+          </div>
         </label>
 
         <DialogFooter>
@@ -123,6 +150,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { absencesService, absenceTypesService, usersService } from '@/services'
+import type { AbsenceTypeListResponse } from '@/services/absenceTypes'
 import { useMessages } from '@/composables/useMessages'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -169,9 +197,10 @@ const formData = ref({
   userUuid: '',
   startDate: '',
   endDate: '',
+  period: 'FULL_DAY' as string,
   absenceTypeUuid: '',
   customType: '',
-  comment: '',
+  reason: '',
   approved: false
 })
 
@@ -238,7 +267,7 @@ const loadData = async () => {
     }
 
     // Types d'absence
-    absenceTypes.value = (typesResponse as any).types || []
+    absenceTypes.value = (typesResponse as AbsenceTypeListResponse).types || []
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Erreur lors du chargement'
   } finally {
@@ -252,9 +281,10 @@ const resetForm = () => {
     userUuid: '',
     startDate: today,
     endDate: today,
+    period: 'FULL_DAY',
     absenceTypeUuid: '',
     customType: '',
-    comment: '',
+    reason: '',
     approved: false
   }
   error.value = ''
@@ -267,20 +297,20 @@ const handleSubmit = async () => {
     saving.value = true
     error.value = ''
 
-    const absenceTypeUuid = formData.value.absenceTypeUuid === 'custom'
-      ? ''
-      : formData.value.absenceTypeUuid
+    const isCustom = formData.value.absenceTypeUuid === 'custom'
 
     const response = await absencesService.createAbsenceForUser({
       userUuid: formData.value.userUuid,
       startDate: formData.value.startDate,
       endDate: formData.value.endDate,
-      absenceTypeUuid,
-      comment: formData.value.comment || undefined,
+      period: formData.value.period,
+      absenceTypeUuid: isCustom ? undefined : formData.value.absenceTypeUuid,
+      customType: isCustom ? formData.value.customType.trim() : undefined,
+      reason: formData.value.reason || undefined,
       approved: formData.value.approved
     })
 
-    emit('saved', response as AbsenceDTO)
+    emit('saved', response.absence)
     messages.success('Absence créée avec succès', 'Succès')
     handleClose()
   } catch (err: unknown) {

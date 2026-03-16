@@ -1,29 +1,34 @@
 import { apiClient } from '@/api'
 import type { AbsenceDTO } from '@/models'
-import type { SuccessMessageResponse, ApiResponse, PagedResponse, PaginationParams } from '@/types'
 
 /**
  * Absence status enum
  */
-export type AbsenceStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
+export type AbsenceStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 /**
- * Absence create request
+ * Absence create request (user)
  */
 export interface AbsenceCreateRequest {
-  absenceTypeUuid: string
   startDate: string
   endDate: string
-  comment?: string
-  halfDayStart?: boolean
-  halfDayEnd?: boolean
+  reason?: string
+  absenceTypeUuid?: string
+  customType?: string
+  period?: string
 }
 
 /**
  * Admin absence create request
  */
-export interface AdminAbsenceCreateRequest extends AbsenceCreateRequest {
+export interface AdminAbsenceCreateRequest {
   userUuid: string
+  startDate: string
+  endDate: string
+  reason?: string
+  absenceTypeUuid?: string
+  customType?: string
+  period?: string
   approved?: boolean
 }
 
@@ -38,14 +43,37 @@ export interface AbsenceValidationRequest {
 /**
  * Absence search filters
  */
-export interface AbsenceSearchParams extends PaginationParams {
+export interface AbsenceSearchParams {
   startDate?: string
   endDate?: string
   status?: AbsenceStatus
   absenceTypeUuid?: string
   userUuid?: string
+  page?: number
+  size?: number
   sortBy?: string
   sortDirection?: 'asc' | 'desc'
+  includePast?: boolean
+}
+
+/**
+ * API response for a single absence
+ */
+export interface AbsenceResponse {
+  success: boolean
+  message?: string
+  absence: AbsenceDTO
+}
+
+/**
+ * API response for a list of absences (paginated)
+ */
+export interface AbsenceListResponse {
+  success: boolean
+  absences: AbsenceDTO[]
+  totalPages: number
+  totalElements: number
+  currentPage: number
 }
 
 /**
@@ -79,8 +107,7 @@ export interface PlanningUserDTO {
   lastName: string
   role: {
     uuid: string
-    nom: string
-    color: string
+    name: string
   }
   pictureUrl?: string
   isCouchette: boolean
@@ -97,8 +124,8 @@ export class AbsencesService {
    * @param data - Absence data
    * @returns Promise with created absence
    */
-  async createAbsenceRequest(data: AbsenceCreateRequest): Promise<ApiResponse<AbsenceDTO>> {
-    return apiClient.post<ApiResponse<AbsenceDTO>>('absences', data)
+  async createAbsenceRequest(data: AbsenceCreateRequest): Promise<AbsenceResponse> {
+    return apiClient.post<AbsenceResponse>('absences', data)
   }
 
   /**
@@ -106,17 +133,17 @@ export class AbsencesService {
    * @param filters - Search filters
    * @returns Promise with paginated absences
    */
-  async getAbsences(filters?: AbsenceSearchParams): Promise<PagedResponse<AbsenceDTO>> {
-    return apiClient.post<PagedResponse<AbsenceDTO>>('absences/my', filters || {})
+  async getAbsences(filters?: AbsenceSearchParams): Promise<AbsenceListResponse> {
+    return apiClient.post<AbsenceListResponse>('absences/my', filters || {})
   }
 
   /**
    * Cancel an absence request (if pending)
    * @param uuid - Absence UUID
-   * @returns Promise with success message
+   * @returns Promise with cancelled absence
    */
-  async cancelAbsence(uuid: string): Promise<SuccessMessageResponse> {
-    return apiClient.delete<SuccessMessageResponse>(`absences/${uuid}`)
+  async cancelAbsence(uuid: string): Promise<AbsenceResponse> {
+    return apiClient.delete<AbsenceResponse>(`absences/${uuid}`)
   }
 
   // Admin methods
@@ -126,8 +153,8 @@ export class AbsencesService {
    * @param data - Absence data with user UUID
    * @returns Promise with created absence
    */
-  async createAbsenceForUser(data: AdminAbsenceCreateRequest): Promise<ApiResponse<AbsenceDTO>> {
-    return apiClient.post<ApiResponse<AbsenceDTO>>('absences/admin/create', data)
+  async createAbsenceForUser(data: AdminAbsenceCreateRequest): Promise<AbsenceResponse> {
+    return apiClient.post<AbsenceResponse>('absences/admin/create', data)
   }
 
   /**
@@ -135,8 +162,8 @@ export class AbsencesService {
    * @param filters - Search filters
    * @returns Promise with paginated absences
    */
-  async searchAbsences(filters?: AbsenceSearchParams): Promise<PagedResponse<AbsenceDTO>> {
-    return apiClient.post<PagedResponse<AbsenceDTO>>('absences/admin/search', filters || {})
+  async searchAbsences(filters?: AbsenceSearchParams): Promise<AbsenceListResponse> {
+    return apiClient.post<AbsenceListResponse>('absences/admin/search', filters || {})
   }
 
   /**
@@ -144,8 +171,8 @@ export class AbsencesService {
    * @param uuid - Absence UUID
    * @returns Promise with absence details
    */
-  async getAbsenceById(uuid: string): Promise<ApiResponse<AbsenceDTO>> {
-    return apiClient.get<ApiResponse<AbsenceDTO>>(`absences/admin/${uuid}`)
+  async getAbsenceById(uuid: string): Promise<AbsenceResponse> {
+    return apiClient.get<AbsenceResponse>(`absences/admin/${uuid}`)
   }
 
   /**
@@ -154,8 +181,8 @@ export class AbsencesService {
    * @param data - Validation data
    * @returns Promise with updated absence
    */
-  async validateAbsence(uuid: string, data: AbsenceValidationRequest): Promise<ApiResponse<AbsenceDTO>> {
-    return apiClient.post<ApiResponse<AbsenceDTO>>(`absences/admin/${uuid}/validate`, data)
+  async validateAbsence(uuid: string, data: AbsenceValidationRequest): Promise<AbsenceResponse> {
+    return apiClient.post<AbsenceResponse>(`absences/admin/${uuid}/validate`, data)
   }
 
   /**
@@ -164,17 +191,17 @@ export class AbsencesService {
    * @param rejectionReason - Rejection reason
    * @returns Promise with updated absence
    */
-  async rejectAbsence(uuid: string, rejectionReason?: string): Promise<ApiResponse<AbsenceDTO>> {
+  async rejectAbsence(uuid: string, rejectionReason?: string): Promise<AbsenceResponse> {
     return this.validateAbsence(uuid, { approved: false, rejectionReason })
   }
 
   /**
    * [ADMIN] Delete absence permanently
    * @param uuid - Absence UUID
-   * @returns Promise with success message
+   * @returns Promise with deleted absence
    */
-  async deleteAbsence(uuid: string): Promise<SuccessMessageResponse> {
-    return apiClient.delete<SuccessMessageResponse>(`absences/admin/${uuid}`)
+  async deleteAbsence(uuid: string): Promise<AbsenceResponse> {
+    return apiClient.delete<AbsenceResponse>(`absences/admin/${uuid}`)
   }
 
   /**

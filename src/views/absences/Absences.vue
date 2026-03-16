@@ -139,7 +139,9 @@
                   {{ formatDate(item.startDate) }}
                   <span v-if="item.startDate !== item.endDate"> → {{ formatDate(item.endDate) }}</span>
                 </span>
-                <span class="ml-2 text-muted-foreground">({{ calculateDuration(item.startDate, item.endDate) }})</span>
+                <span class="ml-2 text-muted-foreground">
+                  ({{ calculateAbsenceDuration(item.startDate, item.endDate, item.period) }}<template v-if="isHalfDay(item.period)"> · {{ getPeriodLabel(item.period) }}</template>)
+                </span>
               </div>
             </div>
           </div>
@@ -216,7 +218,10 @@
                           → {{ formatDate(item.endDate) }}
                         </span>
                       </span>
-                      <span class="text-xs text-muted-foreground">{{ calculateDuration(item.startDate, item.endDate) }}</span>
+                      <span class="text-xs text-muted-foreground">
+                        {{ calculateAbsenceDuration(item.startDate, item.endDate, item.period) }}
+                        <template v-if="isHalfDay(item.period)"> · {{ getPeriodLabel(item.period) }}</template>
+                      </span>
                     </div>
                   </TableCell>
 
@@ -381,9 +386,11 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { absencesService, absenceTypesService, usersService } from '@/services'
 import type { AbsenceDTO, AbsenceTypeDTO, UserDTO } from '@/models'
-import type { AbsenceSearchParams, AbsenceStatus } from '@/services/absences'
+import type { AbsenceSearchParams, AbsenceStatus, AbsenceListResponse } from '@/services/absences'
+import type { AbsenceTypeListResponse } from '@/services/absenceTypes'
 import { useMessages } from '@/composables/useMessages'
 import { useContextMenu } from '@/composables/useContextMenu'
+import { calculateAbsenceDuration, isHalfDay, getPeriodLabel } from '@/utils/absenceFormatters'
 
 // shadcn components
 import { Button } from '@/components/ui/button'
@@ -497,8 +504,7 @@ const activeFiltersText = computed(() => {
     const statusLabels: Record<string, string> = {
       'PENDING': 'En attente',
       'APPROVED': 'Approuvées',
-      'REJECTED': 'Refusées',
-      'CANCELLED': 'Annulées'
+      'REJECTED': 'Refusées'
     }
     parts.push(statusLabels[status] || status)
   }
@@ -600,8 +606,7 @@ const filterConfig = computed<FilterConfig[]>(() => [
     options: [
       { value: 'PENDING', label: 'En attente' },
       { value: 'APPROVED', label: 'Approuvées' },
-      { value: 'REJECTED', label: 'Refusées' },
-      { value: 'CANCELLED', label: 'Annulées' }
+      { value: 'REJECTED', label: 'Refusées' }
     ]
   },
   {
@@ -723,13 +728,13 @@ const loadAbsences = async (page = 0, isInitialLoad = false) => {
     if (absenceTypeUuid) apiFilters.absenceTypeUuid = absenceTypeUuid
     if (userUuid) apiFilters.userUuid = userUuid
 
-    const response = await absencesService.searchAbsences(apiFilters)
+    const response: AbsenceListResponse = await absencesService.searchAbsences(apiFilters)
 
-    absences.value = (response as any).absences || []
+    absences.value = response.absences || []
     pagination.value = {
-      currentPage: (response as any).currentPage || 0,
-      totalPages: (response as any).totalPages || 1,
-      totalElements: (response as any).totalElements || 0
+      currentPage: response.currentPage || 0,
+      totalPages: response.totalPages || 1,
+      totalElements: response.totalElements || 0
     }
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Erreur lors du chargement des absences'
@@ -757,8 +762,8 @@ const loadUsers = async () => {
 
 const loadAbsenceTypes = async () => {
   try {
-    const response = await absenceTypesService.getAbsenceTypes()
-    absenceTypes.value = (response as any).types || []
+    const response: AbsenceTypeListResponse = await absenceTypesService.getAbsenceTypes()
+    absenceTypes.value = response.types || []
   } catch (err) {
     console.error("Erreur lors du chargement des types d'absence:", err)
   }
@@ -805,15 +810,6 @@ const formatDateTime = (dateString?: string | Date): string => {
     hour: '2-digit',
     minute: '2-digit'
   })
-}
-
-const calculateDuration = (startDate?: string, endDate?: string): string => {
-  if (!startDate || !endDate) return '-'
-  const start = new Date(startDate)
-  const end = new Date(endDate)
-  const diffTime = Math.abs(end.getTime() - start.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
-  return `${diffDays} jour${diffDays > 1 ? 's' : ''}`
 }
 
 const getStatusText = (status?: string): string => {

@@ -153,7 +153,7 @@
 
     <!-- Delete confirmation dialog -->
     <Dialog v-model:open="showDeleteModal">
-      <DialogContent class="sm:max-w-md" @interact-outside.prevent>
+      <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle class="flex items-center gap-2">
             <div class="flex size-10 items-center justify-center rounded-full bg-destructive/15 text-destructive">
@@ -192,6 +192,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { absenceTypesService } from '@/services'
+import type { AbsenceTypeListResponse } from '@/services/absenceTypes'
 import { useMessages } from '@/composables/useMessages'
 import type { AbsenceTypeDTO } from '@/models'
 
@@ -250,8 +251,8 @@ const loadTypes = async () => {
     loading.value = true
     error.value = ''
 
-    const response = await absenceTypesService.getAbsenceTypes()
-    absenceTypes.value = (response as any).types || []
+    const response: AbsenceTypeListResponse = await absenceTypesService.getAbsenceTypes()
+    absenceTypes.value = response.types || []
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Erreur lors du chargement des types d\'absence'
     messages.error(error.value, 'Erreur')

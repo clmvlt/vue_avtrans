@@ -1,6 +1,6 @@
 <template>
   <Dialog v-model:open="localOpen">
-    <DialogContent class="sm:max-w-md" @interact-outside.prevent>
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-md">
       <DialogHeader>
         <DialogTitle>{{ isApproving ? 'Approuver l\'absence' : 'Refuser l\'absence' }}</DialogTitle>
         <DialogDescription>
@@ -25,6 +25,10 @@
                 → {{ formatDate(absence.endDate) }}
               </span>
             </span>
+          </div>
+          <div v-if="isHalfDay(absence.period)" class="flex justify-between py-1.5 border-b border-border last:border-0">
+            <span class="text-sm text-muted-foreground">Période</span>
+            <span class="text-sm font-medium text-foreground">{{ getPeriodLabel(absence.period) }}</span>
           </div>
           <div class="flex justify-between py-1.5 border-b border-border last:border-0">
             <span class="text-sm text-muted-foreground">Motif</span>
@@ -76,6 +80,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { LoaderCircle, AlertCircle } from 'lucide-vue-next'
 import type { AbsenceDTO } from '@/models'
+import { isHalfDay, getPeriodLabel } from '@/utils/absenceFormatters'
 
 interface Props {
   modelValue: boolean

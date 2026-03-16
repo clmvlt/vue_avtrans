@@ -1,24 +1,29 @@
 import { apiClient } from '@/api'
 import type { AbsenceTypeDTO } from '@/models'
-import type { SuccessMessageResponse, ApiResponse } from '@/types'
 
 /**
- * Absence type create request
+ * Absence type create/update request
  */
 export interface AbsenceTypeCreateRequest {
   name: string
-  description?: string
-  color?: string
+  color: string
 }
 
 /**
- * Absence type update request
+ * API response for a list of absence types
  */
-export interface AbsenceTypeUpdateRequest {
-  name?: string
-  description?: string
-  color?: string
-  isActive?: boolean
+export interface AbsenceTypeListResponse {
+  success: boolean
+  types: AbsenceTypeDTO[]
+}
+
+/**
+ * API response for a single absence type
+ */
+export interface AbsenceTypeResponse {
+  success: boolean
+  message?: string
+  absenceType: AbsenceTypeDTO
 }
 
 /**
@@ -30,8 +35,8 @@ export class AbsenceTypesService {
    * Get all absence types
    * @returns Promise with list of absence types
    */
-  async getAbsenceTypes(): Promise<ApiResponse<AbsenceTypeDTO[]>> {
-    return apiClient.get<ApiResponse<AbsenceTypeDTO[]>>('absence-types')
+  async getAbsenceTypes(): Promise<AbsenceTypeListResponse> {
+    return apiClient.get<AbsenceTypeListResponse>('absence-types')
   }
 
   /**
@@ -39,8 +44,8 @@ export class AbsenceTypesService {
    * @param uuid - Absence type UUID
    * @returns Promise with absence type details
    */
-  async getTypeById(uuid: string): Promise<ApiResponse<AbsenceTypeDTO>> {
-    return apiClient.get<ApiResponse<AbsenceTypeDTO>>(`absence-types/${uuid}`)
+  async getTypeById(uuid: string): Promise<AbsenceTypeResponse> {
+    return apiClient.get<AbsenceTypeResponse>(`absence-types/${uuid}`)
   }
 
   /**
@@ -48,8 +53,8 @@ export class AbsenceTypesService {
    * @param data - Absence type data
    * @returns Promise with created absence type
    */
-  async createType(data: AbsenceTypeCreateRequest): Promise<ApiResponse<AbsenceTypeDTO>> {
-    return apiClient.post<ApiResponse<AbsenceTypeDTO>>('absence-types', data)
+  async createType(data: AbsenceTypeCreateRequest): Promise<AbsenceTypeResponse> {
+    return apiClient.post<AbsenceTypeResponse>('absence-types', data)
   }
 
   /**
@@ -58,17 +63,17 @@ export class AbsenceTypesService {
    * @param data - Absence type data to update
    * @returns Promise with updated absence type
    */
-  async updateType(uuid: string, data: AbsenceTypeUpdateRequest): Promise<ApiResponse<AbsenceTypeDTO>> {
-    return apiClient.put<ApiResponse<AbsenceTypeDTO>>(`absence-types/${uuid}`, data)
+  async updateType(uuid: string, data: AbsenceTypeCreateRequest): Promise<AbsenceTypeResponse> {
+    return apiClient.put<AbsenceTypeResponse>(`absence-types/${uuid}`, data)
   }
 
   /**
    * [ADMIN] Delete absence type
    * @param uuid - Absence type UUID
-   * @returns Promise with success message
+   * @returns Promise with deleted absence type
    */
-  async deleteType(uuid: string): Promise<SuccessMessageResponse> {
-    return apiClient.delete<SuccessMessageResponse>(`absence-types/${uuid}`)
+  async deleteType(uuid: string): Promise<AbsenceTypeResponse> {
+    return apiClient.delete<AbsenceTypeResponse>(`absence-types/${uuid}`)
   }
 }
 
