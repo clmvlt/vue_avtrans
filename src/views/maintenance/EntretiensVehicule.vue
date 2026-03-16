@@ -322,6 +322,12 @@
                     </div>
                   </div>
 
+                  <!-- Total cost header -->
+                  <div v-if="sortedEntretiens.length > 0 && totalCoutHT > 0" class="mb-2 flex justify-end gap-2 rounded-lg border bg-card px-4 py-3">
+                    <span class="text-sm font-medium text-muted-foreground">Total coût HT :</span>
+                    <span class="text-sm font-semibold text-foreground">{{ totalCoutHT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} €</span>
+                  </div>
+
                   <!-- Desktop Table View -->
                   <div class="hidden overflow-hidden rounded-lg border shadow-sm md:block">
                     <Table>
@@ -425,11 +431,6 @@
                     </Table>
                   </div>
 
-                  <!-- Total cost footer -->
-                  <div v-if="sortedEntretiens.length > 0 && totalCoutHT > 0" class="mt-2 flex justify-end gap-2 rounded-lg border bg-card px-4 py-3">
-                    <span class="text-sm font-medium text-muted-foreground">Total coût HT :</span>
-                    <span class="text-sm font-semibold text-foreground">{{ totalCoutHT.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} €</span>
-                  </div>
                 </div>
 
                 <!-- Pagination -->
@@ -512,7 +513,7 @@
 
     <!-- Modal Créer/Modifier Entretien -->
     <Dialog v-model:open="showEntretienModal">
-      <DialogContent class="sm:max-w-lg" @interact-outside.prevent>
+      <DialogContent class="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{{ isEditMode ? 'Modifier l\'entretien' : 'Nouvel entretien' }}</DialogTitle>
           <DialogDescription>{{ isEditMode ? 'Modifiez les informations de l\'entretien.' : 'Renseignez les informations du nouvel entretien.' }}</DialogDescription>
@@ -622,7 +623,7 @@
 
     <!-- Modal Fichiers -->
     <Dialog v-model:open="showPhotosModal">
-      <DialogContent class="sm:max-w-2xl" @interact-outside.prevent>
+      <DialogContent class="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Fichiers - {{ currentEntretien?.typeEntretien?.nom || '' }}</DialogTitle>
           <DialogDescription>Fichiers attachés à cet entretien.</DialogDescription>
@@ -693,7 +694,7 @@
 
     <!-- Modal Confirmation Suppression Entretien -->
     <Dialog v-model:open="showDeleteModal">
-      <DialogContent class="sm:max-w-md" @interact-outside.prevent>
+      <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Confirmer la suppression</DialogTitle>
           <DialogDescription>Cette action est irréversible.</DialogDescription>
@@ -714,7 +715,7 @@
 
     <!-- Modal Confirmation Suppression Fichier -->
     <Dialog v-model:open="showDeleteFileModal">
-      <DialogContent class="sm:max-w-md" @interact-outside.prevent>
+      <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Supprimer le fichier</DialogTitle>
           <DialogDescription>Cette action est irréversible.</DialogDescription>
@@ -735,7 +736,7 @@
 
     <!-- Modal Confirmation Validation Entretien -->
     <Dialog v-model:open="showValidateModal">
-      <DialogContent class="sm:max-w-md" @interact-outside.prevent>
+      <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Valider l'entretien</DialogTitle>
           <DialogDescription>Confirmation de la validation de l'entretien.</DialogDescription>
@@ -762,7 +763,7 @@
 
     <!-- Modal Confirmation Suppression Configuration -->
     <Dialog v-model:open="showDeleteConfigModal">
-      <DialogContent class="sm:max-w-md" @interact-outside.prevent>
+      <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Supprimer la configuration</DialogTitle>
           <DialogDescription>Cette action est irréversible.</DialogDescription>
@@ -782,7 +783,11 @@
     </Dialog>
 
     <!-- Image fullscreen -->
-    <ImageLightbox v-model:open="showImageFullscreen" :src="fullscreenImageUrl" />
+    <ImageLightbox
+      v-model:open="showImageFullscreen"
+      :images="fullscreenImages"
+      :initial-index="fullscreenIndex"
+    />
   </div>
 </template>
 
@@ -796,6 +801,7 @@ import ConfigEntretienModal from '@/components/maintenance/ConfigEntretienModal.
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ImageLightbox } from '@/components/ui/image-lightbox'
 import { FileCard } from '@/components/ui/file-card'
+import { isImage, getFileUrl } from '@/utils/fileUtils'
 import { FileDropzone } from '@/components/ui/file-dropzone'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1430,10 +1436,20 @@ const deleteEditModeFile = async (fileId: string) => {
 }
 
 const showImageFullscreen = ref(false)
-const fullscreenImageUrl = ref('')
+const fullscreenImages = ref<string[]>([])
+const fullscreenIndex = ref(0)
 
 const openImageFullscreen = (url: string) => {
-  fullscreenImageUrl.value = url
+  const imageFiles = currentFiles.value.filter(f => isImage(f))
+  const imageUrls = imageFiles.map(f => getFileUrl(f))
+  const idx = imageUrls.indexOf(url)
+  if (imageUrls.length > 0) {
+    fullscreenImages.value = imageUrls
+    fullscreenIndex.value = idx >= 0 ? idx : 0
+  } else {
+    fullscreenImages.value = [url]
+    fullscreenIndex.value = 0
+  }
   showImageFullscreen.value = true
 }
 
