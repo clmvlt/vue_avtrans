@@ -1,74 +1,76 @@
 <template>
-  <Teleport to="body">
-    <div v-if="modelValue" class="modal-overlay" @click="handleOverlayClick">
-      <div class="modal modal-email" @click.stop>
-        <div class="modal-header">
-          <font-awesome-icon :icon="['fas', 'envelope']" class="modal-icon" />
-          <h3>Modifier l'email</h3>
-          <button type="button" class="btn-close" @click="handleClose" aria-label="Fermer">
-            <font-awesome-icon :icon="['fas', 'xmark']" />
-          </button>
+  <Dialog v-model:open="localOpen">
+    <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle class="flex items-center gap-3">
+          <div class="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Mail class="size-5" />
+          </div>
+          Modifier l'email
+        </DialogTitle>
+        <DialogDescription class="sr-only">
+          Modifier l'adresse email de l'utilisateur
+        </DialogDescription>
+      </DialogHeader>
+
+      <form @submit.prevent="handleSubmit" class="space-y-4">
+        <div v-if="error" class="flex items-center gap-2 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+          <AlertCircle class="size-4 shrink-0" />
+          {{ error }}
         </div>
 
-        <form @submit.prevent="handleSubmit" class="modal-form">
-          <div v-if="error" class="message message-error">
-            <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
-            {{ error }}
-          </div>
+        <!-- Info utilisateur -->
+        <div class="flex flex-col gap-1 rounded-md border border-border bg-muted p-3">
+          <span class="text-base font-semibold text-foreground">{{ userName }}</span>
+          <span class="text-sm text-muted-foreground">Email actuel : {{ currentEmail }}</span>
+        </div>
 
-          <!-- Info utilisateur -->
-          <div class="user-info-header">
-            <span class="user-name">{{ userName }}</span>
-            <span class="current-email">Email actuel : {{ currentEmail }}</span>
+        <!-- Avertissement -->
+        <div class="flex gap-3 rounded-md border border-info bg-info/10 p-4">
+          <Info class="mt-0.5 size-5 shrink-0 text-info" />
+          <div class="flex-1">
+            <p class="mb-1 text-sm font-semibold text-info">Important</p>
+            <template v-if="isSameEmail">
+              <p class="text-sm text-muted-foreground">
+                Cette action va renvoyer un email de vérification à l'adresse actuelle.
+              </p>
+            </template>
+            <template v-else>
+              <p class="mb-2 text-sm text-muted-foreground">
+                La modification de l'email va :
+              </p>
+              <ul class="list-disc space-y-1 pl-4 text-sm text-muted-foreground">
+                <li>Remplacer l'adresse email actuelle</li>
+                <li>Marquer l'email comme <strong>non vérifié</strong></li>
+                <li>Envoyer un nouvel email de vérification</li>
+              </ul>
+            </template>
           </div>
+        </div>
 
-          <!-- Avertissement -->
-          <div class="warning-box">
-            <font-awesome-icon :icon="['fas', 'info-circle']" class="warning-icon" />
-            <div class="warning-content">
-              <p class="warning-title">Important</p>
-              <template v-if="isSameEmail">
-                <p class="warning-text">
-                  Cette action va renvoyer un email de vérification à l'adresse actuelle.
-                </p>
-              </template>
-              <template v-else>
-                <p class="warning-text">
-                  La modification de l'email va :
-                </p>
-                <ul class="warning-list">
-                  <li>Remplacer l'adresse email actuelle</li>
-                  <li>Marquer l'email comme <strong>non vérifié</strong></li>
-                  <li>Envoyer un nouvel email de vérification</li>
-                </ul>
-              </template>
-            </div>
-          </div>
+        <!-- Nouveau email -->
+        <InputField
+          v-model="newEmail"
+          label="Nouvel email"
+          type="email"
+          placeholder="nouveau@example.com"
+          required
+          :disabled="saving"
+          :icon="AtSign"
+        />
 
-          <!-- Nouveau email -->
-          <InputField
-            v-model="newEmail"
-            label="Nouvel email"
-            type="email"
-            placeholder="nouveau@example.com"
-            required
-            :disabled="saving"
-            :icon="AtSign"
-          />
-
-          <div class="modal-actions">
-            <Button type="button" @click="handleClose" variant="ghost" :disabled="saving">
-              Annuler
-            </Button>
-            <Button type="submit" :disabled="saving || !isValid">
-              <LoaderCircle v-if="saving" class="size-4 animate-spin" />
-              {{ isSameEmail ? 'Renvoyer la vérification' : 'Modifier l\'email' }}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </Teleport>
+        <DialogFooter>
+          <Button type="button" variant="outline" @click="handleClose" :disabled="saving">
+            Annuler
+          </Button>
+          <Button type="submit" :disabled="saving || !isValid">
+            <LoaderCircle v-if="saving" class="size-4 animate-spin" />
+            {{ isSameEmail ? 'Renvoyer la vérification' : 'Modifier l\'email' }}
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
@@ -76,7 +78,15 @@ import { ref, computed, watch } from 'vue'
 import { usersService } from '@/services/users'
 import { useMessages } from '@/composables/useMessages'
 import { Button } from '@/components/ui/button'
-import { LoaderCircle, AtSign } from 'lucide-vue-next'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { LoaderCircle, AtSign, AlertCircle, Mail, Info } from 'lucide-vue-next'
 import { InputField } from '@/components/ui/input-field'
 import type { UserDTO } from '@/models'
 
@@ -101,6 +111,16 @@ const emit = defineEmits<{
 
 const messages = useMessages()
 
+// Local open state synced with modelValue
+const localOpen = computed({
+  get: () => props.modelValue,
+  set: (val) => {
+    if (!val && !saving.value) {
+      handleClose()
+    }
+  }
+})
+
 // États
 const saving = ref(false)
 const error = ref('')
@@ -120,7 +140,7 @@ const isValid = computed(() => {
   return newEmail.value.trim() !== '' && isValidEmail(newEmail.value)
 })
 
-// Reset quand le modal s'ouvre - pré-remplir avec l'email actuel
+// Reset quand le dialog s'ouvre - pré-remplir avec l'email actuel
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
     newEmail.value = props.currentEmail
@@ -163,195 +183,9 @@ const handleSubmit = async () => {
   }
 }
 
-// Fermer le modal
+// Fermer le dialog
 const handleClose = () => {
   emit('update:modelValue', false)
   emit('close')
 }
-
-// Gérer le clic sur l'overlay
-const handleOverlayClick = () => {
-  if (!saving.value) {
-    handleClose()
-  }
-}
 </script>
-
-<style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-index-modal);
-  padding: var(--space-4);
-}
-
-.modal-email {
-  max-width: 480px;
-  width: 100%;
-  background-color: var(--color-bg-primary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-xl);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-5);
-  position: relative;
-}
-
-.modal-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--color-primary-bg);
-  color: var(--color-primary);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-lg);
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  flex: 1;
-}
-
-.btn-close {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition-base);
-}
-
-.btn-close:hover {
-  background: var(--color-bg-hover);
-  color: var(--color-text-primary);
-}
-
-.modal-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.message {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-sm);
-}
-
-.message-error {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger);
-  border: 1px solid var(--color-danger);
-}
-
-.user-info-header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-3);
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-primary);
-}
-
-.user-name {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-base);
-}
-
-.current-email {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.warning-box {
-  display: flex;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  background-color: var(--color-info-bg);
-  border: 1px solid var(--color-info);
-  border-radius: var(--radius-md);
-}
-
-.warning-icon {
-  color: var(--color-info);
-  font-size: var(--font-size-lg);
-  flex-shrink: 0;
-  margin-top: var(--space-1);
-}
-
-.warning-content {
-  flex: 1;
-}
-
-.warning-title {
-  margin: 0 0 var(--space-1) 0;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-info);
-  font-size: var(--font-size-sm);
-}
-
-.warning-text {
-  margin: 0 0 var(--space-2) 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.warning-list {
-  margin: 0;
-  padding-left: var(--space-4);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.warning-list li {
-  margin-bottom: var(--space-1);
-}
-
-.warning-list li:last-child {
-  margin-bottom: 0;
-}
-
-.modal-actions {
-  display: flex;
-  gap: var(--space-3);
-  justify-content: flex-end;
-  margin-top: var(--space-2);
-}
-
-@media (max-width: 768px) {
-  .modal-email {
-    width: 95%;
-    padding: var(--space-4);
-  }
-}
-</style>

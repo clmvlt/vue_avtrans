@@ -1,35 +1,40 @@
 <template>
-  <Teleport to="body">
-    <div v-if="modelValue" class="modal-overlay" @click="handleOverlayClick">
-      <div class="modal modal-user" @click.stop>
-      <div class="modal-header">
-        <font-awesome-icon :icon="['fas', 'user-pen']" class="modal-icon" />
-        <h3>{{ isCreating ? 'Créer un utilisateur' : 'Modifier l\'utilisateur' }}</h3>
-        <button type="button" class="btn-close" @click="handleClose" aria-label="Fermer">
-          <font-awesome-icon :icon="['fas', 'xmark']" />
-        </button>
+  <Dialog :open="modelValue" @update:open="handleOpenChange">
+    <DialogContent class="sm:max-w-[520px] max-h-[90dvh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle class="flex items-center gap-3">
+          <div class="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <UserPen class="size-5" />
+          </div>
+          {{ isCreating ? 'Créer un utilisateur' : 'Modifier l\'utilisateur' }}
+        </DialogTitle>
+        <DialogDescription class="sr-only">
+          {{ isCreating ? 'Formulaire de création d\'utilisateur' : 'Formulaire de modification d\'utilisateur' }}
+        </DialogDescription>
+      </DialogHeader>
+
+      <!-- Loading (uniquement si pas d'initialUser et qu'on doit fetch) -->
+      <div v-if="loading" class="flex flex-col items-center justify-center gap-4 py-12">
+        <LoaderCircle class="size-10 animate-spin text-primary" />
+        <p class="text-muted-foreground">Chargement...</p>
       </div>
 
-      <div v-if="loading" class="loading-state">
-        <span class="spinner"></span>
-        <p>Chargement...</p>
-      </div>
-
-      <form v-else @submit.prevent="handleSubmit" class="modal-form">
-        <div v-if="error" class="message message-error">
-          <font-awesome-icon :icon="['fas', 'exclamation-circle']" />
+      <!-- Form -->
+      <form v-else @submit.prevent="handleSubmit" class="space-y-4">
+        <div v-if="error" class="flex items-center gap-2 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+          <AlertCircle class="size-4 shrink-0" />
           {{ error }}
         </div>
 
-        <div v-if="success" class="message message-success">
-          <font-awesome-icon :icon="['fas', 'check-circle']" />
+        <div v-if="success" class="flex items-center gap-2 rounded-md border border-success bg-success/10 p-3 text-sm text-success">
+          <CircleCheck class="size-4 shrink-0" />
           {{ success }}
         </div>
 
-        <!-- Champs modifiables -->
-        <div class="form-row">
+        <!-- Prénom / Nom -->
+        <div class="grid gap-4 sm:grid-cols-2">
           <InputField
-            v-model="formData.firstName"
+            v-model="firstName"
             label="Prénom"
             type="text"
             placeholder="Jean"
@@ -37,9 +42,8 @@
             :disabled="saving"
             :icon="User"
           />
-
           <InputField
-            v-model="formData.lastName"
+            v-model="lastName"
             label="Nom"
             type="text"
             placeholder="Dupont"
@@ -49,9 +53,9 @@
           />
         </div>
 
-        <!-- Email : modifiable en création, lecture seule en édition -->
+        <!-- Email -->
         <InputField
-          v-model="formData.email"
+          v-model="email"
           label="Email"
           type="email"
           placeholder="jean.dupont@example.com"
@@ -61,127 +65,194 @@
           :hint="!isCreating ? 'L\'email ne peut pas être modifié' : undefined"
         />
 
-        <!-- Mot de passe : uniquement en création -->
-        <AVInput
+        <!-- Mot de passe (création uniquement) -->
+        <InputField
           v-if="isCreating"
-          v-model="formData.password"
+          v-model="password"
           label="Mot de passe"
           type="password"
           placeholder="********"
           required
           :disabled="saving"
-          :icon="['fas', 'lock']"
+          :icon="Lock"
           :show-password-toggle="true"
           hint="Minimum 8 caractères"
         />
 
-        <!-- Rôle : modifiable -->
-        <div class="form-group">
-          <label for="editRole">Rôle</label>
-          <select
-            id="editRole"
-            v-model="formData.roleUuid"
-            :disabled="saving"
-            class="role-select"
-          >
-            <option :value="null">Aucun rôle</option>
-            <option value="c10523af-a4ab-47e2-8025-5ef4e241ef08">Administrateur</option>
-            <option value="ccbd448a-0eef-4277-b53b-91be340b080f">Mécanicien</option>
-            <option value="99127dd5-f7bd-446c-9fd0-c05d4ea135b2">Utilisateur</option>
-          </select>
-        </div>
+        <!-- Rôle -->
+        <Select
+          v-model="roleUuidSelect"
+          label="Rôle"
+          :options="roleOptions"
+          placeholder="Sélectionner un rôle..."
+          :disabled="saving"
+          :searchable="false"
+          clearable
+          :teleport="false"
+        />
 
-        <!-- Compte actif : modifiable -->
-        <div class="flex items-center gap-3 p-4 bg-secondary/50 border border-border rounded-md transition-colors hover:bg-secondary">
-          <Checkbox
-            id="editIsActive"
-            :checked="formData.isActive"
-            @update:checked="(val: boolean) => formData.isActive = val ?? false"
-            :disabled="saving"
-          />
-          <Label for="editIsActive" class="text-sm font-medium cursor-pointer flex-1">
-            Compte actif
-          </Label>
-        </div>
-
-        <!-- Permission couchette : modifiable -->
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center gap-3 p-4 bg-secondary/50 border border-border rounded-md transition-colors hover:bg-secondary">
+        <!-- Toggles -->
+        <div class="space-y-3">
+          <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-accent/50 has-[[data-state=checked]]:border-primary/30 has-[[data-state=checked]]:bg-primary/5">
             <Checkbox
-              id="editIsCouchette"
-              :checked="formData.isCouchette"
-              @update:checked="(val: boolean) => formData.isCouchette = val ?? false"
+              :checked="isActive"
+              @update:checked="(val: boolean | 'indeterminate') => isActive = val === true"
               :disabled="saving"
             />
-            <Label for="editIsCouchette" class="text-sm font-medium cursor-pointer flex-1">
-              Permission couchette
-            </Label>
-          </div>
-          <span class="text-xs text-muted-foreground ml-[calc(1rem+0.75rem+1rem)]">
-            Permet à l'utilisateur de déclarer des couchettes
-          </span>
+            <div class="flex flex-col gap-0.5">
+              <span class="text-sm font-medium leading-none">Compte actif</span>
+              <span class="text-xs text-muted-foreground">L'utilisateur peut se connecter</span>
+            </div>
+          </label>
+
+          <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-accent/50 has-[[data-state=checked]]:border-primary/30 has-[[data-state=checked]]:bg-primary/5">
+            <Checkbox
+              :checked="isCouchette"
+              @update:checked="(val: boolean | 'indeterminate') => isCouchette = val === true"
+              :disabled="saving"
+            />
+            <div class="flex flex-col gap-0.5">
+              <span class="text-sm font-medium leading-none">Permission couchette</span>
+              <span class="text-xs text-muted-foreground">Permet de déclarer des couchettes</span>
+            </div>
+          </label>
         </div>
 
-        <!-- Section informations en lecture seule (uniquement en mode édition) -->
-        <div v-if="userData && !isCreating" class="info-section">
-          <h4 class="info-section-title">Informations système</h4>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Email vérifié</span>
-              <span :class="['info-badge', userData.isMailVerified ? 'badge-success' : 'badge-warning']">
-                <font-awesome-icon :icon="['fas', userData.isMailVerified ? 'check-circle' : 'clock']" />
+        <!-- Heures contrat -->
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-foreground">Contrat</h4>
+          <InputField
+            v-model="heureContratInput"
+            label="Heures mensuelles du contrat"
+            type="number"
+            placeholder="Ex: 151.67"
+            :disabled="saving"
+            :icon="Clock"
+            hint="Heures contractuelles par mois (ex: 151.67h)"
+          />
+        </div>
+
+        <!-- Adresse & Permis -->
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-foreground">Adresse & Permis</h4>
+
+          <InputField
+            v-model="driverLicenseNumber"
+            label="Numéro de permis"
+            type="text"
+            placeholder="Ex: 12AB34567"
+            :disabled="saving"
+            :icon="CreditCard"
+          />
+
+          <InputField
+            v-model="addressStreet"
+            label="Rue"
+            type="text"
+            placeholder="12 rue de la Paix"
+            :disabled="saving"
+            :icon="MapPin"
+          />
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <InputField
+              v-model="addressCity"
+              label="Ville"
+              type="text"
+              placeholder="Paris"
+              :disabled="saving"
+            />
+            <InputField
+              v-model="addressPostalCode"
+              label="Code postal"
+              type="text"
+              placeholder="75000"
+              :disabled="saving"
+            />
+          </div>
+
+          <InputField
+            v-model="addressCountry"
+            label="Pays"
+            type="text"
+            placeholder="France"
+            :disabled="saving"
+          />
+        </div>
+
+        <!-- Informations système (édition uniquement) -->
+        <div v-if="userData && !isCreating" class="rounded-md border border-border bg-muted p-4">
+          <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Informations système</h4>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-muted-foreground">Email vérifié</span>
+              <span :class="[
+                'inline-flex w-fit items-center gap-1 rounded-sm px-2 py-0.5 text-xs font-medium',
+                userData.isMailVerified ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'
+              ]">
+                <CircleCheck v-if="userData.isMailVerified" class="size-3" />
+                <Clock v-else class="size-3" />
                 {{ userData.isMailVerified ? 'Vérifié' : 'Non vérifié' }}
               </span>
             </div>
-            <div class="info-item">
-              <span class="info-label">UUID</span>
-              <span class="info-value info-uuid">{{ userData.uuid }}</span>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-muted-foreground">UUID</span>
+              <span class="break-all font-mono text-xs text-muted-foreground">{{ userData.uuid }}</span>
             </div>
-            <div class="info-item">
-              <span class="info-label">Créé le</span>
-              <span class="info-value">{{ formatDate(userData.createdAt) }}</span>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-muted-foreground">Créé le</span>
+              <span class="text-sm font-medium text-foreground">{{ formatDate(userData.createdAt) }}</span>
             </div>
-            <div class="info-item">
-              <span class="info-label">Modifié le</span>
-              <span class="info-value">{{ formatDate(userData.updatedAt) }}</span>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-muted-foreground">Modifié le</span>
+              <span class="text-sm font-medium text-foreground">{{ formatDate(userData.updatedAt) }}</span>
             </div>
           </div>
         </div>
 
-        <div class="modal-actions">
-          <Button type="button" @click="handleClose" variant="ghost" :disabled="saving">
+        <DialogFooter>
+          <Button type="button" variant="outline" @click="handleClose" :disabled="saving">
             Annuler
           </Button>
           <Button type="submit" :disabled="saving">
             <LoaderCircle v-if="saving" class="size-4 animate-spin" />
             {{ isCreating ? 'Créer' : 'Enregistrer' }}
           </Button>
-        </div>
+        </DialogFooter>
       </form>
-      </div>
-    </div>
-  </Teleport>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { usersService } from '@/services/users'
 import { useMessages } from '@/composables/useMessages'
 import { Button } from '@/components/ui/button'
-import { LoaderCircle, User, Mail } from 'lucide-vue-next'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { LoaderCircle, User, UserPen, Mail, Lock, AlertCircle, CircleCheck, Clock, CreditCard, MapPin } from 'lucide-vue-next'
 import { InputField } from '@/components/ui/input-field'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
-import type { UserDTO } from '@/models'
+import { Select } from '@/components/ui/select'
+import type { UserDTO, UpdateUserRequest } from '@/models'
 
 interface Props {
   modelValue: boolean
   userUuid?: string | null
+  initialUser?: UserDTO | null
   isCreating?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   userUuid: null,
+  initialUser: null,
   isCreating: false
 })
 
@@ -200,29 +271,77 @@ const error = ref('')
 const success = ref('')
 const userData = ref<UserDTO | null>(null)
 
-// Données du formulaire
-const formData = ref({
-  firstName: '',
-  lastName: '',
-  email: '',
-  password: '',
-  roleUuid: null as string | null,
-  isActive: true,
-  isCouchette: false
+// Champs du formulaire en refs séparées (évite les problèmes de réactivité avec reka-ui Checkbox)
+const firstName = ref('')
+const lastName = ref('')
+const email = ref('')
+const password = ref('')
+const roleUuid = ref<string | null>(null)
+const isActive = ref(true)
+const isCouchette = ref(false)
+const heureContratInput = ref('')
+const driverLicenseNumber = ref('')
+const addressStreet = ref('')
+const addressCity = ref('')
+const addressPostalCode = ref('')
+const addressCountry = ref('France')
+
+// Options pour le Select de rôle
+const roleOptions = [
+  { value: 'c10523af-a4ab-47e2-8025-5ef4e241ef08', label: 'Administrateur' },
+  { value: 'ccbd448a-0eef-4277-b53b-91be340b080f', label: 'Mécanicien' },
+  { value: '99127dd5-f7bd-446c-9fd0-c05d4ea135b2', label: 'Utilisateur' },
+]
+
+// Computed pour le Select (string <-> string | null)
+const roleUuidSelect = computed({
+  get: () => roleUuid.value ?? '',
+  set: (val: string) => { roleUuid.value = val || null },
 })
 
-
-// Charger les données utilisateur quand le modal s'ouvre
+// Charger les données quand le dialog s'ouvre
 watch(() => props.modelValue, async (isOpen) => {
   if (isOpen) {
     resetForm()
-    if (props.userUuid && !props.isCreating) {
-      await loadUserData()
+    if (!props.isCreating) {
+      if (props.initialUser) {
+        populateForm(props.initialUser)
+      } else if (props.userUuid) {
+        await loadUserData()
+      }
     }
   }
 }, { immediate: true })
 
-// Charger les données utilisateur
+// Peupler le formulaire avec un UserDTO
+const populateForm = (user: UserDTO) => {
+  userData.value = user
+  firstName.value = user.firstName || ''
+  lastName.value = user.lastName || ''
+  email.value = user.email || ''
+  password.value = ''
+  roleUuid.value = user.role?.uuid || null
+  isActive.value = user.isActive ?? true
+  isCouchette.value = user.isCouchette ?? false
+  heureContratInput.value = user.heureContrat != null ? String(user.heureContrat) : ''
+  driverLicenseNumber.value = user.driverLicenseNumber || ''
+  addressStreet.value = user.address?.street || ''
+  addressCity.value = user.address?.city || ''
+  addressPostalCode.value = user.address?.postalCode || ''
+  addressCountry.value = user.address?.country || 'France'
+}
+
+// Extraire le UserDTO depuis la réponse API
+const extractUser = (response: unknown): UserDTO | undefined => {
+  const r = response as any
+  const candidate = r?.data || r?.user || r
+  if (candidate && (candidate.uuid || candidate.email)) {
+    return candidate as UserDTO
+  }
+  return undefined
+}
+
+// Charger les données utilisateur depuis l'API (fallback si pas d'initialUser)
 const loadUserData = async () => {
   if (!props.userUuid) return
 
@@ -231,22 +350,10 @@ const loadUserData = async () => {
     error.value = ''
 
     const response = await usersService.getUserById(props.userUuid)
+    const user = extractUser(response)
 
-    // L'API peut retourner soit { data: UserDTO } soit directement UserDTO
-    const responseAny = response as any
-    const user: UserDTO | undefined = responseAny.data || responseAny
-
-    if (user && (user.uuid || user.email)) {
-      userData.value = user
-      formData.value = {
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        password: '',
-        roleUuid: user.role?.uuid || null,
-        isActive: user.isActive ?? true,
-        isCouchette: user.isCouchette ?? false
-      }
+    if (user) {
+      populateForm(user)
     } else {
       error.value = 'Données utilisateur non trouvées'
     }
@@ -259,15 +366,19 @@ const loadUserData = async () => {
 
 // Réinitialiser le formulaire
 const resetForm = () => {
-  formData.value = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    roleUuid: null,
-    isActive: true,
-    isCouchette: false
-  }
+  firstName.value = ''
+  lastName.value = ''
+  email.value = ''
+  password.value = ''
+  roleUuid.value = null
+  isActive.value = true
+  isCouchette.value = false
+  heureContratInput.value = ''
+  driverLicenseNumber.value = ''
+  addressStreet.value = ''
+  addressCity.value = ''
+  addressPostalCode.value = ''
+  addressCountry.value = 'France'
   userData.value = null
   error.value = ''
   success.value = ''
@@ -281,18 +392,19 @@ const handleSubmit = async () => {
   try {
     saving.value = true
 
-    const dataToSend: any = {
-      firstName: formData.value.firstName,
-      lastName: formData.value.lastName,
-      isActive: formData.value.isActive,
-      roleUuid: formData.value.roleUuid,
-      isCouchette: formData.value.isCouchette
-    }
-
     if (props.isCreating) {
-      dataToSend.email = formData.value.email
-      if (formData.value.password) {
-        dataToSend.password = formData.value.password
+      const dataToSend: any = {
+        firstName: firstName.value,
+        lastName: lastName.value,
+        email: email.value,
+        isActive: isActive.value,
+        isCouchette: isCouchette.value
+      }
+      if (password.value) {
+        dataToSend.password = password.value
+      }
+      if (roleUuid.value) {
+        dataToSend.roleUuid = roleUuid.value
       }
 
       // TODO: Implémenter l'endpoint de création dans le service
@@ -302,13 +414,32 @@ const handleSubmit = async () => {
       messages.success('Utilisateur créé avec succès !', 'Succès')
       handleClose()
     } else if (props.userUuid) {
+      const dataToSend: UpdateUserRequest = {
+        firstName: firstName.value,
+        lastName: lastName.value,
+        isActive: isActive.value,
+        isCouchette: isCouchette.value,
+        address: {
+          street: addressStreet.value,
+          city: addressCity.value,
+          postalCode: addressPostalCode.value,
+          country: addressCountry.value,
+        },
+        driverLicenseNumber: driverLicenseNumber.value,
+        heureContrat: heureContratInput.value ? parseFloat(heureContratInput.value) : null,
+      }
+      if (roleUuid.value) {
+        dataToSend.roleUuid = roleUuid.value
+      }
+
       const response = await usersService.updateUser(props.userUuid, dataToSend)
 
-      if (!response || !response.user) {
+      const updatedUser = extractUser(response)
+      if (!updatedUser) {
         throw new Error('Aucune donnée utilisateur dans la réponse')
       }
 
-      emit('saved', response.user)
+      emit('saved', updatedUser)
       messages.success('Utilisateur modifié avec succès !', 'Succès')
       handleClose()
     }
@@ -320,15 +451,14 @@ const handleSubmit = async () => {
   }
 }
 
-// Fermer le modal
+// Fermer le dialog
 const handleClose = () => {
   emit('update:modelValue', false)
   emit('close')
 }
 
-// Gérer le clic sur l'overlay
-const handleOverlayClick = () => {
-  if (!saving.value) {
+const handleOpenChange = (open: boolean) => {
+  if (!open && !saving.value) {
     handleClose()
   }
 }
@@ -339,7 +469,6 @@ const formatDate = (dateString?: Date | string) => {
   try {
     const date = new Date(dateString)
     if (isNaN(date.getTime())) return '-'
-
     return date.toLocaleString('fr-FR', {
       year: 'numeric',
       month: 'short',
@@ -352,272 +481,3 @@ const formatDate = (dateString?: Date | string) => {
   }
 }
 </script>
-
-<style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: var(--z-index-modal);
-  padding: var(--space-4);
-}
-
-.modal-user {
-  max-width: 520px;
-  width: 100%;
-  background-color: var(--color-bg-primary);
-  border-radius: var(--radius-lg);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-xl);
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-5);
-  position: relative;
-}
-
-.modal-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--color-primary-bg);
-  color: var(--color-primary);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-lg);
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  flex: 1;
-}
-
-.btn-close {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition-base);
-}
-
-.btn-close:hover {
-  background: var(--color-bg-hover);
-  color: var(--color-text-primary);
-}
-
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-12);
-  gap: var(--space-4);
-}
-
-.loading-state p {
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--color-border-primary);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.modal-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.message {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-sm);
-}
-
-.message-error {
-  background-color: var(--color-danger-bg);
-  color: var(--color-danger);
-  border: 1px solid var(--color-danger);
-}
-
-.message-success {
-  background-color: var(--color-success-bg);
-  color: var(--color-success);
-  border: 1px solid var(--color-success);
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-4);
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: var(--space-2);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-}
-
-.role-select {
-  width: 100%;
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-base);
-  transition: all var(--transition-base);
-  font-family: inherit;
-}
-
-.role-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-focus);
-}
-
-.role-select:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.info-section {
-  padding: var(--space-4);
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-primary);
-  border-radius: var(--radius-md);
-  margin-top: var(--space-2);
-}
-
-.info-section-title {
-  margin: 0 0 var(--space-3) 0;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-4);
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.info-item.full-width {
-  grid-column: 1 / -1;
-}
-
-.info-label {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.info-value {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
-  font-weight: var(--font-weight-medium);
-}
-
-.info-uuid {
-  font-family: monospace;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-  word-break: break-all;
-}
-
-.info-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  width: fit-content;
-}
-
-.badge-success {
-  background-color: var(--color-success-bg);
-  color: var(--color-success);
-}
-
-.badge-warning {
-  background-color: var(--color-warning-bg);
-  color: var(--color-warning);
-}
-
-.modal-actions {
-  display: flex;
-  gap: var(--space-3);
-  justify-content: flex-end;
-  margin-top: var(--space-4);
-}
-
-@media (max-width: 768px) {
-  .modal-user {
-    width: 95%;
-    padding: var(--space-4);
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
