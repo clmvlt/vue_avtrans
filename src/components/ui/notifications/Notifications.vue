@@ -153,6 +153,7 @@ import {
   Banknote,
   UserPlus,
   ListChecks,
+  CreditCard,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -292,6 +293,8 @@ const getNotificationIcon = (refType?: string) => {
       return UserPlus
     case 'todo':
       return ListChecks
+    case 'carte_expiration':
+      return CreditCard
     default:
       return Bell
   }
@@ -312,6 +315,8 @@ const getRefTypeLabel = (refType?: string): string => {
       return 'Utilisateur'
     case 'todo':
       return 'Tâche'
+    case 'carte_expiration':
+      return 'Carte'
     default:
       return 'Général'
   }
@@ -414,6 +419,9 @@ const handleNotificationClick = async (notification: any) => {
           break
         case 'todo':
           router.push('/todos')
+          break
+        case 'carte_expiration':
+          router.push('/cartes')
           break
         default:
           router.push('/notifications')

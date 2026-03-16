@@ -238,6 +238,7 @@ import {
   Banknote,
   UserPlus,
   ListChecks,
+  CreditCard,
   Bell,
 } from 'lucide-vue-next'
 
@@ -345,6 +346,9 @@ const handleNotificationClick = async (notification: NotificationDTO) => {
         case 'todo':
           router.push('/todos')
           break
+        case 'carte_expiration':
+          router.push('/cartes')
+          break
       }
     }
   } catch (err) {
@@ -361,6 +365,7 @@ const getNotificationIcon = (refType?: string) => {
     case 'acompte': return Banknote
     case 'user': return UserPlus
     case 'todo': return ListChecks
+    case 'carte_expiration': return CreditCard
     default: return Bell
   }
 }
@@ -374,6 +379,7 @@ const getIconClasses = (refType?: string): string => {
     case 'acompte': return 'bg-green-100 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
     case 'user': return 'bg-primary/10 text-primary border-primary/20'
     case 'todo': return 'bg-muted text-muted-foreground border-border'
+    case 'carte_expiration': return 'bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800'
     default: return 'bg-muted text-muted-foreground border-border'
   }
 }
@@ -387,6 +393,7 @@ const getRefTypeLabel = (refType?: string): string => {
     case 'acompte': return 'Acompte'
     case 'user': return 'Utilisateur'
     case 'todo': return 'Tâche'
+    case 'carte_expiration': return 'Carte'
     default: return 'Général'
   }
 }
