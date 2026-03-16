@@ -110,16 +110,16 @@ export const useUserServices = (userUuid: string) => {
       .map(day => {
         const date = new Date(day.date)
 
-        const workServices = day.services
+        // Tri chronologique mixte (services + pauses mélangés)
+        const allServices = [...day.services]
+          .sort((a: any, b: any) => new Date(a.debut).getTime() - new Date(b.debut).getTime())
+
+        const workSeconds = day.services
           .filter((s: any) => !s.isBreak)
-          .sort((a: any, b: any) => new Date(a.debut).getTime() - new Date(b.debut).getTime())
-
-        const breaks = day.services
+          .reduce((sum: number, s: any) => sum + (s.duree || 0), 0)
+        const breakSeconds = day.services
           .filter((s: any) => s.isBreak)
-          .sort((a: any, b: any) => new Date(a.debut).getTime() - new Date(b.debut).getTime())
-
-        const workSeconds = workServices.reduce((sum: number, s: any) => sum + (s.duree || 0), 0)
-        const breakSeconds = breaks.reduce((sum: number, s: any) => sum + (s.duree || 0), 0)
+          .reduce((sum: number, s: any) => sum + (s.duree || 0), 0)
         const totalSeconds = workSeconds - breakSeconds
 
         const hours = Math.floor(totalSeconds / 3600)
@@ -134,8 +134,7 @@ export const useUserServices = (userUuid: string) => {
             month: 'long',
             year: 'numeric'
           }),
-          workServices,
-          breaks,
+          allServices,
           totalHours,
           totalSeconds
         }

@@ -135,6 +135,13 @@
                   {{ item.isMailVerified ? 'Vérifié' : 'Non' }}
                 </Badge>
               </div>
+
+              <!-- Last vehicle -->
+              <div v-if="getLastVehicle(item.uuid)" class="mt-3 flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2">
+                <Car class="size-4 shrink-0 text-muted-foreground" />
+                <span class="text-sm font-medium">{{ getLastVehicle(item.uuid)!.vehiculeImmat }}</span>
+                <span class="text-xs text-muted-foreground">· {{ formatVehicleDate(getLastVehicle(item.uuid)!.date) }}</span>
+              </div>
             </div>
           </div>
 
@@ -228,6 +235,20 @@
                     </Badge>
                   </TableCell>
 
+                  <!-- Last vehicle -->
+                  <TableCell>
+                    <template v-if="getLastVehicle(item.uuid)">
+                      <div class="flex items-center gap-2">
+                        <Car class="size-4 shrink-0 text-muted-foreground" />
+                        <div class="flex flex-col">
+                          <span class="text-sm font-medium">{{ getLastVehicle(item.uuid)!.vehiculeImmat }}</span>
+                          <span class="text-xs text-muted-foreground">{{ formatVehicleDate(getLastVehicle(item.uuid)!.date) }}</span>
+                        </div>
+                      </div>
+                    </template>
+                    <span v-else class="text-xs italic text-muted-foreground">—</span>
+                  </TableCell>
+
                   <!-- Actions -->
                   <TableCell class="text-right">
                     <div class="flex flex-wrap justify-end gap-1.5">
@@ -268,7 +289,7 @@
 
     <!-- Delete confirmation dialog -->
     <Dialog v-model:open="showDeleteModal">
-      <DialogContent class="sm:max-w-md" @interact-outside.prevent>
+      <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle class="flex items-center gap-2">
             <div class="flex size-10 items-center justify-center rounded-full bg-destructive/15 text-destructive">
@@ -330,6 +351,7 @@
     <UserEditModal
       v-model="showEditModal"
       :user-uuid="userToEdit?.uuid"
+      :initial-user="userToEdit"
       :is-creating="isCreating"
       @saved="handleUserSaved"
       @close="closeEditModal"
@@ -393,7 +415,7 @@ import { useRouter } from 'vue-router'
 import { usersService } from '@/services/users'
 import { useMessages } from '@/composables/useMessages'
 import { useContextMenu } from '@/composables/useContextMenu'
-import type { UserDTO } from '@/models'
+import type { UserDTO, UserLastVehicleDTO } from '@/models'
 import { UserStatus, UserStatusLabels } from '@/enums'
 
 // shadcn components
@@ -434,6 +456,7 @@ import {
   Clock,
   CalendarOff,
   Mail,
+  Car,
 } from 'lucide-vue-next'
 
 // DropdownMenu for mobile actions
@@ -474,6 +497,7 @@ interface TableColumnDef {
 const messages = useMessages()
 const router = useRouter()
 const users = ref<UserWithStatus[]>([])
+const lastVehiclesMap = ref<Map<string, UserLastVehicleDTO>>(new Map())
 const loading = ref(true)
 const error = ref('')
 const showDeleteModal = ref(false)
@@ -562,6 +586,7 @@ const tableColumns = computed<TableColumnDef[]>(() => [
   { key: 'roleName', label: 'Rôle', sortable: true },
   { key: 'statusSort', label: 'Présence', sortable: true },
   { key: 'isActiveSort', label: 'Compte', sortable: true },
+  { key: 'lastVehicle', label: 'Dernier véhicule' },
   { key: 'actions', label: 'Actions', align: 'right' }
 ])
 
@@ -636,17 +661,38 @@ const getPresenceBadgeClass = (status?: UserStatus): string => {
   }
 }
 
+const getLastVehicle = (userUuid?: string) => {
+  if (!userUuid) return null
+  return lastVehiclesMap.value.get(userUuid) ?? null
+}
+
+const formatVehicleDate = (dateStr: string) => {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const isToday = date.toDateString() === now.toDateString()
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const isYesterday = date.toDateString() === yesterday.toDateString()
+
+  if (isToday) return "Aujourd'hui"
+  if (isYesterday) return 'Hier'
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
 const loadUsers = async () => {
   try {
     loading.value = true
     error.value = ''
 
-    const response = await usersService.getUsers()
+    const [usersResponse] = await Promise.all([
+      usersService.getUsers(),
+      loadLastVehicles()
+    ])
 
-    if (response && response.data) {
-      users.value = Array.isArray(response.data) ? response.data : []
-    } else if (Array.isArray(response)) {
-      users.value = response
+    if (usersResponse && usersResponse.data) {
+      users.value = Array.isArray(usersResponse.data) ? usersResponse.data : []
+    } else if (Array.isArray(usersResponse)) {
+      users.value = usersResponse
     } else {
       users.value = []
     }
@@ -655,6 +701,21 @@ const loadUsers = async () => {
     messages.error(error.value, 'Erreur')
   } finally {
     loading.value = false
+  }
+}
+
+const loadLastVehicles = async () => {
+  try {
+    const data = await usersService.getUsersLastVehicles()
+    const map = new Map<string, UserLastVehicleDTO>()
+    if (Array.isArray(data)) {
+      for (const item of data) {
+        map.set(item.userUuid, item)
+      }
+    }
+    lastVehiclesMap.value = map
+  } catch {
+    // Endpoint may not exist yet — silently ignore
   }
 }
 

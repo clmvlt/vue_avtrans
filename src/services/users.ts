@@ -5,8 +5,11 @@ import type {
   UserWithStatusDTO,
   UserWithHoursDTO,
   UserLastKilometrageResponse,
+  UserLastVehicleDTO,
   NotificationPreferencesDTO,
-  UpdateNotificationPreferencesRequest
+  UpdateNotificationPreferencesRequest,
+  UsersContractComparisonListResponse,
+  UserContractComparisonResponse
 } from '@/models'
 import type { SuccessMessageResponse, ApiResponse } from '@/types'
 
@@ -104,6 +107,41 @@ export class UsersService {
       'users/me/notification-preferences',
       preferences
     )
+  }
+
+  /**
+   * [ADMIN] Get last vehicle used per user
+   * @returns Promise with array of last vehicle info per user
+   */
+  async getUsersLastVehicles(): Promise<UserLastVehicleDTO[]> {
+    return apiClient.get<UserLastVehicleDTO[]>('users/last-vehicles')
+  }
+
+  /**
+   * [ADMIN] Get contract hours comparison for all users
+   * @param year - Year (defaults to current)
+   * @param month - Month (defaults to current)
+   */
+  async getContractComparison(year?: number, month?: number): Promise<UsersContractComparisonListResponse> {
+    const params = new URLSearchParams()
+    if (year != null) params.set('year', String(year))
+    if (month != null) params.set('month', String(month))
+    const query = params.toString()
+    return apiClient.get<UsersContractComparisonListResponse>(`users/contract-hours${query ? `?${query}` : ''}`)
+  }
+
+  /**
+   * [ADMIN] Get contract hours comparison for a specific user
+   * @param uuid - User UUID
+   * @param year - Year (defaults to current)
+   * @param month - Month (defaults to current)
+   */
+  async getUserContractComparison(uuid: string, year?: number, month?: number): Promise<UserContractComparisonResponse> {
+    const params = new URLSearchParams()
+    if (year != null) params.set('year', String(year))
+    if (month != null) params.set('month', String(month))
+    const query = params.toString()
+    return apiClient.get<UserContractComparisonResponse>(`users/${uuid}/contract-hours${query ? `?${query}` : ''}`)
   }
 
   /**

@@ -2,6 +2,14 @@
   <div class="min-h-screen bg-background">
     <main class="px-4 py-4 md:px-6 md:py-6">
       <div class="mx-auto max-w-[1200px] space-y-6">
+        <!-- User name header -->
+        <div v-if="userName" class="flex items-center gap-3">
+          <div class="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <User class="size-5" />
+          </div>
+          <h1 class="text-xl font-bold text-foreground">{{ userName }}</h1>
+        </div>
+
         <!-- Status card -->
         <div class="rounded-lg border bg-card p-5 shadow-sm">
           <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
@@ -179,27 +187,39 @@
                 <span class="font-semibold capitalize text-foreground">{{ day.dayName }}</span>
                 <span class="text-sm text-muted-foreground">{{ day.dateFormatted }}</span>
               </div>
-              <div class="flex items-center gap-2 rounded-md bg-background px-3 py-1.5 text-sm font-semibold text-primary">
-                <Clock class="size-4" />
-                <span>{{ day.totalHours }}</span>
+              <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 rounded-md bg-background px-3 py-1.5 text-sm font-semibold text-primary">
+                  <Clock class="size-4" />
+                  <span>{{ day.totalHours }}</span>
+                </div>
+                <Button
+                  size="sm"
+                  class="bg-primary text-primary-foreground hover:bg-primary/90"
+                  @click="openCreateModalForDate(day.date)"
+                >
+                  <Plus class="mr-1.5 size-4" />
+                  Ajouter un service
+                </Button>
               </div>
             </div>
 
             <div class="flex flex-col gap-2 p-3">
-              <!-- Work services -->
+              <!-- All services in chronological order -->
               <div
-                v-for="service in day.workServices"
+                v-for="service in day.allServices"
                 :key="service.uuid"
                 class="flex items-center gap-3 rounded-md p-3 transition-colors hover:bg-muted/50"
               >
-                <div class="h-8 w-1 shrink-0 rounded-full bg-green-500" />
+                <div class="h-8 w-1 shrink-0 rounded-full" :class="service.isBreak ? 'bg-amber-500' : 'bg-green-500'" />
                 <div class="flex flex-1 items-center justify-between gap-3">
-                  <div class="flex items-center gap-2 font-mono text-sm">
+                  <div class="flex flex-wrap items-center gap-2 font-mono text-sm">
+                    <Badge v-if="service.isBreak" variant="outline" class="border-amber-500/50 font-sans text-amber-600 dark:text-amber-400">Pause</Badge>
                     <span class="font-medium text-foreground">{{ formatTime(service.debut) }}</span>
                     <ArrowRight class="size-3 text-muted-foreground" />
                     <span class="font-medium text-foreground">{{ formatTime(service.fin) || '--:--' }}</span>
+                    <Badge v-if="!service.fin" variant="outline" class="border-green-500/50 font-sans text-green-600 animate-pulse dark:text-green-400">En cours</Badge>
                   </div>
-                  <span class="font-mono text-sm text-muted-foreground">{{ formatDuration(service.duree || 0) }}</span>
+                  <span v-if="service.duree" class="font-mono text-sm text-muted-foreground">{{ formatDuration(service.duree) }}</span>
                 </div>
                 <!-- Desktop actions -->
                 <div class="hidden shrink-0 gap-1 md:flex">
@@ -254,76 +274,6 @@
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-
-              <!-- Breaks -->
-              <div
-                v-for="breakService in day.breaks"
-                :key="breakService.uuid"
-                class="flex items-center gap-3 rounded-md p-3 transition-colors hover:bg-muted/50"
-              >
-                <div class="h-8 w-1 shrink-0 rounded-full bg-amber-500" />
-                <div class="flex flex-1 items-center justify-between gap-3">
-                  <div class="flex flex-wrap items-center gap-2 font-mono text-sm">
-                    <Badge variant="outline" class="border-amber-500/50 font-sans text-amber-600 dark:text-amber-400">Pause</Badge>
-                    <span class="font-medium text-foreground">{{ formatTime(breakService.debut) }}</span>
-                    <ArrowRight class="size-3 text-muted-foreground" />
-                    <span class="font-medium text-foreground">{{ formatTime(breakService.fin) || '--:--' }}</span>
-                  </div>
-                  <span class="font-mono text-sm text-muted-foreground">{{ formatDuration(breakService.duree || 0) }}</span>
-                </div>
-                <!-- Desktop actions -->
-                <div class="hidden shrink-0 gap-1 md:flex">
-                  <Button
-                    v-if="hasValidLocation(breakService)"
-                    variant="ghost"
-                    size="icon-sm"
-                    @click="showLocationMap(breakService, formatTime)"
-                    title="Localisation"
-                  >
-                    <MapPin class="size-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    @click="editService(breakService)"
-                    title="Modifier"
-                  >
-                    <Pencil class="size-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    class="hover:text-destructive"
-                    @click="confirmDelete(breakService)"
-                    title="Supprimer"
-                  >
-                    <Trash2 class="size-3.5" />
-                  </Button>
-                </div>
-                <!-- Mobile actions -->
-                <DropdownMenu>
-                  <DropdownMenuTrigger as-child class="md:hidden">
-                    <Button variant="ghost" size="icon-sm">
-                      <MoreVertical class="size-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" class="w-44">
-                    <DropdownMenuItem v-if="hasValidLocation(breakService)" @click="showLocationMap(breakService, formatTime)">
-                      <MapPin class="mr-2 size-4" />
-                      Localisation
-                    </DropdownMenuItem>
-                    <DropdownMenuItem @click="editService(breakService)">
-                      <Pencil class="mr-2 size-4" />
-                      Modifier
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem class="text-destructive focus:text-destructive" @click="confirmDelete(breakService)">
-                      <Trash2 class="mr-2 size-4" />
-                      Supprimer
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
             </div>
           </div>
         </div>
@@ -371,8 +321,14 @@
         </DialogHeader>
 
         <form @submit.prevent="handleSubmit" class="space-y-4">
-          <!-- Type tabs (Service / Pause) -->
-          <div class="grid grid-cols-2 gap-2 rounded-lg bg-muted p-1">
+          <!-- Type tabs (Service / Pause) — lecture seule en édition -->
+          <div v-if="showEditModal" class="flex items-center gap-2 rounded-lg bg-muted px-4 py-2.5">
+            <component :is="formData.isBreak ? Pause : Play" class="size-4" :class="formData.isBreak ? 'text-amber-500' : 'text-green-500'" />
+            <span class="text-sm font-medium" :class="formData.isBreak ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'">
+              {{ formData.isBreak ? 'Pause' : 'Service' }}
+            </span>
+          </div>
+          <div v-else class="grid grid-cols-2 gap-2 rounded-lg bg-muted p-1">
             <button
               type="button"
               :class="[
@@ -454,9 +410,18 @@
     <Dialog v-model:open="showDeleteModal">
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Supprimer ce service ?</DialogTitle>
+          <DialogTitle>Supprimer ce {{ serviceToDelete?.isBreak ? 'pause' : 'service' }} ?</DialogTitle>
           <DialogDescription>Cette action est irreversible.</DialogDescription>
         </DialogHeader>
+        <div v-if="serviceToDelete" class="flex items-center gap-3 rounded-md bg-muted/50 px-4 py-3">
+          <div class="h-6 w-1 shrink-0 rounded-full" :class="serviceToDelete.isBreak ? 'bg-amber-500' : 'bg-green-500'" />
+          <span class="font-mono text-sm font-medium">
+            {{ formatTime(serviceToDelete.debut) }} → {{ formatTime(serviceToDelete.fin) || '--:--' }}
+          </span>
+          <span v-if="serviceToDelete.duree" class="font-mono text-sm text-muted-foreground">
+            ({{ formatDuration(serviceToDelete.duree) }})
+          </span>
+        </div>
         <DialogFooter>
           <Button variant="outline" @click="cancelDelete">Annuler</Button>
           <Button variant="destructive" @click="handleDelete" :disabled="deleting">
@@ -530,6 +495,7 @@ import {
   CircleAlert,
   ClipboardList,
   MoreVertical,
+  User,
 } from 'lucide-vue-next'
 
 // DropdownMenu for mobile actions
@@ -560,6 +526,7 @@ const {
   services,
   loading,
   error,
+  userName,
   userStatus,
   activeServiceStart,
   actionLoading,
@@ -669,6 +636,20 @@ const openCreateModal = () => {
     debutDate: getTodayDate(),
     debutTime: getCurrentTime(),
     finDate: '',
+    finTime: '',
+    latitude: null,
+    longitude: null,
+    isBreak: false
+  }
+  formError.value = ''
+  showCreateModal.value = true
+}
+
+const openCreateModalForDate = (date: string) => {
+  formData.value = {
+    debutDate: date,
+    debutTime: '',
+    finDate: date,
     finTime: '',
     latitude: null,
     longitude: null,
