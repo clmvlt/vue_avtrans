@@ -215,7 +215,7 @@
                 <p v-if="item.description" class="mb-2 text-sm leading-relaxed text-muted-foreground">
                   {{ truncateText(item.description, 100) }}
                 </p>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
                   <div v-if="isMecanicien" class="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -248,6 +248,15 @@
                   <span v-else class="text-sm font-semibold" :class="(item.quantite || 0) <= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'">
                     {{ item.quantite }} {{ item.unite }}
                   </span>
+                  <template v-if="item.prixUnitaire != null && item.prixUnitaire > 0">
+                    <span class="text-sm text-muted-foreground">·</span>
+                    <span class="text-sm text-muted-foreground">
+                      {{ formatPrice(item.prixUnitaire) }} € / {{ item.unite || 'pièce' }}
+                    </span>
+                    <span class="text-sm font-semibold text-primary">
+                      Total : {{ formatPrice((item.quantite || 0) * item.prixUnitaire) }} €
+                    </span>
+                  </template>
                 </div>
               </div>
               <!-- Desktop actions -->
@@ -353,7 +362,7 @@
             ></textarea>
           </div>
 
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="space-y-2">
               <label for="quantite" class="text-sm font-medium text-foreground">Quantité *</label>
               <Input
@@ -366,6 +375,21 @@
               />
             </div>
 
+            <div class="space-y-2">
+              <label for="prixUnitaire" class="text-sm font-medium text-foreground">Prix unitaire HT (€)</label>
+              <Input
+                id="prixUnitaire"
+                v-model.number="itemFormData.prixUnitaire"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                :disabled="savingItem"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="space-y-2">
               <label class="text-sm font-medium text-foreground">Unité *</label>
               <Select
@@ -626,6 +650,7 @@ const itemFormData = ref({
   nom: '',
   description: '',
   quantite: 0,
+  prixUnitaire: undefined as number | undefined,
   unite: 'pièce',
   categoryId: ''
 })
@@ -794,6 +819,10 @@ const truncateText = (text: string, maxLength: number): string => {
   return text.substring(0, maxLength) + '...'
 }
 
+const formatPrice = (value: number): string => {
+  return value.toFixed(2).replace('.', ',')
+}
+
 // Mise à jour rapide de la quantité
 const updateQuantity = async (item: StockItemDTO, delta: number) => {
   if (!item.id) return
@@ -834,6 +863,7 @@ const openCreateItemModal = () => {
     nom: '',
     description: '',
     quantite: 0,
+    prixUnitaire: undefined,
     unite: 'pièce',
     categoryId: preselectedCategoryId
   }
@@ -849,6 +879,7 @@ const openEditItemModal = (item: StockItemDTO) => {
     nom: item.nom || '',
     description: item.description || '',
     quantite: item.quantite || 0,
+    prixUnitaire: item.prixUnitaire ?? undefined,
     unite: item.unite || 'pièce',
     categoryId: item.category?.id || ''
   }
@@ -873,6 +904,7 @@ const handleItemFormSubmit = async () => {
       nom: itemFormData.value.nom,
       description: itemFormData.value.description || undefined,
       quantite: itemFormData.value.quantite,
+      prixUnitaire: itemFormData.value.prixUnitaire !== undefined ? itemFormData.value.prixUnitaire : undefined,
       unite: itemFormData.value.unite,
       categoryId: itemFormData.value.categoryId || undefined
     }

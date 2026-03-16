@@ -6,6 +6,7 @@ export interface StockItemDTO {
   nom?: string
   description?: string
   quantite?: number
+  prixUnitaire?: number
   category?: StockCategoryDTO
   unite?: string
   createdAt?: string

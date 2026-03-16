@@ -10,6 +10,7 @@ export interface StockItemCreateRequest {
   nom: string
   description?: string
   quantite: number
+  prixUnitaire?: number
   categoryId?: string
   unite: string
 }
@@ -22,6 +23,7 @@ export interface StockItemUpdateRequest {
   nom?: string
   description?: string
   quantite?: number
+  prixUnitaire?: number
   categoryId?: string
   unite?: string
 }
