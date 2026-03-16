@@ -1,17 +1,9 @@
 /**
- * Absence type DTO
+ * Absence type DTO — matches the API response
  */
 export interface AbsenceTypeDTO {
   uuid?: string;
   name?: string;
   color?: string;
   createdAt?: Date | string;
-}
-
-/**
- * Absence type create request
- */
-export interface AbsenceTypeCreateRequest {
-  name: string;
-  color?: string;
 }

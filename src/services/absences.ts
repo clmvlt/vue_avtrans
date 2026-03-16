@@ -33,6 +33,19 @@ export interface AdminAbsenceCreateRequest {
 }
 
 /**
+ * Admin absence update request — PUT /absences/admin/{uuid}
+ * All fields optional (partial update). Use null to explicitly clear a field.
+ */
+export interface AdminAbsenceUpdateRequest {
+  startDate?: string
+  endDate?: string
+  reason?: string | null
+  absenceTypeUuid?: string | null
+  customType?: string | null
+  period?: string
+}
+
+/**
  * Absence validation request
  */
 export interface AbsenceValidationRequest {
@@ -193,6 +206,16 @@ export class AbsencesService {
    */
   async rejectAbsence(uuid: string, rejectionReason?: string): Promise<AbsenceResponse> {
     return this.validateAbsence(uuid, { approved: false, rejectionReason })
+  }
+
+  /**
+   * [ADMIN] Update a non-approved absence
+   * @param uuid - Absence UUID
+   * @param data - Fields to update
+   * @returns Promise with updated absence
+   */
+  async updateAbsenceByAdmin(uuid: string, data: AdminAbsenceUpdateRequest): Promise<AbsenceResponse> {
+    return apiClient.put<AbsenceResponse>(`absences/admin/${uuid}`, data)
   }
 
   /**

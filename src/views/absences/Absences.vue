@@ -103,6 +103,10 @@
                       <Eye class="mr-2 size-4" />
                       Détails
                     </DropdownMenuItem>
+                    <DropdownMenuItem v-if="canEdit(item)" @click="openEditModal(item)">
+                      <Pencil class="mr-2 size-4" />
+                      Modifier
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem class="text-destructive focus:text-destructive" @click="openDeleteModal(item)">
                       <Trash2 class="mr-2 size-4" />
@@ -273,6 +277,15 @@
                         Détails
                       </Button>
                       <Button
+                        v-if="canEdit(item)"
+                        size="sm"
+                        variant="outline"
+                        @click.stop="openEditModal(item)"
+                        title="Modifier"
+                      >
+                        Modifier
+                      </Button>
+                      <Button
                         size="sm"
                         variant="destructive"
                         @click.stop="openDeleteModal(item)"
@@ -322,6 +335,14 @@
       @close="showCreateModal = false"
     />
 
+    <!-- Modal d'édition -->
+    <AbsenceEditModal
+      v-model="showEditModal"
+      :absence="selectedAbsence"
+      @saved="handleAbsenceSaved"
+      @close="closeEditModal"
+    />
+
     <!-- Modal de détails -->
     <AbsenceDetailModal
       v-model="showDetailModal"
@@ -329,6 +350,7 @@
       @close="closeDetailModal"
       @approve="handleApproveFromDetail"
       @reject="handleRejectFromDetail"
+      @edit="handleEditFromDetail"
     />
 
     <!-- Modal de validation -->
@@ -371,6 +393,13 @@
       <ContextMenuItem @click="contextMenu.handleAction('details', handleContextAction)">
         <template #icon><Eye class="size-4" /></template>
         Détails
+      </ContextMenuItem>
+      <ContextMenuItem
+        v-if="contextMenu.state.value.entity && canEdit(contextMenu.state.value.entity)"
+        @click="contextMenu.handleAction('edit', handleContextAction)"
+      >
+        <template #icon><Pencil class="size-4" /></template>
+        Modifier
       </ContextMenuItem>
       <ContextMenuSeparator />
       <ContextMenuItem destructive @click="contextMenu.handleAction('delete', handleContextAction)">
@@ -420,6 +449,7 @@ import {
   Check,
   X,
   Eye,
+  Pencil,
   Trash2,
 } from 'lucide-vue-next'
 
@@ -543,6 +573,7 @@ const formatDateShort = (dateString: string): string => {
 
 // Modals
 const showCreateModal = ref(false)
+const showEditModal = ref(false)
 const showDetailModal = ref(false)
 const showValidateModal = ref(false)
 const showDeleteModal = ref(false)
@@ -557,6 +588,8 @@ watch(() => contextMenuRef.value?.menuElement, (el) => {
   contextMenu.menuRef.value = el ?? null
 })
 
+const canEdit = (absence: AbsenceDTO) => absence.status !== 'APPROVED'
+
 const handleContextAction = (absence: AbsenceDTO, action: string) => {
   switch (action) {
     case 'approve':
@@ -564,6 +597,9 @@ const handleContextAction = (absence: AbsenceDTO, action: string) => {
       break
     case 'reject':
       openValidateModal(absence, false)
+      break
+    case 'edit':
+      openEditModal(absence)
       break
     case 'details':
       openDetailModal(absence)
@@ -827,6 +863,16 @@ const openCreateModal = () => {
   showCreateModal.value = true
 }
 
+const openEditModal = (absence: AbsenceDTO) => {
+  selectedAbsence.value = absence
+  showEditModal.value = true
+}
+
+const closeEditModal = () => {
+  showEditModal.value = false
+  selectedAbsence.value = null
+}
+
 const openDetailModal = (absence: AbsenceDTO) => {
   selectedAbsence.value = absence
   showDetailModal.value = true
@@ -873,9 +919,14 @@ const handleRejectFromDetail = (absence: AbsenceDTO) => {
   openValidateModal(absence, false)
 }
 
+const handleEditFromDetail = (absence: AbsenceDTO) => {
+  showDetailModal.value = false
+  openEditModal(absence)
+}
+
 // Actions
 const handleAbsenceSaved = () => {
-  loadAbsences(0)
+  loadAbsences(pagination.value.currentPage)
 }
 
 const handleValidated = () => {

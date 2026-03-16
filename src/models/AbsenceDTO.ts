@@ -2,7 +2,7 @@ import { UserDTO } from './UserDTO';
 import { AbsenceTypeDTO } from './AbsenceTypeDTO';
 
 /**
- * Absence DTO
+ * Absence DTO — matches the API AbsenceDTO response
  */
 export interface AbsenceDTO {
   uuid?: string;
@@ -12,7 +12,9 @@ export interface AbsenceDTO {
   reason?: string;
   absenceType?: AbsenceTypeDTO;
   customType?: string;
+  /** FULL_DAY | MORNING | AFTERNOON */
   period?: string;
+  /** PENDING | APPROVED | REJECTED */
   status?: string;
   validatedBy?: UserDTO;
   validatedAt?: Date | string;
@@ -22,56 +24,7 @@ export interface AbsenceDTO {
 }
 
 /**
- * Absence create request
- */
-export interface AbsenceCreateRequest {
-  startDate: string;
-  endDate: string;
-  reason?: string;
-  absenceTypeUuid?: string;
-  customType?: string;
-  period?: string;
-}
-
-/**
- * Admin absence create request
- */
-export interface AdminAbsenceCreateRequest {
-  userUuid: string;
-  startDate: string;
-  endDate: string;
-  reason?: string;
-  absenceTypeUuid?: string;
-  customType?: string;
-  period?: string;
-  approved?: boolean;
-}
-
-/**
- * Absence validation request
- */
-export interface AbsenceValidationRequest {
-  approved: boolean;
-  rejectionReason?: string;
-}
-
-/**
- * Absence search request
- */
-export interface AbsenceSearchRequest {
-  startDate?: string;
-  endDate?: string;
-  status?: string;
-  absenceTypeUuid?: string;
-  page?: number;
-  size?: number;
-  sortBy?: string;
-  sortDirection?: string;
-  includePast?: boolean;
-}
-
-/**
- * Planning user DTO
+ * Planning user DTO — matches GET /absences/admin/planning response
  */
 export interface PlanningUserDTO {
   uuid?: string;

@@ -2,8 +2,10 @@
   <Dialog v-model:open="localOpen">
     <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Nouvelle absence</DialogTitle>
-        <DialogDescription>Créer une nouvelle absence pour un employé</DialogDescription>
+        <DialogTitle>{{ isEditMode ? "Modifier l'absence" : 'Nouvelle absence' }}</DialogTitle>
+        <DialogDescription>
+          {{ isEditMode ? "Modifier les informations de l'absence" : 'Créer une nouvelle absence pour un employé' }}
+        </DialogDescription>
       </DialogHeader>
 
       <div v-if="loading" class="flex flex-col items-center justify-center gap-4 py-12">
@@ -17,8 +19,27 @@
           {{ error }}
         </div>
 
-        <!-- Employé -->
-        <div class="flex flex-col gap-2">
+        <!-- Info employé (edit mode) -->
+        <div v-if="isEditMode && absence?.user" class="flex items-center gap-3 rounded-lg border border-border bg-muted/50 p-3">
+          <div class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
+            <img
+              v-if="absence.user.pictureUrl"
+              :src="absence.user.pictureUrl"
+              :alt="`Photo de ${absence.user.firstName}`"
+              class="size-full object-cover"
+            />
+            <span v-else class="flex size-full items-center justify-center bg-primary text-sm font-semibold text-primary-foreground">
+              {{ getInitials(absence.user.firstName, absence.user.lastName) }}
+            </span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-sm font-medium text-foreground">{{ absence.user.firstName }} {{ absence.user.lastName }}</span>
+            <span class="text-xs text-muted-foreground">{{ absence.user.email }}</span>
+          </div>
+        </div>
+
+        <!-- Employé (create mode) -->
+        <div v-if="!isEditMode" class="flex flex-col gap-2">
           <label class="text-sm font-medium text-foreground">Employé *</label>
           <Select
             :model-value="formData.userUuid"
@@ -35,20 +56,20 @@
         <!-- Dates -->
         <div class="grid grid-cols-2 gap-4">
           <div class="flex flex-col gap-2">
-            <label for="createStartDate" class="text-sm font-medium text-foreground">Date de début *</label>
+            <label for="editStartDate" class="text-sm font-medium text-foreground">Date de début *</label>
             <Input
               type="date"
-              id="createStartDate"
+              id="editStartDate"
               v-model="formData.startDate"
               required
               :disabled="saving"
             />
           </div>
           <div class="flex flex-col gap-2">
-            <label for="createEndDate" class="text-sm font-medium text-foreground">Date de fin *</label>
+            <label for="editEndDate" class="text-sm font-medium text-foreground">Date de fin *</label>
             <Input
               type="date"
-              id="createEndDate"
+              id="editEndDate"
               v-model="formData.endDate"
               required
               :disabled="saving"
@@ -95,10 +116,10 @@
 
         <!-- Type personnalisé -->
         <div v-if="formData.absenceTypeUuid === 'custom'" class="flex flex-col gap-2">
-          <label for="createCustomType" class="text-sm font-medium text-foreground">Type personnalisé *</label>
+          <label for="editCustomType" class="text-sm font-medium text-foreground">Type personnalisé *</label>
           <Input
             type="text"
-            id="createCustomType"
+            id="editCustomType"
             v-model="formData.customType"
             placeholder="Ex: Formation, Événement familial..."
             :disabled="saving"
@@ -107,9 +128,9 @@
 
         <!-- Motif -->
         <div class="flex flex-col gap-2">
-          <label for="createReason" class="text-sm font-medium text-foreground">Motif</label>
+          <label for="editReason" class="text-sm font-medium text-foreground">Motif</label>
           <Textarea
-            id="createReason"
+            id="editReason"
             v-model="formData.reason"
             placeholder="Motif de l'absence..."
             :disabled="saving"
@@ -117,8 +138,8 @@
           />
         </div>
 
-        <!-- Approuver directement -->
-        <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-accent/50 has-[[data-state=checked]]:border-primary/30 has-[[data-state=checked]]:bg-primary/5">
+        <!-- Approuver directement (create mode only) -->
+        <label v-if="!isEditMode" class="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-accent/50 has-[[data-state=checked]]:border-primary/30 has-[[data-state=checked]]:bg-primary/5">
           <Checkbox
             :checked="formData.approved"
             @update:checked="(val: boolean) => formData.approved = val"
@@ -130,6 +151,12 @@
           </div>
         </label>
 
+        <!-- Info: REJECTED repasse en PENDING -->
+        <div v-if="isEditMode && absence?.status === 'REJECTED'" class="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+          <AlertCircle class="size-4 shrink-0" />
+          La modification repassera cette absence en statut « En attente »
+        </div>
+
         <DialogFooter>
           <Button type="button" variant="outline" @click="handleClose" :disabled="saving">
             Annuler
@@ -139,7 +166,7 @@
             :disabled="saving || !isFormValid"
           >
             <LoaderCircle v-if="saving" class="size-4 animate-spin mr-2" />
-            Créer l'absence
+            {{ isEditMode ? "Enregistrer" : "Créer l'absence" }}
           </Button>
         </DialogFooter>
       </form>
@@ -163,9 +190,12 @@ import type { AbsenceDTO, AbsenceTypeDTO, UserDTO } from '@/models'
 
 interface Props {
   modelValue: boolean
+  absence?: AbsenceDTO | null
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  absence: null
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
@@ -174,6 +204,8 @@ const emit = defineEmits<{
 }>()
 
 const messages = useMessages()
+
+const isEditMode = computed(() => !!props.absence?.uuid)
 
 // Local open state synced with modelValue
 const localOpen = computed({
@@ -228,7 +260,7 @@ const absenceTypeOptions = computed(() => {
 
 // Validation
 const isFormValid = computed(() => {
-  const hasUser = !!formData.value.userUuid
+  const hasUser = isEditMode.value || !!formData.value.userUuid
   const hasStartDate = !!formData.value.startDate
   const hasEndDate = !!formData.value.endDate
   const hasType = formData.value.absenceTypeUuid === 'custom'
@@ -237,6 +269,12 @@ const isFormValid = computed(() => {
 
   return hasUser && hasStartDate && hasEndDate && hasType
 })
+
+const getInitials = (firstName?: string, lastName?: string): string => {
+  const first = firstName ? firstName.charAt(0).toUpperCase() : ''
+  const last = lastName ? lastName.charAt(0).toUpperCase() : ''
+  return first + last || '?'
+}
 
 // Charger les données quand le modal s'ouvre
 watch(() => props.modelValue, async (isOpen) => {
@@ -251,23 +289,29 @@ const loadData = async () => {
   error.value = ''
 
   try {
-    // Charger utilisateurs et types en parallèle
-    const [usersResponse, typesResponse] = await Promise.all([
-      usersService.getUsers(),
-      absenceTypesService.getAbsenceTypes()
-    ])
-
-    // Utilisateurs
-    if (usersResponse && usersResponse.data) {
-      users.value = Array.isArray(usersResponse.data) ? usersResponse.data : []
-    } else if (Array.isArray(usersResponse)) {
-      users.value = usersResponse as unknown as UserDTO[]
+    if (isEditMode.value) {
+      // En mode édition, on charge seulement les types
+      const typesResponse = await absenceTypesService.getAbsenceTypes()
+      absenceTypes.value = (typesResponse as AbsenceTypeListResponse).types || []
     } else {
-      users.value = []
-    }
+      // En mode création, on charge utilisateurs et types en parallèle
+      const [usersResponse, typesResponse] = await Promise.all([
+        usersService.getUsers(),
+        absenceTypesService.getAbsenceTypes()
+      ])
 
-    // Types d'absence
-    absenceTypes.value = (typesResponse as AbsenceTypeListResponse).types || []
+      // Utilisateurs
+      if (usersResponse && usersResponse.data) {
+        users.value = Array.isArray(usersResponse.data) ? usersResponse.data : []
+      } else if (Array.isArray(usersResponse)) {
+        users.value = usersResponse as unknown as UserDTO[]
+      } else {
+        users.value = []
+      }
+
+      // Types d'absence
+      absenceTypes.value = (typesResponse as AbsenceTypeListResponse).types || []
+    }
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Erreur lors du chargement'
   } finally {
@@ -276,18 +320,35 @@ const loadData = async () => {
 }
 
 const resetForm = () => {
-  const today = new Date().toISOString().split('T')[0] || ''
-  formData.value = {
-    userUuid: '',
-    startDate: today,
-    endDate: today,
-    period: 'FULL_DAY',
-    absenceTypeUuid: '',
-    customType: '',
-    reason: '',
-    approved: false
-  }
   error.value = ''
+
+  if (props.absence && isEditMode.value) {
+    // Mode édition : pré-remplir avec les données de l'absence
+    const a = props.absence
+    formData.value = {
+      userUuid: a.user?.uuid || '',
+      startDate: a.startDate ? String(a.startDate).split('T')[0]! : '',
+      endDate: a.endDate ? String(a.endDate).split('T')[0]! : '',
+      period: a.period || 'FULL_DAY',
+      absenceTypeUuid: a.customType ? 'custom' : (a.absenceType?.uuid || ''),
+      customType: a.customType || '',
+      reason: a.reason || '',
+      approved: false
+    }
+  } else {
+    // Mode création
+    const today = new Date().toISOString().split('T')[0] || ''
+    formData.value = {
+      userUuid: '',
+      startDate: today,
+      endDate: today,
+      period: 'FULL_DAY',
+      absenceTypeUuid: '',
+      customType: '',
+      reason: '',
+      approved: false
+    }
+  }
 }
 
 const handleSubmit = async () => {
@@ -299,22 +360,39 @@ const handleSubmit = async () => {
 
     const isCustom = formData.value.absenceTypeUuid === 'custom'
 
-    const response = await absencesService.createAbsenceForUser({
-      userUuid: formData.value.userUuid,
-      startDate: formData.value.startDate,
-      endDate: formData.value.endDate,
-      period: formData.value.period,
-      absenceTypeUuid: isCustom ? undefined : formData.value.absenceTypeUuid,
-      customType: isCustom ? formData.value.customType.trim() : undefined,
-      reason: formData.value.reason || undefined,
-      approved: formData.value.approved
-    })
+    if (isEditMode.value) {
+      // Mode édition — envoyer null pour effacer les champs (mise à jour partielle)
+      const response = await absencesService.updateAbsenceByAdmin(props.absence!.uuid!, {
+        startDate: formData.value.startDate,
+        endDate: formData.value.endDate,
+        period: formData.value.period,
+        absenceTypeUuid: isCustom ? null : formData.value.absenceTypeUuid,
+        customType: isCustom ? formData.value.customType.trim() : null,
+        reason: formData.value.reason.trim() || null
+      })
 
-    emit('saved', response.absence)
-    messages.success('Absence créée avec succès', 'Succès')
+      emit('saved', response.absence)
+      messages.success('Absence modifiée avec succès', 'Succès')
+    } else {
+      // Mode création
+      const response = await absencesService.createAbsenceForUser({
+        userUuid: formData.value.userUuid,
+        startDate: formData.value.startDate,
+        endDate: formData.value.endDate,
+        period: formData.value.period,
+        absenceTypeUuid: isCustom ? undefined : formData.value.absenceTypeUuid,
+        customType: isCustom ? formData.value.customType.trim() : undefined,
+        reason: formData.value.reason || undefined,
+        approved: formData.value.approved
+      })
+
+      emit('saved', response.absence)
+      messages.success('Absence créée avec succès', 'Succès')
+    }
+
     handleClose()
   } catch (err: unknown) {
-    error.value = err instanceof Error ? err.message : 'Erreur lors de la création'
+    error.value = err instanceof Error ? err.message : (isEditMode.value ? 'Erreur lors de la modification' : 'Erreur lors de la création')
     messages.error(error.value, 'Erreur')
   } finally {
     saving.value = false

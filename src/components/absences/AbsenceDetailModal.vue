@@ -118,6 +118,9 @@
         <Button variant="outline" @click="handleClose">
           Fermer
         </Button>
+        <Button v-if="absence && absence.status !== 'APPROVED'" variant="outline" @click="handleEdit">
+          Modifier
+        </Button>
         <template v-if="absence?.status === 'PENDING'">
           <Button variant="default" @click="handleApprove">
             Approuver
@@ -151,6 +154,7 @@ const emit = defineEmits<{
   'close': []
   'approve': [absence: AbsenceDTO]
   'reject': [absence: AbsenceDTO]
+  'edit': [absence: AbsenceDTO]
 }>()
 
 const localOpen = computed({
@@ -219,6 +223,10 @@ const getStatusText = (status?: string): string => {
 const handleClose = () => {
   emit('update:modelValue', false)
   emit('close')
+}
+
+const handleEdit = () => {
+  emit('edit', props.absence!)
 }
 
 const handleApprove = () => {
