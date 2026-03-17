@@ -30,12 +30,74 @@
         </div>
       </div>
 
-      <!-- ZONE DROITE — Notifications + Menu -->
+      <!-- ZONE DROITE — Notifications + Avatar + Menu -->
       <div class="flex shrink-0 items-center gap-1.5">
         <!-- Notifications (masqué sur mobile) -->
         <div class="hidden sm:block">
           <Notifications />
         </div>
+
+        <!-- Avatar utilisateur avec dropdown -->
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <button class="flex size-9 cursor-pointer items-center justify-center rounded-full ring-offset-background transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" title="Mon compte">
+              <Avatar class="size-8">
+                <AvatarImage v-if="userImage" :src="userImage" :alt="userName" class="object-cover" />
+                <AvatarFallback class="bg-primary text-xs font-bold text-primary-foreground">
+                  {{ userInitials || '?' }}
+                </AvatarFallback>
+              </Avatar>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="w-56">
+            <DropdownMenuLabel class="font-normal">
+              <div class="flex flex-col gap-1">
+                <p class="text-sm font-medium leading-none">{{ userName }}</p>
+                <p class="text-xs leading-none text-muted-foreground">{{ userEmail }}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem as-child>
+                <router-link to="/profile" class="flex w-full cursor-pointer items-center gap-2">
+                  <UserPen class="size-4" />
+                  Mon profil
+                </router-link>
+              </DropdownMenuItem>
+              <DropdownMenuItem @click="toggleTheme" class="cursor-pointer gap-2">
+                <Sun v-if="isDark" class="size-4" />
+                <Moon v-else class="size-4" />
+                {{ isDark ? 'Mode clair' : 'Mode sombre' }}
+              </DropdownMenuItem>
+              <DropdownMenuItem v-if="showViewModeToggle" @click="emit('toggle-view-mode')" class="cursor-pointer gap-2">
+                <ArrowLeftRight class="size-4" />
+                {{ isViewingAsUser ? 'Vue Admin' : 'Vue Utilisateur' }}
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem @click="emit('show-changelog')" class="relative cursor-pointer gap-2">
+                <Sparkles class="size-4" />
+                Nouveautés
+                <span
+                  v-if="hasUnseenChanges"
+                  class="ml-auto size-2 rounded-full bg-primary"
+                />
+              </DropdownMenuItem>
+              <DropdownMenuItem as-child>
+                <router-link to="/add-to-homescreen" class="flex w-full cursor-pointer items-center gap-2">
+                  <Smartphone class="size-4" />
+                  Installer l'app
+                </router-link>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem @click="emit('logout')" class="cursor-pointer gap-2 text-destructive focus:text-destructive">
+              <LogOut class="size-4" />
+              Déconnexion
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <!-- Bouton Menu (Sheet trigger) -->
         <Sheet v-model:open="sheetOpen">
@@ -161,6 +223,15 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Notifications } from '@/components/ui/notifications'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 // Lucide icons
 import {
