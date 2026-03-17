@@ -69,8 +69,8 @@ onMounted(() => {
     setMessagesInstance(messagesRef.value)
   }
 
-  // Afficher le changelog si nouvelles mises à jour non vues
-  if (hasUnseenChanges.value && authStore.isAuthenticated) {
+  // Afficher le changelog si nouvelles mises à jour non vues (pas sur les pages publiques)
+  if (hasUnseenChanges.value && authStore.isAuthenticated && !pagesWithoutNavbar.includes(route.name as string)) {
     showChangelog.value = true
   }
 
