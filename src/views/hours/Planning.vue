@@ -121,8 +121,9 @@
                   <span class="truncate text-sm font-medium text-foreground">{{ user.firstName }} {{ user.lastName }}</span>
                   <span
                     v-if="user.role"
-                    class="text-xs font-medium text-muted-foreground"
-                  >{{ user.role.name }}</span>
+                    class="text-xs font-medium"
+                    :style="user.role.color ? { color: user.role.color } : undefined"
+                  >{{ user.role.nom }}</span>
                 </div>
                 <router-link
                   :to="`/absences?userUuid=${user.uuid}`"
@@ -137,18 +138,27 @@
               <div
                 v-for="date in dates"
                 :key="`${user.uuid}-${date.dateStr}`"
-                class="flex min-h-[52px] items-center justify-center border-l transition-colors"
+                class="relative flex min-h-[52px] items-center justify-center border-l transition-colors"
                 :class="getDayCellClass(user, date)"
                 :style="getDayCellStyle(user, date)"
                 @click="handleCellClick(user, date)"
               >
-                <span
-                  v-if="getAbsenceForDate(user, date)"
-                  class="text-lg font-bold"
-                  :style="getAbsenceIconStyle(user, date)"
-                >
-                  {{ getAbsenceIcon(getAbsenceForDate(user, date)) }}
-                </span>
+                <template v-if="getAbsenceForDate(user, date)">
+                  <span
+                    class="text-lg font-bold"
+                    :style="getAbsenceIconStyle(user, date)"
+                  >
+                    {{ getAbsenceIcon(getAbsenceForDate(user, date)) }}
+                  </span>
+                  <span
+                    v-if="getAbsenceForDate(user, date)?.period === 'MORNING'"
+                    class="absolute bottom-0.5 text-[8px] leading-none text-muted-foreground"
+                  >AM</span>
+                  <span
+                    v-else-if="getAbsenceForDate(user, date)?.period === 'AFTERNOON'"
+                    class="absolute bottom-0.5 text-[8px] leading-none text-muted-foreground"
+                  >PM</span>
+                </template>
               </div>
             </div>
           </div>
@@ -593,20 +603,29 @@ const getAbsenceForDate = (user: PlanningUserDTO, date: DateInfo): AbsenceDTO | 
   })
 }
 
+function hexToRgba(hex: string, opacity: number): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`
+}
+
 const getDayCellClass = (user: PlanningUserDTO, date: DateInfo): string[] => {
   const absence = getAbsenceForDate(user, date)
   const classes: string[] = []
 
-  if (date.isToday) classes.push('bg-primary/10')
-  if (date.isWeekend && !date.isToday) classes.push('bg-muted/50')
-  if (date.isHoliday && !date.isToday) classes.push('bg-destructive/5')
+  if (!absence) {
+    if (date.isToday) classes.push('bg-primary/10')
+    if (date.isWeekend && !date.isToday) classes.push('bg-muted/50')
+    if (date.isHoliday && !date.isToday) classes.push('bg-destructive/5')
+  }
 
   if (absence) {
     classes.push('cursor-pointer')
     classes.push('hover:brightness-95')
     if (!absence.absenceType?.color && absence.status) {
       switch (absence.status) {
-        case 'APPROVED': classes.push('bg-destructive/15'); break
+        case 'APPROVED': classes.push('bg-emerald-500/15'); break
         case 'PENDING': classes.push('bg-amber-500/15'); break
         case 'REJECTED': classes.push('bg-muted'); break
       }
@@ -621,8 +640,17 @@ const getDayCellStyle = (user: PlanningUserDTO, date: DateInfo): Record<string, 
   if (!absence) return {}
 
   if (absence.absenceType?.color) {
-    const opacity = absence.status === 'APPROVED' ? '30' : (absence.status === 'PENDING' ? '20' : '10')
-    return { backgroundColor: absence.absenceType.color + opacity }
+    const opacity = absence.status === 'APPROVED' ? 0.25 : 0.15
+    const color = hexToRgba(absence.absenceType.color, opacity)
+    const transparent = 'transparent'
+
+    if (absence.period === 'MORNING') {
+      return { background: `linear-gradient(to bottom, ${color} 50%, ${transparent} 50%)` }
+    }
+    if (absence.period === 'AFTERNOON') {
+      return { background: `linear-gradient(to bottom, ${transparent} 50%, ${color} 50%)` }
+    }
+    return { backgroundColor: color }
   }
 
   return {}
@@ -632,11 +660,16 @@ const getAbsenceIconStyle = (user: PlanningUserDTO, date: DateInfo): Record<stri
   const absence = getAbsenceForDate(user, date)
   if (!absence) return {}
 
-  if (absence.absenceType?.color) {
+  if (absence.status === 'APPROVED' && absence.absenceType?.color) {
     return { color: absence.absenceType.color }
   }
 
-  return {}
+  switch (absence.status) {
+    case 'APPROVED': return { color: '#16a34a' }
+    case 'PENDING': return { color: '#d97706' }
+    case 'REJECTED': return { color: '#dc2626' }
+    default: return {}
+  }
 }
 
 const getAbsenceIcon = (absence?: AbsenceDTO | null): string => {

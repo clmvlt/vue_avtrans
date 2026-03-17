@@ -120,7 +120,8 @@ export interface PlanningUserDTO {
   lastName: string
   role: {
     uuid: string
-    name: string
+    nom: string
+    color?: string
   }
   pictureUrl?: string
   isCouchette: boolean
