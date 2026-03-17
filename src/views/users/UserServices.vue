@@ -224,11 +224,12 @@
                 <!-- Desktop actions -->
                 <div class="hidden shrink-0 gap-1 md:flex">
                   <Button
-                    v-if="hasValidLocation(service)"
+                    v-if="hasLocationData(service)"
                     variant="ghost"
                     size="icon-sm"
                     @click="showLocationMap(service, formatTime)"
                     title="Localisation"
+                    :class="isLocationInvalid(service) ? 'text-destructive hover:text-destructive' : ''"
                   >
                     <MapPin class="size-3.5" />
                   </Button>
@@ -258,7 +259,7 @@
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" class="w-44">
-                    <DropdownMenuItem v-if="hasValidLocation(service)" @click="showLocationMap(service, formatTime)">
+                    <DropdownMenuItem v-if="hasLocationData(service)" @click="showLocationMap(service, formatTime)" :class="isLocationInvalid(service) ? 'text-destructive focus:text-destructive' : ''">
                       <MapPin class="mr-2 size-4" />
                       Localisation
                     </DropdownMenuItem>
@@ -441,9 +442,20 @@
             Localisation
           </DialogTitle>
         </DialogHeader>
-        <div class="flex items-center justify-between bg-muted/50 px-5 py-3 text-sm">
-          <span class="font-medium text-foreground">{{ mapServiceTime }}</span>
-          <span class="font-mono text-muted-foreground">{{ mapCoords }}</span>
+        <div class="flex flex-col gap-2 bg-muted/50 px-5 py-3 text-sm">
+          <div class="flex items-center justify-between">
+            <span class="font-medium text-foreground">{{ mapServiceTime }}</span>
+          </div>
+          <div v-if="mapCoords" class="flex items-center gap-2">
+            <span class="inline-block size-2.5 rounded-full" :class="mapCoords === 'Position non disponible' ? 'bg-destructive' : 'bg-green-500'" />
+            <span class="text-xs text-muted-foreground">Début :</span>
+            <span class="font-mono" :class="mapCoords === 'Position non disponible' ? 'text-destructive' : 'text-muted-foreground'">{{ mapCoords }}</span>
+          </div>
+          <div v-if="mapCoordsEnd" class="flex items-center gap-2">
+            <span class="inline-block size-2.5 rounded-full" :class="mapCoordsEnd === 'Position non disponible' ? 'bg-destructive' : 'bg-purple-800'" />
+            <span class="text-xs text-muted-foreground">Fin :</span>
+            <span class="font-mono" :class="mapCoordsEnd === 'Position non disponible' ? 'text-destructive' : 'text-muted-foreground'">{{ mapCoordsEnd }}</span>
+          </div>
         </div>
         <div ref="mapContainer" class="h-[350px] w-full" />
         <div class="border-t px-5 py-4">
@@ -549,7 +561,8 @@ const {
   createService,
   updateService,
   getStatusText,
-  hasValidLocation
+  hasLocationData,
+  isLocationInvalid
 } = useUserServices(userUuid.value)
 
 // Convert typeFilterOptions to Select-compatible format
@@ -598,6 +611,7 @@ const {
   mapContainer,
   mapServiceTime,
   mapCoords,
+  mapCoordsEnd,
   showLocationMap,
   closeMapModal
 } = useMapModal()
@@ -628,6 +642,8 @@ const formData = ref({
   finTime: '',
   latitude: null as number | null,
   longitude: null as number | null,
+  latitudeEnd: null as number | null,
+  longitudeEnd: null as number | null,
   isBreak: false
 })
 
@@ -639,6 +655,8 @@ const openCreateModal = () => {
     finTime: '',
     latitude: null,
     longitude: null,
+    latitudeEnd: null,
+    longitudeEnd: null,
     isBreak: false
   }
   formError.value = ''
@@ -653,6 +671,8 @@ const openCreateModalForDate = (date: string) => {
     finTime: '',
     latitude: null,
     longitude: null,
+    latitudeEnd: null,
+    longitudeEnd: null,
     isBreak: false
   }
   formError.value = ''
@@ -671,6 +691,8 @@ const editService = (service: any) => {
     finTime: finLocal ? finLocal.split('T')[1] || '' : '',
     latitude: service.latitude,
     longitude: service.longitude,
+    latitudeEnd: service.latitudeEnd ?? null,
+    longitudeEnd: service.longitudeEnd ?? null,
     isBreak: service.isBreak
   }
   formError.value = ''

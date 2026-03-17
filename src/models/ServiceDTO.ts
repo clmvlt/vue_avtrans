@@ -8,8 +8,14 @@ export interface ServiceDTO {
   /** Duration in milliseconds or seconds */
   duree?: number;
   isBreak?: boolean;
+  /** Latitude GPS de début */
   latitude?: number;
+  /** Longitude GPS de début */
   longitude?: number;
+  /** Latitude GPS de fin */
+  latitudeEnd?: number;
+  /** Longitude GPS de fin */
+  longitudeEnd?: number;
   isAdmin?: boolean;
   userUuid?: string;
 }
@@ -71,6 +77,8 @@ export interface ServiceCreateRequest {
   fin?: Date | string;
   latitude?: number;
   longitude?: number;
+  latitudeEnd?: number;
+  longitudeEnd?: number;
   isBreak?: boolean;
 }
 
@@ -82,6 +90,8 @@ export interface ServiceUpdateRequest {
   fin?: Date | string;
   latitude?: number;
   longitude?: number;
+  latitudeEnd?: number;
+  longitudeEnd?: number;
   isBreak?: boolean;
 }
 

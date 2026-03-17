@@ -37,6 +37,8 @@ export interface ServiceFormData {
   finTime: string
   latitude: number | null
   longitude: number | null
+  latitudeEnd: number | null
+  longitudeEnd: number | null
   isBreak: boolean
 }
 
@@ -362,6 +364,8 @@ export const useUserServices = (userUuid: string) => {
       fin: formData.finDate && formData.finTime ? `${formData.finDate}T${formData.finTime}:00` : undefined,
       latitude: formData.latitude || undefined,
       longitude: formData.longitude || undefined,
+      latitudeEnd: formData.latitudeEnd || undefined,
+      longitudeEnd: formData.longitudeEnd || undefined,
       isBreak: formData.isBreak
     }
 
@@ -376,6 +380,8 @@ export const useUserServices = (userUuid: string) => {
       fin: formData.finDate && formData.finTime ? `${formData.finDate}T${formData.finTime}:00` : undefined,
       latitude: formData.latitude || undefined,
       longitude: formData.longitude || undefined,
+      latitudeEnd: formData.latitudeEnd || undefined,
+      longitudeEnd: formData.longitudeEnd || undefined,
       isBreak: formData.isBreak
     }
 
@@ -411,8 +417,34 @@ export const useUserServices = (userUuid: string) => {
     }
   }
 
+  // Coordonnée GPS "présente" = pas null/undefined
+  const hasStartData = (service: any) => {
+    return service.latitude != null && service.longitude != null
+  }
+
+  const hasEndData = (service: any) => {
+    return service.latitudeEnd != null && service.longitudeEnd != null
+  }
+
+  // Le service a au moins une donnée de position (même si 0,0)
+  const hasLocationData = (service: any) => {
+    return hasStartData(service) || hasEndData(service)
+  }
+
+  // Coordonnée GPS "valide" = présente ET non-zéro (0,0 = échec géolocalisation)
   const hasValidLocation = (service: any) => {
-    return service.latitude !== null && service.longitude !== null
+    return hasStartData(service) && service.latitude !== 0 && service.longitude !== 0
+  }
+
+  const hasValidEndLocation = (service: any) => {
+    return hasEndData(service) && service.latitudeEnd !== 0 && service.longitudeEnd !== 0
+  }
+
+  // Au moins une position a des données invalides (0,0 ou incohérentes)
+  const isLocationInvalid = (service: any) => {
+    const startInvalid = hasStartData(service) && (service.latitude === 0 || service.longitude === 0)
+    const endInvalid = hasEndData(service) && (service.latitudeEnd === 0 || service.longitudeEnd === 0)
+    return startInvalid || endInvalid
   }
 
   return {
@@ -450,6 +482,9 @@ export const useUserServices = (userUuid: string) => {
     updateService,
     getStatusClass,
     getStatusText,
-    hasValidLocation
+    hasLocationData,
+    hasValidLocation,
+    hasValidEndLocation,
+    isLocationInvalid
   }
 }
