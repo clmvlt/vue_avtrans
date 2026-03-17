@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted, type Component } from 'vue'
+import { ref, computed, onMounted, onUnmounted, type Component } from 'vue'
 import { RouterLink } from 'vue-router'
 import {
   Truck, Snowflake, PawPrint, MapPin, Warehouse, Clock,
   Phone, Mail, ChevronDown, ArrowRight, Menu, X,
-  Shield, Zap, Globe, Package, Locate, Smartphone,
-  Sun, Moon
+  Shield, Zap, Globe, Package, Locate, Smartphone
 } from 'lucide-vue-next'
-import { useTheme } from '@/composables/useTheme'
 import FleetViewer from '@/components/landing/FleetViewer.vue'
 
 import locauxImg from '@/assets/images/locaux.jpg'
@@ -18,9 +16,6 @@ import logoImg from '@/assets/favicon.png'
 // --- State ---
 const isScrolled = ref(false)
 const mobileMenuOpen = ref(false)
-const { isDark, toggleTheme } = useTheme()
-const themeToggleRef = ref<HTMLButtonElement | null>(null)
-const isTransitioning = ref(false)
 let observer: IntersectionObserver | null = null
 let statsObserver: IntersectionObserver | null = null
 
@@ -36,81 +31,6 @@ const parallaxCta = computed(() => parallaxEnabled.value ? `translateY(${scrollY
 
 // --- Floating CTA ---
 const showFloatingCta = ref(false)
-
-// --- Theme toggle with circular propagation ---
-// Build an organic blob clip-path at a given scale, centered on (cx, cy)
-const buildBlob = (cx: number, cy: number, radius: number, seed: number): string => {
-  const points = 10
-  const pts: string[] = []
-  for (let i = 0; i < points; i++) {
-    const angle = (Math.PI * 2 * i) / points
-    // Randomize radius per point for organic wobble (±25%)
-    const wobble = 0.75 + 0.5 * Math.abs(Math.sin(seed * 7.3 + i * 2.1 + angle * 1.7))
-    const r = radius * wobble
-    const px = cx + Math.cos(angle) * r
-    const py = cy + Math.sin(angle) * r
-    pts.push(`${px}px ${py}px`)
-  }
-  return `polygon(${pts.join(', ')})`
-}
-
-const handleThemeToggle = async () => {
-  if (isTransitioning.value) return
-
-  if (!document.startViewTransition) {
-    toggleTheme()
-    return
-  }
-
-  isTransitioning.value = true
-
-  const btn = themeToggleRef.value
-  if (!btn) {
-    toggleTheme()
-    isTransitioning.value = false
-    return
-  }
-
-  const rect = btn.getBoundingClientRect()
-  const cx = rect.left + rect.width / 2
-  const cy = rect.top + rect.height / 2
-
-  const maxRadius = Math.hypot(
-    Math.max(cx, window.innerWidth - cx),
-    Math.max(cy, window.innerHeight - cy)
-  ) * 1.3
-
-  // Random seed for this toggle so each click feels different
-  const seed = Math.random() * 100
-
-  // Build keyframes with organic blob shapes at different scales
-  const steps = 8
-  const keyframes: Keyframe[] = []
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps
-    // Ease-out cubic for smooth deceleration
-    const eased = 1 - Math.pow(1 - t, 3)
-    const r = eased * maxRadius
-    keyframes.push({ clipPath: buildBlob(cx, cy, r, seed + i * 0.5) })
-  }
-
-  const transition = document.startViewTransition(() => {
-    toggleTheme()
-    return nextTick()
-  })
-
-  transition.ready.then(() => {
-    document.documentElement.animate(keyframes, {
-      duration: 650,
-      easing: 'linear',
-      pseudoElement: '::view-transition-new(root)'
-    })
-  })
-
-  transition.finished.then(() => {
-    isTransitioning.value = false
-  })
-}
 
 // --- Scroll handling ---
 const onScroll = () => {
@@ -303,8 +223,13 @@ const injectJsonLd = () => {
   document.head.appendChild(jsonLdScript)
 }
 
-// --- Intersection Observer for reveal animations ---
+// --- Force light mode on landing page ---
+const wasDark = ref(false)
+
 onMounted(() => {
+  wasDark.value = document.documentElement.classList.contains('dark')
+  document.documentElement.classList.remove('dark')
+
   window.addEventListener('scroll', onScroll, { passive: true })
 
   // Inject structured data for SEO
@@ -348,6 +273,9 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // Restore dark mode if it was active before
+  if (wasDark.value) document.documentElement.classList.add('dark')
+
   window.removeEventListener('scroll', onScroll)
   observer?.disconnect()
   statsObserver?.disconnect()
@@ -497,30 +425,6 @@ const footerServices = [
 
           <!-- Desktop CTA -->
           <div class="hidden items-center gap-3 lg:flex">
-            <!-- Theme toggle -->
-            <button
-              ref="themeToggleRef"
-              @click="handleThemeToggle"
-              class="relative inline-flex size-9 items-center justify-center rounded-lg transition-all"
-              :class="isScrolled
-                ? 'text-foreground hover:bg-accent'
-                : 'text-white/70 hover:text-white hover:bg-white/10'"
-              aria-label="Changer le thème"
-            >
-              <Transition
-                enter-active-class="transition duration-300 ease-out"
-                enter-from-class="rotate-90 scale-0 opacity-0"
-                enter-to-class="rotate-0 scale-100 opacity-100"
-                leave-active-class="transition duration-200 ease-in absolute"
-                leave-from-class="rotate-0 scale-100 opacity-100"
-                leave-to-class="-rotate-90 scale-0 opacity-0"
-                mode="out-in"
-              >
-                <Sun v-if="isDark" class="size-[18px]" />
-                <Moon v-else class="size-[18px]" />
-              </Transition>
-            </button>
-
             <RouterLink to="/login">
               <button
                 class="rounded-lg px-4 py-2 text-sm font-medium transition-all border"
@@ -575,15 +479,6 @@ const footerServices = [
             >
               {{ link.label }}
             </button>
-            <!-- Mobile theme toggle -->
-            <button
-              @click="handleThemeToggle"
-              class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              <Sun v-if="isDark" class="size-4" />
-              <Moon v-else class="size-4" />
-              {{ isDark ? 'Mode clair' : 'Mode sombre' }}
-            </button>
             <div class="my-3 h-px bg-border" />
             <div class="flex gap-3 px-4">
               <RouterLink to="/login" class="flex-1">
@@ -618,11 +513,6 @@ const footerServices = [
         </div>
         <div class="absolute inset-0 bg-gradient-to-br from-gray-900/90 via-gray-900/70 to-gray-900/40" />
         <div class="absolute inset-0 bg-gradient-to-t from-gray-900/50 via-transparent to-gray-900/20" />
-        <!-- Dark mode violet overlay -->
-        <div
-          class="absolute inset-0 hidden dark:block"
-          style="background: radial-gradient(ellipse at 30% 50%, rgba(124, 58, 237, 0.15), transparent 70%)"
-        />
       </div>
 
       <!-- Content -->
@@ -723,7 +613,7 @@ const footerServices = [
           <div
             v-for="(service, index) in services"
             :key="service.title"
-            class="reveal group service-card rounded-2xl border border-border bg-card p-8 transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 dark:hover:shadow-xl dark:hover:shadow-primary/10"
+            class="reveal group service-card rounded-2xl border border-border bg-card p-8 transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
             :style="{ transitionDelay: `${index * 80}ms` }"
           >
             <div :class="['mb-5 inline-flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors duration-300 group-hover:bg-primary group-hover:text-primary-foreground', service.animation]">
@@ -1179,12 +1069,4 @@ const footerServices = [
   100% { transform: rotate(180deg); }
 }
 
-/* ── Dark mode storytelling ── */
-:global(.dark) .stat-value {
-  text-shadow: 0 0 20px rgba(139, 92, 246, 0.5), 0 0 40px rgba(139, 92, 246, 0.2);
-}
-
-:global(.dark) .service-card:hover {
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.08), 0 20px 25px -5px rgba(139, 92, 246, 0.1);
-}
 </style>
