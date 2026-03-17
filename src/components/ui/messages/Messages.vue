@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div class="pointer-events-none fixed right-4 top-16 z-[1070] flex w-full max-w-sm flex-col gap-2">
+    <div class="pointer-events-none fixed inset-x-3 top-16 z-[1070] mx-auto flex max-w-sm flex-col gap-2 sm:inset-x-auto sm:right-4 sm:left-auto">
       <!-- Liste des messages -->
       <TransitionGroup name="message">
         <div
@@ -28,6 +28,14 @@
             >
               {{ message.text }}
             </p>
+            <button
+              v-if="message.action"
+              class="mt-2 cursor-pointer text-sm font-medium underline underline-offset-2 transition-colors"
+              :class="variantActionClass(message.variant)"
+              @click="message.action.onClick(); removeMessage(message.id)"
+            >
+              {{ message.action.label }}
+            </button>
           </div>
 
           <!-- Close -->
@@ -68,12 +76,18 @@ import { ref } from 'vue'
 import { X, CheckCircle2, XCircle, AlertTriangle, Info, CircleDot } from 'lucide-vue-next'
 import type { Component } from 'vue'
 
+export interface MessageAction {
+  label: string
+  onClick: () => void
+}
+
 export interface Message {
   id: string
   title?: string
   text: string
   variant?: 'primary' | 'success' | 'warning' | 'danger' | 'info'
   duration?: number
+  action?: MessageAction
 }
 
 interface MessageInternal extends Message {
@@ -109,6 +123,16 @@ const variantBorderClass = (variant?: string): string => {
     case 'warning': return 'border-amber-500/30'
     case 'info': return 'border-violet-500/30'
     default: return 'border-primary/30'
+  }
+}
+
+const variantActionClass = (variant?: string): string => {
+  switch (variant) {
+    case 'success': return 'text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300'
+    case 'danger': return 'text-destructive hover:text-destructive/80'
+    case 'warning': return 'text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300'
+    case 'info': return 'text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'
+    default: return 'text-primary hover:text-primary/80'
   }
 }
 
@@ -233,12 +257,4 @@ defineExpose({
   opacity: 0;
 }
 
-/* Responsive */
-@media (max-width: 480px) {
-  .fixed.right-4 {
-    right: 0.75rem;
-    left: 0.75rem;
-    max-width: none;
-  }
-}
 </style>

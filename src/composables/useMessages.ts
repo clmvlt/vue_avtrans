@@ -1,10 +1,16 @@
 import type { ComponentPublicInstance } from 'vue'
 
+interface MessageAction {
+  label: string
+  onClick: () => void
+}
+
 interface Message {
   title?: string
   text: string
   variant?: 'primary' | 'success' | 'warning' | 'danger' | 'info'
   duration?: number
+  action?: MessageAction
 }
 
 // Instance globale du composant Messages
@@ -36,24 +42,24 @@ export function useMessages() {
   /**
    * Raccourcis pour les différents types de messages
    */
-  const success = (text: string, title?: string, duration = 5000): string | null => {
-    return showMessage({ text, title, variant: 'success', duration })
+  const success = (text: string, title?: string, duration = 5000, action?: MessageAction): string | null => {
+    return showMessage({ text, title, variant: 'success', duration, action })
   }
 
-  const error = (text: string, title?: string, duration = 7000): string | null => {
-    return showMessage({ text, title, variant: 'danger', duration })
+  const error = (text: string, title?: string, duration = 7000, action?: MessageAction): string | null => {
+    return showMessage({ text, title, variant: 'danger', duration, action })
   }
 
-  const warning = (text: string, title?: string, duration = 6000): string | null => {
-    return showMessage({ text, title, variant: 'warning', duration })
+  const warning = (text: string, title?: string, duration = 6000, action?: MessageAction): string | null => {
+    return showMessage({ text, title, variant: 'warning', duration, action })
   }
 
-  const info = (text: string, title?: string, duration = 5000): string | null => {
-    return showMessage({ text, title, variant: 'info', duration })
+  const info = (text: string, title?: string, duration = 5000, action?: MessageAction): string | null => {
+    return showMessage({ text, title, variant: 'info', duration, action })
   }
 
-  const primary = (text: string, title?: string, duration = 5000): string | null => {
-    return showMessage({ text, title, variant: 'primary', duration })
+  const primary = (text: string, title?: string, duration = 5000, action?: MessageAction): string | null => {
+    return showMessage({ text, title, variant: 'primary', duration, action })
   }
 
   /**
