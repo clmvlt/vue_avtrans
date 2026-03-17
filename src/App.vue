@@ -38,7 +38,7 @@ const needsProfileCompletion = computed(() => {
 })
 
 // Pages qui ne doivent pas afficher la navbar
-const pagesWithoutNavbar = ['login', 'register', 'verify', 'forgot-password', 'reset-password', 'unauthorized', 'NotFound']
+const pagesWithoutNavbar = ['Landing', 'AppDownload', 'login', 'register', 'verify', 'forgot-password', 'reset-password', 'unauthorized', 'NotFound']
 
 // Vérifier si la navbar doit être affichée
 const showNavbar = computed(() => {

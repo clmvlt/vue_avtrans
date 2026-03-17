@@ -27,10 +27,12 @@ const getDefaultRoute = (): string => {
 }
 
 const routes: RouteRecordRaw[] = [
-  // Common routes
+  // Landing page (public)
   {
     path: '/',
-    redirect: () => getDefaultRoute()
+    name: 'Landing',
+    component: () => import('../views/landing/Landing.vue'),
+    meta: { requiresAuth: false }
   },
   {
     path: '/unauthorized',
