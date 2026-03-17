@@ -86,6 +86,12 @@ const authStore = useAuthStore()
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
+
+const getDefaultRoute = (): string => {
+  if (authStore.isAdmin) return '/users'
+  if (authStore.isMechanic) return '/vehicules'
+  return '/pointage'
+}
 const errorMessage = ref('')
 const showHomeScreenPrompt = ref(false)
 
@@ -128,8 +134,8 @@ const handleLogin = async () => {
       if (shouldShowHomeScreenPrompt()) {
         showHomeScreenPrompt.value = true
       } else {
-        // Redirection vers la page d'accueil
-        router.push('/')
+        // Redirection vers la page par défaut selon le rôle
+        router.push(getDefaultRoute())
       }
     }
   } catch (error: unknown) {
@@ -154,6 +160,6 @@ const handlePromptNavigate = () => {
  * Ferme le prompt et redirige vers l'accueil
  */
 const handlePromptDismiss = () => {
-  router.push('/')
+  router.push(getDefaultRoute())
 }
 </script>

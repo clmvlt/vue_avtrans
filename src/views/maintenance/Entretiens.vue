@@ -1063,7 +1063,7 @@ const handleGoBack = () => {
   if (historyState && historyState.position > 0) {
     router.back()
   } else {
-    router.push('/')
+    router.push('/vehicules')
   }
 }
 
