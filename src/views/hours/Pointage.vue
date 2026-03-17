@@ -178,18 +178,7 @@
                     <ArrowRight class="size-3 text-muted-foreground" />
                     <span class="font-medium text-foreground">{{ service.fin ? formatTime(service.fin) : 'En cours' }}</span>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <Button
-                      v-if="hasValidLocation(service)"
-                      variant="ghost"
-                      size="icon-sm"
-                      @click="showLocationMap(service, formatTime)"
-                      title="Localisation"
-                    >
-                      <MapPin class="size-4" />
-                    </Button>
-                    <span class="whitespace-nowrap font-mono text-sm text-muted-foreground">{{ getServiceDuration(service) }}</span>
-                  </div>
+                  <span class="whitespace-nowrap font-mono text-sm text-muted-foreground">{{ getServiceDuration(service) }}</span>
                 </div>
               </div>
             </div>
@@ -287,18 +276,7 @@
                         <ArrowRight class="size-3 text-muted-foreground" />
                         <span class="font-medium text-foreground">{{ service.fin ? formatTime(service.fin) : '--:--' }}</span>
                       </div>
-                      <div class="flex items-center gap-2">
-                        <Button
-                          v-if="hasValidLocation(service)"
-                          variant="ghost"
-                          size="icon-sm"
-                          @click="showLocationMap(service, formatTime)"
-                          title="Localisation"
-                        >
-                          <MapPin class="size-4" />
-                        </Button>
-                        <span class="whitespace-nowrap font-mono text-sm text-muted-foreground">{{ formatDurationFromSeconds(service.duree || 0) }}</span>
-                      </div>
+                      <span class="whitespace-nowrap font-mono text-sm text-muted-foreground">{{ formatDurationFromSeconds(service.duree || 0) }}</span>
                     </div>
                   </div>
                 </div>
@@ -393,25 +371,6 @@
       </DialogContent>
     </Dialog>
 
-    <!-- Map Modal -->
-    <Dialog v-model:open="showMapModal">
-      <DialogContent class="gap-0 p-0 sm:max-w-[600px]">
-        <DialogHeader class="px-5 pt-5">
-          <div class="flex items-center gap-3">
-            <MapPin class="size-5 text-primary" />
-            <DialogTitle>Localisation</DialogTitle>
-          </div>
-        </DialogHeader>
-        <div class="flex items-center justify-between border-y bg-muted/50 px-5 py-3 text-sm max-sm:flex-col max-sm:items-start max-sm:gap-1">
-          <span class="font-medium text-foreground">{{ mapServiceTime }}</span>
-          <span class="font-mono text-muted-foreground">{{ mapCoords }}</span>
-        </div>
-        <div ref="mapContainer" class="h-[350px] w-full max-sm:h-[280px]"></div>
-        <DialogFooter class="px-5 pb-5 pt-4">
-          <Button @click="showMapModal = false">Fermer</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   </div>
 </template>
 
@@ -421,7 +380,6 @@ import { userServicesService, type WorkedHoursDTO, type GpsLocationRequest } fro
 import { usersService, vehiclesService } from '@/services'
 import type { ServiceDTO, VehiculeDTO } from '@/models'
 import { useMessages } from '@/composables/useMessages'
-import { useMapModal } from '@/composables/useMapModal'
 import { useAuthStore } from '@/stores/auth'
 import { USER_ROLE_UUIDS } from '@/enums'
 import { Retour } from '@/components/ui/retour'
@@ -429,10 +387,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import {
   Gauge, Play, Pause, Square, Sun, CalendarDays, CalendarRange,
-  Calendar, Clock, ClipboardList, ArrowRight, MapPin, Filter,
+  Calendar, Clock, ClipboardList, ArrowRight, Filter,
   Check, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight,
   LoaderCircle
 } from 'lucide-vue-next'
@@ -444,20 +402,6 @@ const authStore = useAuthStore()
 const isUserRole = computed(() => {
   return authStore.userRoleUuid === USER_ROLE_UUIDS.UTILISATEUR
 })
-
-// Map modal
-const {
-  showMapModal,
-  mapContainer,
-  mapServiceTime,
-  mapCoords,
-  showLocationMap,
-} = useMapModal()
-
-// Helper to check if service has valid location
-const hasValidLocation = (service: ServiceDTO): boolean => {
-  return !!(service.latitude && service.longitude)
-}
 
 // Types
 interface DayGroup {
@@ -696,26 +640,78 @@ const updateElapsedTime = () => {
   }
 }
 
-const requestLocation = (): Promise<GpsLocationRequest> => {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve({ latitude: 0, longitude: 0 })
-      return
-    }
+// État de la permission géolocalisation
+const locationPermission = ref<'granted' | 'prompt' | 'denied' | 'unsupported'>('prompt')
 
+const checkLocationPermission = async () => {
+  if (!navigator.geolocation) {
+    locationPermission.value = 'unsupported'
+    return
+  }
+  if (navigator.permissions) {
+    try {
+      const status = await navigator.permissions.query({ name: 'geolocation' })
+      locationPermission.value = status.state as 'granted' | 'prompt' | 'denied'
+      // Écouter les changements de permission
+      status.addEventListener('change', () => {
+        locationPermission.value = status.state as 'granted' | 'prompt' | 'denied'
+      })
+    } catch {
+      // Fallback si permissions API non supportée
+    }
+  }
+}
+
+const getLocationDeniedMessage = (): string => {
+  const ua = navigator.userAgent
+  if (/android/i.test(ua)) {
+    return 'Localisation refusée. Appuyez sur le cadenas (🔒) dans la barre d\'adresse → Autorisations → Localisation → Autoriser.'
+  }
+  if (/iPad|iPhone|iPod/.test(ua)) {
+    return 'Localisation refusée. Allez dans Réglages → Safari → Service de localisation → Autoriser.'
+  }
+  return 'Localisation refusée. Cliquez sur l\'icône à gauche de la barre d\'adresse → Autoriser la localisation.'
+}
+
+const requestLocation = async (): Promise<GpsLocationRequest> => {
+  if (!navigator.geolocation) {
+    messages.error('La géolocalisation n\'est pas disponible sur cet appareil')
+    return { latitude: 0, longitude: 0 }
+  }
+
+  return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        locationPermission.value = 'granted'
         resolve({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude
         })
       },
-      () => {
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          locationPermission.value = 'denied'
+          messages.error(
+            getLocationDeniedMessage(),
+            'Localisation bloquée',
+            12000,
+            { label: 'Réessayer la localisation', onClick: () => requestLocation() }
+          )
+        } else if (err.code === err.TIMEOUT) {
+          messages.error(
+            'Impossible d\'obtenir la position (délai dépassé)',
+            undefined,
+            7000,
+            { label: 'Réessayer', onClick: () => requestLocation() }
+          )
+        } else {
+          messages.error('Erreur de géolocalisation')
+        }
         resolve({ latitude: 0, longitude: 0 })
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 15000,
         maximumAge: 0
       }
     )
@@ -1019,6 +1015,13 @@ const openKmModal = async () => {
 
 // Lifecycle
 onMounted(async () => {
+  // Vérifier/demander la permission de géolocalisation dès le chargement
+  await checkLocationPermission()
+  if (locationPermission.value === 'prompt') {
+    // Déclencher le prompt du navigateur immédiatement
+    requestLocation()
+  }
+
   await checkKilometrage()
 
   loadData()
