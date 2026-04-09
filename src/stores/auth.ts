@@ -120,11 +120,15 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem('user', JSON.stringify(response.user))
       }
     } catch (err) {
-      // If refresh fails (e.g., token expired), logout
-      if (err instanceof ApiError && err.status === 401) {
-        logout()
-      } else {
-        console.error('Error refreshing user data:', err)
+      if (err instanceof ApiError) {
+        // Token expired or invalid — logout
+        if (err.status === 401) {
+          logout()
+        } else if (err.code === 'NETWORK_ERROR' || err.code === 'TIMEOUT') {
+          // CORS or network failure — ignore silently, keep cached user data
+        } else {
+          console.error('Error refreshing user data:', err)
+        }
       }
     } finally {
       loading.value = false

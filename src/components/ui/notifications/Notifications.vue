@@ -270,6 +270,10 @@ const loadNotifications = async () => {
     // Mettre à jour le titre
     updateDocumentTitle(actualCount)
   } catch (err: any) {
+    // Network/CORS errors during polling — keep previous state silently
+    if (err.code === 'NETWORK_ERROR' || err.code === 'TIMEOUT') {
+      return
+    }
     error.value = err.message || 'Erreur lors du chargement'
     unreadCount.value = 0
     updateDocumentTitle(0)
