@@ -7,9 +7,12 @@
           <TabsList>
             <TabsTrigger value="week">Semaine</TabsTrigger>
             <TabsTrigger value="month">Mois</TabsTrigger>
+            <TabsTrigger value="custom">Personnalisé</TabsTrigger>
           </TabsList>
         </Tabs>
-        <div class="flex items-center justify-center gap-2">
+
+        <!-- Navigation semaine/mois -->
+        <div v-if="periodType !== 'custom'" class="flex items-center justify-center gap-2">
           <Button variant="outline" size="icon-sm" @click="navigatePrevious">
             <ChevronLeft class="size-4" />
           </Button>
@@ -24,11 +27,75 @@
             Auj.
           </Button>
         </div>
+
+        <!-- Contrôles mode personnalisé -->
+        <div v-else class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-medium text-muted-foreground">Du</label>
+            <input
+              v-model="customStartDate"
+              type="date"
+              class="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
+            />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-medium text-muted-foreground">Au</label>
+            <input
+              v-model="customEndDate"
+              type="date"
+              class="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20"
+            />
+          </div>
+          <Button size="sm" :disabled="!isCustomRangeValid" @click="loadPlanning">
+            <Search class="size-3.5" />
+            <span class="hidden sm:inline">Afficher</span>
+          </Button>
+          <Separator orientation="vertical" class="mx-1 hidden h-6 md:block" />
+          <div class="flex items-center gap-1">
+            <Button
+              v-for="preset in customPresets"
+              :key="preset.label"
+              variant="outline"
+              size="sm"
+              class="h-7 px-2 text-xs"
+              @click="applyPreset(preset.months)"
+            >{{ preset.label }}</Button>
+          </div>
+          <p v-if="customDateError" class="w-full text-xs text-destructive">{{ customDateError }}</p>
+        </div>
       </div>
     </header>
 
     <!-- Main Content -->
     <main class="px-4 py-4 md:px-6 md:py-6">
+      <!-- Export bar -->
+      <div v-if="!loading && !error && planningData.users.length" class="mb-4 flex items-center justify-between">
+        <span class="text-sm text-muted-foreground">
+          {{ planningData.users.length }} employé{{ planningData.users.length > 1 ? 's' : '' }} &middot; {{ dates.length }} jours
+        </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button variant="outline" size="sm" :disabled="isExporting">
+              <LoaderCircle v-if="isExporting" class="size-4 animate-spin" />
+              <Printer v-else class="size-4" />
+              Exporter
+              <ChevronDown class="size-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Format d'export</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem @click="exportPlanning('pdf')">
+              <FileText class="size-4" />
+              PDF (A4 paysage)
+            </DropdownMenuItem>
+            <DropdownMenuItem @click="exportPlanning('png')">
+              <ImageIcon class="size-4" />
+              Image PNG
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
           <!-- Loading -->
           <div v-if="loading" class="flex flex-col items-center justify-center gap-4 py-16">
             <LoaderCircle class="size-10 animate-spin text-primary" />
@@ -60,7 +127,7 @@
             <!-- Header Row -->
             <div
               class="grid border-b bg-muted/50"
-              :style="{ gridTemplateColumns: `220px repeat(${dates.length}, minmax(44px, 1fr))` }"
+              :style="{ gridTemplateColumns: gridColumns }"
             >
               <div class="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Employé
@@ -68,27 +135,30 @@
               <div
                 v-for="date in dates"
                 :key="date.dateStr"
-                class="flex min-h-[56px] flex-col items-center justify-center border-l px-1 py-2"
+                class="flex flex-col items-center justify-center border-l px-0.5"
                 :class="[
+                  isCompactGrid ? 'min-h-[40px] py-1' : 'min-h-[56px] py-2 px-1',
                   date.isToday && !date.isHoliday ? 'bg-primary' : '',
                   date.isToday && date.isHoliday ? 'bg-primary' : '',
                   !date.isToday && date.isHoliday ? 'bg-destructive/10' : '',
                   !date.isToday && !date.isHoliday && date.isWeekend ? 'bg-muted/80' : '',
                 ]"
-                :title="date.holidayName"
+                :title="date.holidayName || date.dateStr"
               >
                 <span
-                  class="text-xs uppercase"
+                  class="uppercase leading-tight"
                   :class="[
+                    isCompactGrid ? 'text-[9px]' : 'text-xs',
                     date.isToday ? 'text-primary-foreground' : '',
                     !date.isToday && date.isHoliday ? 'text-destructive' : '',
                     !date.isToday && !date.isHoliday && date.isWeekend ? 'text-muted-foreground/60' : '',
                     !date.isToday && !date.isHoliday && !date.isWeekend ? 'text-muted-foreground' : '',
                   ]"
-                >{{ date.dayName }}</span>
+                >{{ isCompactGrid ? date.dayName.charAt(0) : date.dayName }}</span>
                 <span
-                  class="text-base font-bold"
+                  class="font-bold leading-tight"
                   :class="[
+                    isCompactGrid ? 'text-xs' : 'text-base',
                     date.isToday ? 'text-primary-foreground' : '',
                     !date.isToday && date.isHoliday ? 'text-destructive' : '',
                     !date.isToday && !date.isHoliday && date.isWeekend ? 'text-muted-foreground/60' : '',
@@ -108,7 +178,7 @@
               v-for="user in planningData.users"
               :key="user.uuid"
               class="grid border-b last:border-b-0"
-              :style="{ gridTemplateColumns: `220px repeat(${dates.length}, minmax(44px, 1fr))` }"
+              :style="{ gridTemplateColumns: gridColumns }"
             >
               <div class="flex items-center gap-3 border-r bg-card px-4 py-3">
                 <Avatar class="size-9 shrink-0 border-2 border-border">
@@ -138,24 +208,25 @@
               <div
                 v-for="date in dates"
                 :key="`${user.uuid}-${date.dateStr}`"
-                class="relative flex min-h-[52px] items-center justify-center border-l transition-colors"
-                :class="getDayCellClass(user, date)"
+                class="relative flex items-center justify-center border-l transition-colors"
+                :class="[isCompactGrid ? 'min-h-[36px]' : 'min-h-[52px]', ...getDayCellClass(user, date)]"
                 :style="getDayCellStyle(user, date)"
                 @click="handleCellClick(user, date)"
               >
                 <template v-if="getAbsenceForDate(user, date)">
                   <span
-                    class="text-lg font-bold"
+                    class="font-bold"
+                    :class="isCompactGrid ? 'text-sm' : 'text-lg'"
                     :style="getAbsenceIconStyle(user, date)"
                   >
                     {{ getAbsenceIcon(getAbsenceForDate(user, date)) }}
                   </span>
                   <span
-                    v-if="getAbsenceForDate(user, date)?.period === 'MORNING'"
+                    v-if="!isCompactGrid && getAbsenceForDate(user, date)?.period === 'MORNING'"
                     class="absolute bottom-0.5 text-[8px] leading-none text-muted-foreground"
                   >AM</span>
                   <span
-                    v-else-if="getAbsenceForDate(user, date)?.period === 'AFTERNOON'"
+                    v-else-if="!isCompactGrid && getAbsenceForDate(user, date)?.period === 'AFTERNOON'"
                     class="absolute bottom-0.5 text-[8px] leading-none text-muted-foreground"
                   >PM</span>
                 </template>
@@ -329,7 +400,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { absencesService, type PlanningUserDTO } from '@/services/absences'
 import { absenceTypesService } from '@/services'
 import type { AbsenceDTO, AbsenceTypeDTO } from '@/models'
@@ -342,18 +413,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Separator } from '@/components/ui/separator'
 import {
   LoaderCircle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   CalendarX2,
   TriangleAlert,
   CalendarDays,
   Check,
   X,
   ExternalLink,
+  Search,
+  Printer,
+  FileText,
+  ImageIcon,
 } from 'lucide-vue-next'
 
 interface DateInfo {
@@ -429,11 +514,40 @@ const planningData = ref<{ users: PlanningUserDTO[], startDate: string, endDate:
   endDate: '',
   periodType: 'month'
 })
-const periodType = ref<'week' | 'month'>('month')
+const periodType = ref<'week' | 'month' | 'custom'>('month')
 const currentYear = ref(new Date().getFullYear())
 const currentMonth = ref(new Date().getMonth() + 1)
 const currentWeek = ref(getWeekNumber(new Date()))
 const absenceTypes = ref<AbsenceTypeDTO[]>([])
+
+// Custom period
+const customStartDate = ref('')
+const customEndDate = ref('')
+const customDateError = ref('')
+
+const customPresets = [
+  { label: '2 mois', months: 2 },
+  { label: '3 mois', months: 3 },
+  { label: '6 mois', months: 6 },
+]
+
+const isCustomRangeValid = computed(() => {
+  if (!customStartDate.value || !customEndDate.value) return false
+  return customStartDate.value <= customEndDate.value
+})
+
+const gridColumns = computed(() => {
+  const count = dates.value.length
+  // Adapter la taille min des colonnes selon le nombre de jours
+  // pour minimiser le scroll horizontal sur les grandes plages
+  let minCol = 44
+  if (count > 60) minCol = 24
+  else if (count > 45) minCol = 28
+  else if (count > 31) minCol = 32
+  return `200px repeat(${count}, minmax(${minCol}px, 1fr))`
+})
+
+const isCompactGrid = computed(() => dates.value.length > 31)
 
 // Modal
 const showModal = ref(false)
@@ -490,10 +604,9 @@ const currentPeriodLabel = computed(() => {
     const start = new Date(planningData.value.startDate)
     const end = new Date(planningData.value.endDate)
     return `${start.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`
-  } else {
-    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
-    return `${monthNames[currentMonth.value - 1]} ${currentYear.value}`
   }
+  const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+  return `${monthNames[currentMonth.value - 1]} ${currentYear.value}`
 })
 
 // Helpers
@@ -508,18 +621,40 @@ function getWeekNumber(date: Date): number {
 // API
 const loadPlanning = async () => {
   try {
+    customDateError.value = ''
+
+    if (periodType.value === 'custom') {
+      if (!customStartDate.value || !customEndDate.value) {
+        customDateError.value = 'Les deux dates sont requises.'
+        return
+      }
+      if (customStartDate.value > customEndDate.value) {
+        customDateError.value = 'La date de début doit être avant la date de fin.'
+        return
+      }
+    }
+
     loading.value = true
     error.value = ''
 
-    const params: { periodType: 'week' | 'month', year: number, week?: number, month?: number } = {
-      periodType: periodType.value,
-      year: currentYear.value
-    }
+    let params: Record<string, string | number>
 
-    if (periodType.value === 'week') {
-      params.week = currentWeek.value
+    if (periodType.value === 'custom') {
+      params = {
+        periodType: 'custom',
+        startDate: customStartDate.value,
+        endDate: customEndDate.value,
+      }
     } else {
-      params.month = currentMonth.value
+      params = {
+        periodType: periodType.value,
+        year: currentYear.value,
+      }
+      if (periodType.value === 'week') {
+        params.week = currentWeek.value
+      } else {
+        params.month = currentMonth.value
+      }
     }
 
     const response = await absencesService.getAbsencePlanning(params)
@@ -539,7 +674,27 @@ const loadPlanning = async () => {
 }
 
 const handlePeriodChange = (value: string | number) => {
-  periodType.value = value as 'week' | 'month'
+  periodType.value = value as 'week' | 'month' | 'custom'
+  if (periodType.value === 'custom') {
+    // Initialiser avec le mois en cours si vide
+    if (!customStartDate.value) {
+      const today = new Date()
+      customStartDate.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
+      const endMonth = new Date(today.getFullYear(), today.getMonth() + 2, 0)
+      customEndDate.value = `${endMonth.getFullYear()}-${String(endMonth.getMonth() + 1).padStart(2, '0')}-${String(endMonth.getDate()).padStart(2, '0')}`
+    }
+    loadPlanning()
+  } else {
+    loadPlanning()
+  }
+}
+
+const applyPreset = (months: number) => {
+  const today = new Date()
+  const start = new Date(today.getFullYear(), today.getMonth(), 1)
+  const end = new Date(today.getFullYear(), today.getMonth() + months, 0)
+  customStartDate.value = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`
+  customEndDate.value = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`
   loadPlanning()
 }
 
@@ -796,6 +951,266 @@ const loadAbsenceTypes = async () => {
     absenceTypes.value = (response as { types?: AbsenceTypeDTO[] }).types || []
   } catch {
     // Ignorer les erreurs de chargement des types d'absence
+  }
+}
+
+// Export
+const isExporting = ref(false)
+
+function getExportPeriodLabel(): string {
+  if (!planningData.value.startDate || !planningData.value.endDate) return ''
+  const start = new Date(planningData.value.startDate)
+  const end = new Date(planningData.value.endDate)
+  const fmt = (d: Date) => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+  return `${fmt(start)} — ${fmt(end)}`
+}
+
+function getExportFileName(ext: string): string {
+  const s = planningData.value.startDate
+  const e = planningData.value.endDate
+  return `planning-absences_${s}_${e}.${ext}`
+}
+
+function generateAbbreviation(name: string): string {
+  if (!name) return '?'
+  if (name.length <= 3) return name.toUpperCase()
+  const words = name.trim().split(/\s+/)
+  if (words.length >= 2) {
+    return words.map(w => w.charAt(0).toUpperCase()).join('').slice(0, 3)
+  }
+  return name.slice(0, 3).toUpperCase()
+}
+
+function darkenHex(hex: string): string {
+  const r = Math.max(0, parseInt(hex.slice(1, 3), 16) - 90)
+  const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - 90)
+  const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - 90)
+  return `rgb(${r},${g},${b})`
+}
+
+function buildExportHtml(): string {
+  // Abbreviation map
+  const abbrMap = new Map<string, { abbr: string; color: string; name: string }>()
+  const usedAbbrs = new Set<string>()
+  for (const type of absenceTypes.value) {
+    if (!type.uuid || !type.name) continue
+    let abbr = generateAbbreviation(type.name)
+    while (usedAbbrs.has(abbr)) abbr += type.name.charAt(abbr.length) || '+'
+    usedAbbrs.add(abbr)
+    abbrMap.set(type.uuid, { abbr, color: type.color || '#888888', name: type.name })
+  }
+
+  // Month spans for header
+  const monthSpans: { label: string; colspan: number }[] = []
+  let curMonthKey = ''
+  for (const date of dates.value) {
+    const d = new Date(date.dateStr)
+    const key = `${d.getFullYear()}-${d.getMonth()}`
+    const label = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    if (key !== curMonthKey) {
+      monthSpans.push({ label: label.charAt(0).toUpperCase() + label.slice(1), colspan: 1 })
+      curMonthKey = key
+    } else {
+      monthSpans[monthSpans.length - 1]!.colspan++
+    }
+  }
+
+  // Adaptive sizing
+  const nDays = dates.value.length
+  let colW = 32, empW = 180, fs = 10, rowH = 30
+  if (nDays > 62) { colW = 22; empW = 150; fs = 8; rowH = 24 }
+  else if (nDays > 31) { colW = 26; empW = 160; fs = 9; rowH = 26 }
+
+  const B = '1px solid #aaa'
+  const BB = '2px solid #333'
+
+  let h = `<div style="font-family:Arial,Helvetica,sans-serif;background:#fff;padding:24px 20px;color:#111;">`
+
+  // Title
+  h += `<div style="margin-bottom:14px;">`
+  h += `<div style="font-size:16px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;">Planning des absences</div>`
+  h += `<div style="font-size:11px;color:#555;margin-top:3px;">${getExportPeriodLabel()} &nbsp;·&nbsp; Généré le ${new Date().toLocaleDateString('fr-FR')}</div>`
+  h += `</div>`
+
+  // Table
+  h += `<table style="border-collapse:collapse;font-size:${fs}px;line-height:1.3;">`
+
+  // Month header
+  h += `<tr>`
+  h += `<th style="border:${BB};padding:4px;background:#e0e0e0;min-width:${empW}px;width:${empW}px;"></th>`
+  for (const span of monthSpans) {
+    h += `<th colspan="${span.colspan}" style="border:${BB};padding:3px 2px;background:#e0e0e0;text-align:center;font-size:${fs}px;font-weight:700;">${span.label}</th>`
+  }
+  h += `</tr>`
+
+  // Day header
+  h += `<tr>`
+  h += `<th style="border:${BB};padding:4px 8px;background:#f2f2f2;text-align:left;font-weight:700;">Employé</th>`
+  let prevM = -1
+  for (const date of dates.value) {
+    const d = new Date(date.dateStr)
+    const m = d.getMonth()
+    const lb = m !== prevM && prevM !== -1 ? BB : B
+    prevM = m
+    let bg = '#f2f2f2', clr = '#222'
+    if (date.isWeekend) { bg = '#d9d9d9'; clr = '#555' }
+    if (date.isHoliday) { bg = '#f5c6cb'; clr = '#721c24' }
+    const dl = date.dayName.charAt(0).toUpperCase()
+    h += `<th style="border:${B};border-left:${lb};border-top:${BB};padding:2px 0;min-width:${colW}px;width:${colW}px;text-align:center;background:${bg};color:${clr};font-weight:600;">`
+    h += `${dl}<br><span style="font-size:${Math.max(fs, 8)}px;">${date.dayNumber}</span>`
+    if (date.isHoliday) h += `<br><span style="font-size:5px;color:#721c24;">●</span>`
+    h += `</th>`
+  }
+  h += `</tr>`
+
+  // User rows
+  for (let i = 0; i < planningData.value.users.length; i++) {
+    const user = planningData.value.users[i]!
+    // Alternate row bg for readability
+    const rowBg = i % 2 === 0 ? '#fff' : '#f9f9f9'
+    h += `<tr>`
+    h += `<td style="border:${BB};padding:4px 8px;background:${rowBg};font-weight:600;white-space:nowrap;height:${rowH}px;">`
+    h += `${user.firstName} ${user.lastName}`
+    h += `</td>`
+
+    prevM = -1
+    for (const date of dates.value) {
+      const d = new Date(date.dateStr)
+      const m = d.getMonth()
+      const lb = m !== prevM && prevM !== -1 ? BB : B
+      prevM = m
+
+      const absence = getAbsenceForDate(user, date)
+      let bg = rowBg, txt = '', clr = '#333', fw = 'normal', bdr = `border:${B};border-left:${lb};`
+
+      if (!absence) {
+        if (date.isWeekend) bg = '#ececec'
+        if (date.isHoliday) bg = '#fde8e8'
+      } else {
+        const info = absence.absenceType?.uuid ? abbrMap.get(absence.absenceType.uuid) : null
+        const abbr = info?.abbr || (absence.customType ? generateAbbreviation(absence.customType) : '')
+        const color = info?.color || absence.absenceType?.color || '#888888'
+
+        if (absence.status === 'APPROVED') {
+          bg = hexToRgba(color, 0.35)
+          clr = darkenHex(color)
+          txt = abbr
+          fw = 'bold'
+        } else if (absence.status === 'PENDING') {
+          bg = hexToRgba(color, 0.15)
+          clr = '#444'
+          txt = abbr + '?'
+          bdr = `border:1px dashed #999;border-left:${lb};`
+        }
+        if (absence.period === 'MORNING') txt += '↑'
+        else if (absence.period === 'AFTERNOON') txt += '↓'
+      }
+
+      h += `<td style="${bdr}padding:1px;text-align:center;background:${bg};color:${clr};font-weight:${fw};font-size:${Math.max(fs - 1, 7)}px;height:${rowH}px;">${txt}</td>`
+    }
+    h += `</tr>`
+  }
+
+  h += `</table>`
+
+  // Legend
+  h += `<div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:12px;font-size:${fs}px;align-items:center;">`
+  h += `<span style="font-weight:700;color:#444;text-transform:uppercase;letter-spacing:.5px;font-size:${fs - 1}px;">Légende :</span>`
+  for (const [, info] of abbrMap) {
+    h += `<span style="display:inline-flex;align-items:center;gap:4px;">`
+    h += `<span style="display:inline-block;width:14px;height:14px;background:${hexToRgba(info.color, 0.35)};border:2px solid ${info.color};border-radius:2px;"></span>`
+    h += `<strong>${info.abbr}</strong> = ${info.name}`
+    h += `</span>`
+  }
+  h += `</div>`
+  h += `<div style="margin-top:6px;font-size:${Math.max(fs - 1, 7)}px;color:#777;">? = En attente · ↑ = Matin · ↓ = Après-midi · ● = Jour férié · Lignes alternées pour lisibilité N&B</div>`
+  h += `</div>`
+
+  return h
+}
+
+async function exportPlanning(format: 'pdf' | 'png') {
+  if (!planningData.value.users.length || isExporting.value) return
+  isExporting.value = true
+
+  try {
+    // Build offscreen print-optimized element
+    const container = document.createElement('div')
+    container.style.cssText = 'position:absolute;left:-9999px;top:0;'
+    container.innerHTML = buildExportHtml()
+    document.body.appendChild(container)
+    await nextTick()
+
+    const html2canvas = (await import('html2canvas-pro')).default
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      logging: false,
+    })
+    document.body.removeChild(container)
+
+    if (format === 'png') {
+      const link = document.createElement('a')
+      link.download = getExportFileName('png')
+      link.href = canvas.toDataURL('image/png')
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      return
+    }
+
+    // PDF — A4 paysage avec pagination
+    const { jsPDF } = await import('jspdf')
+    const A4_W = 297, A4_H = 210, MARGIN = 8, HEADER_H = 14
+    const usableW = A4_W - MARGIN * 2
+    const usableH = A4_H - MARGIN * 2 - HEADER_H
+
+    const ratio = usableW / canvas.width
+    const scaledH = canvas.height * ratio
+
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+
+    const drawPageHeader = (pageNum: number, totalPages: number) => {
+      pdf.setFontSize(11)
+      pdf.setTextColor(30, 30, 30)
+      pdf.text(`Planning des absences — ${getExportPeriodLabel()}`, MARGIN, MARGIN + 5)
+      pdf.setFontSize(8)
+      pdf.setTextColor(120, 120, 120)
+      pdf.text(`Page ${pageNum}/${totalPages}`, A4_W - MARGIN, MARGIN + 5, { align: 'right' })
+      pdf.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, A4_W - MARGIN, MARGIN + 9, { align: 'right' })
+    }
+
+    if (scaledH <= usableH) {
+      drawPageHeader(1, 1)
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', MARGIN, MARGIN + HEADER_H, usableW, scaledH)
+    } else {
+      const totalPages = Math.ceil(scaledH / usableH)
+      const sliceHeightPx = usableH / ratio
+
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) pdf.addPage()
+        drawPageHeader(page + 1, totalPages)
+
+        const srcY = page * sliceHeightPx
+        const srcH = Math.min(sliceHeightPx, canvas.height - srcY)
+        const destH = srcH * ratio
+
+        const sliceCanvas = document.createElement('canvas')
+        sliceCanvas.width = canvas.width
+        sliceCanvas.height = srcH
+        const ctx = sliceCanvas.getContext('2d')!
+        ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH)
+
+        pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', MARGIN, MARGIN + HEADER_H, usableW, destH)
+      }
+    }
+
+    pdf.save(getExportFileName('pdf'))
+  } catch (err) {
+    console.error('Export failed:', err)
+    error.value = 'Erreur lors de l\'export. Veuillez réessayer.'
+  } finally {
+    isExporting.value = false
   }
 }
 

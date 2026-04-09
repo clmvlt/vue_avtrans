@@ -93,10 +93,12 @@ export interface AbsenceListResponse {
  * Planning query parameters
  */
 export interface PlanningQueryParams {
-  periodType?: 'week' | 'month'
+  periodType?: 'week' | 'month' | 'custom'
   year?: number
   month?: number
   week?: number
+  startDate?: string
+  endDate?: string
 }
 
 /**
