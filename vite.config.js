@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
+import { compression } from 'vite-plugin-compression2'
 import path from 'path'
 import fs from 'fs'
 
@@ -27,7 +28,15 @@ const versionPlugin = () => {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), vueDevTools(), tailwindcss(), versionPlugin()],
+  plugins: [
+    vue(),
+    vueDevTools(),
+    tailwindcss(),
+    versionPlugin(),
+    // Pré-compression des assets au build (gzip + brotli)
+    compression({ algorithm: 'gzip', exclude: [/\.(br)$/] }),
+    compression({ algorithm: 'brotliCompress', exclude: [/\.(gz)$/] })
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
@@ -48,7 +57,11 @@ export default defineConfig({
           // Chart.js - lazy loaded (only VehiculeDetail, Entretiens pages)
           'chartjs': ['chart.js', 'vue-chartjs'],
           // PDF.js - lazy loaded (only AVPdfPreview component)
-          'pdfjs': ['pdfjs-dist']
+          'pdfjs': ['pdfjs-dist'],
+          // Three.js - lazy loaded (only Landing FleetViewer)
+          'threejs': ['three', '@tresjs/core', '@tresjs/cientos'],
+          // Mapbox GL - lazy loaded (only UserServices map modal)
+          'mapbox': ['mapbox-gl']
         }
       }
     }

@@ -1,6 +1,6 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
-const VERSION_CHECK_INTERVAL = 60000 // 60 secondes
+const VERSION_CHECK_INTERVAL = 300000 // 5 minutes
 const VERSION_STORAGE_KEY = 'app_version'
 const DISMISSED_VERSION_KEY = 'dismissed_update_version'
 

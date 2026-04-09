@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, type Component } from 'vue'
+import { ref, computed, onMounted, onUnmounted, defineAsyncComponent, type Component } from 'vue'
 import { RouterLink } from 'vue-router'
 import {
   Truck, Snowflake, PawPrint, MapPin, Warehouse, Clock,
   Phone, Mail, ChevronDown, ArrowRight, Menu, X,
   Shield, Zap, Globe, Package, Locate, Smartphone
 } from 'lucide-vue-next'
-import FleetViewer from '@/components/landing/FleetViewer.vue'
+
+// Lazy-load Three.js / FleetViewer (~934KB) — chargé uniquement quand visible
+const FleetViewer = defineAsyncComponent(() => import('@/components/landing/FleetViewer.vue'))
 
 import locauxImg from '@/assets/images/locaux.jpg'
 import expertiseImg from '@/assets/images/expertise-image.jpg'

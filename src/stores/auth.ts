@@ -105,12 +105,13 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Refresh user data from the API
    * Calls /auth/me to get the latest user information
+   * @param showLoading - Si true, affiche l'état loading (false au démarrage pour ne pas bloquer le rendu)
    */
-  const refreshUser = async (): Promise<void> => {
+  const refreshUser = async (showLoading = true): Promise<void> => {
     if (!token.value) return
 
     try {
-      loading.value = true
+      if (showLoading) loading.value = true
       const response = await authService.getMe()
 
       if (response.user) {
@@ -133,9 +134,10 @@ export const useAuthStore = defineStore('auth', () => {
   // Charger les données au démarrage
   loadFromStorage()
 
-  // Si un token existe, rafraîchir les données utilisateur depuis l'API
+  // Si un token existe, rafraîchir les données utilisateur en arrière-plan
+  // (sans loading=true pour ne pas bloquer le rendu — on a déjà les données du localStorage)
   if (token.value) {
-    refreshUser()
+    refreshUser(false)
   }
 
   return {

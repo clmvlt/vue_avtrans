@@ -1,11 +1,23 @@
 /**
  * Composable pour gérer la modal de carte avec Mapbox
+ * Mapbox GL (~1.7MB) est chargé dynamiquement à l'ouverture de la carte
  */
 import { ref, nextTick, onUnmounted } from 'vue'
-import mapboxgl from 'mapbox-gl'
-import 'mapbox-gl/dist/mapbox-gl.css'
 
 import { MAPBOX_TOKEN } from '@/config/map'
+
+// Mapbox chargé à la demande
+let mapboxgl: typeof import('mapbox-gl').default | null = null
+let mapboxLoaded = false
+
+const loadMapbox = async () => {
+  if (mapboxLoaded) return mapboxgl!
+  const mod = await import('mapbox-gl')
+  await import('mapbox-gl/dist/mapbox-gl.css')
+  mapboxgl = mod.default
+  mapboxLoaded = true
+  return mapboxgl
+}
 
 export const useMapModal = () => {
   // État
@@ -39,6 +51,9 @@ export const useMapModal = () => {
     mapHasEndLocation.value = !!hasEnd
     showMapModal.value = true
 
+    // Charger Mapbox à la demande (~1.7MB)
+    const mb = await loadMapbox()
+
     await nextTick()
 
     if (!mapContainer.value) {
@@ -47,28 +62,28 @@ export const useMapModal = () => {
     }
 
     // Initialiser la carte
-    mapboxgl.accessToken = MAPBOX_TOKEN
+    mb.accessToken = MAPBOX_TOKEN
 
     // Collecter les points valides
     const points: [number, number][] = []
     if (hasStart) points.push([service.longitude, service.latitude])
     if (hasEnd) points.push([service.longitudeEnd, service.latitudeEnd])
 
-    map = new mapboxgl.Map({
+    map = new mb.Map({
       container: mapContainer.value,
       style: 'mapbox://styles/mapbox/streets-v12',
       center: points[0],
       zoom: 14
     })
 
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right')
+    map.addControl(new mb.NavigationControl(), 'top-right')
 
     map.on('load', () => {
       // Marqueur de début (vert)
       if (hasStart) {
-        const startMarker = new mapboxgl.Marker({ color: '#16a34a' })
+        const startMarker = new mb.Marker({ color: '#16a34a' })
           .setLngLat([service.longitude, service.latitude])
-          .setPopup(new mapboxgl.Popup().setHTML(`
+          .setPopup(new mb.Popup().setHTML(`
             <strong>Début ${service.isBreak ? 'pause' : 'service'}</strong><br>
             ${formatTimeFn(service.debut)}
           `))
@@ -78,9 +93,9 @@ export const useMapModal = () => {
 
       // Marqueur de fin (violet)
       if (hasEnd) {
-        const endMarker = new mapboxgl.Marker({ color: '#581c87' })
+        const endMarker = new mb.Marker({ color: '#581c87' })
           .setLngLat([service.longitudeEnd, service.latitudeEnd])
-          .setPopup(new mapboxgl.Popup().setHTML(`
+          .setPopup(new mb.Popup().setHTML(`
             <strong>Fin ${service.isBreak ? 'pause' : 'service'}</strong><br>
             ${formatTimeFn(service.fin)}
           `))
@@ -90,7 +105,7 @@ export const useMapModal = () => {
 
       // Ajuster le zoom pour afficher tous les points
       if (points.length >= 2) {
-        const bounds = new mapboxgl.LngLatBounds()
+        const bounds = new mb.LngLatBounds()
         for (const p of points) bounds.extend(p)
         map.fitBounds(bounds, { padding: 80, maxZoom: 16 })
       }

@@ -1,5 +1,28 @@
 # Headers pour Netlify, Cloudflare Pages, et autres hébergeurs compatibles
 
+# Assets hashés par Vite — cache immutable longue durée (1 an)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Modèles 3D — cache longue durée
+/models/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Sons — cache longue durée
+/sounds/*
+  Cache-Control: public, max-age=2592000
+
+# Icônes PWA — cache 30 jours
+/icons/*
+  Cache-Control: public, max-age=2592000
+
+# index.html et version.json — toujours revalider
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+/version.json
+  Cache-Control: no-cache, no-store
+
 # Configuration pour les fichiers .well-known
 /.well-known/*
   Content-Type: application/json
