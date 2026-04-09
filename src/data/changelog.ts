@@ -25,6 +25,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: '0.0.31',
+    date: '2026-03-26',
+    changes: [
+      { role: 'admin', type: 'feature', description: 'Ajout des signatures dans les exports Excel.' },
+    ]
+  },
+  {
     version: '0.0.29',
     date: '2026-03-17',
     changes: [
