@@ -141,6 +141,9 @@
                 <Car class="size-4 shrink-0 text-muted-foreground" />
                 <span class="text-sm font-medium">{{ getLastVehicle(item.uuid)!.vehiculeImmat }}</span>
                 <span class="text-xs text-muted-foreground">· {{ formatVehicleDate(getLastVehicle(item.uuid)!.date) }}</span>
+                <Button variant="ghost" size="icon" class="ml-auto size-7" @click.stop="$router.push(`/vehicules/${getLastVehicle(item.uuid)!.vehiculeId}`)" title="Voir le véhicule">
+                  <ExternalLink class="size-3.5" />
+                </Button>
               </div>
             </div>
           </div>
@@ -244,6 +247,9 @@
                           <span class="text-sm font-medium">{{ getLastVehicle(item.uuid)!.vehiculeImmat }}</span>
                           <span class="text-xs text-muted-foreground">{{ formatVehicleDate(getLastVehicle(item.uuid)!.date) }}</span>
                         </div>
+                        <Button variant="ghost" size="icon" class="ml-auto size-7" @click.stop="$router.push(`/vehicules/${getLastVehicle(item.uuid)!.vehiculeId}`)" title="Voir le véhicule">
+                          <ExternalLink class="size-3.5" />
+                        </Button>
                       </div>
                     </template>
                     <span v-else class="text-xs italic text-muted-foreground">—</span>
@@ -457,6 +463,7 @@ import {
   CalendarOff,
   Mail,
   Car,
+  ExternalLink,
 } from 'lucide-vue-next'
 
 // DropdownMenu for mobile actions
