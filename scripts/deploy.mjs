@@ -13,7 +13,7 @@ import { Client } from 'ssh2'
 
 // ── Configuration ──────────────────────────────────────────────
 const CONFIG = {
-  host: 'movix.fr',
+  host: 'pointage.avtrans-concept.com',
   port: 22,
   username: 'debian',
   password: 'wu^eGjU7zOeZ7P#mhBw@',
