@@ -127,8 +127,8 @@ watch(() => route.path, () => {
 
     <!-- Content: Scrollable nav sections -->
     <SidebarContent>
-      <SidebarGroup v-for="section in filteredNavSections" :key="section.title">
-        <SidebarGroupLabel>
+      <SidebarGroup v-for="section in filteredNavSections" :key="section.title || section.links[0]?.to">
+        <SidebarGroupLabel v-if="section.title">
           <component :is="section.lucideIcon" class="mr-1" />
           {{ section.title }}
         </SidebarGroupLabel>

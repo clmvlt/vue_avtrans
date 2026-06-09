@@ -153,6 +153,53 @@ export const mainNavLinks: NavLinkConfig[] = [
  * Organisé en sections logiques
  */
 export const fullNavSections: NavSectionConfig[] = [
+  // Lien À faire (sans catégorie)
+  {
+    title: '',
+    lucideIcon: ListChecks,
+    links: [
+      {
+        to: '/todos',
+        label: 'À faire',
+        lucideIcon: ListChecks,
+        requiredRoles: [UserRole.ADMINISTRATEUR, UserRole.MECANICIEN]
+      }
+    ]
+  },
+
+  // Section Mon espace (UTILISATEUR + ADMIN)
+  {
+    title: 'Mon espace',
+    lucideIcon: UserCircle,
+    links: [
+      {
+        to: '/pointage',
+        label: 'Pointage',
+        lucideIcon: Clock,
+        requiredRoles: [UserRole.UTILISATEUR, UserRole.ADMINISTRATEUR]
+      },
+      {
+        to: '/myabsences',
+        label: 'Mes absences',
+        lucideIcon: CalendarX2,
+        requiredRoles: [UserRole.UTILISATEUR, UserRole.ADMINISTRATEUR]
+      },
+      {
+        to: '/myacomptes',
+        label: 'Mes acomptes',
+        lucideIcon: Coins,
+        requiredRoles: [UserRole.UTILISATEUR, UserRole.ADMINISTRATEUR]
+      },
+      {
+        to: '/mycouchettes',
+        label: 'Mes couchettes',
+        lucideIcon: BedDouble,
+        requiredRoles: [UserRole.UTILISATEUR, UserRole.ADMINISTRATEUR],
+        requiredPermissions: ['couchette']
+      }
+    ]
+  },
+
   // Section Véhicules (ADMIN + MECANICIEN)
   {
     title: 'Véhicules',
@@ -257,54 +304,6 @@ export const fullNavSections: NavSectionConfig[] = [
         label: 'Signatures',
         lucideIcon: PenLine,
         requiredRoles: [UserRole.ADMINISTRATEUR]
-      }
-    ]
-  },
-
-  // Section Mon espace (UTILISATEUR + ADMIN)
-  {
-    title: 'Mon espace',
-    lucideIcon: UserCircle,
-    links: [
-      {
-        to: '/pointage',
-        label: 'Pointage',
-        lucideIcon: Clock,
-        requiredRoles: [UserRole.UTILISATEUR, UserRole.ADMINISTRATEUR]
-      },
-      {
-        to: '/myabsences',
-        label: 'Mes absences',
-        lucideIcon: CalendarX2,
-        requiredRoles: [UserRole.UTILISATEUR, UserRole.ADMINISTRATEUR]
-      },
-      {
-        to: '/myacomptes',
-        label: 'Mes acomptes',
-        lucideIcon: Coins,
-        requiredRoles: [UserRole.UTILISATEUR, UserRole.ADMINISTRATEUR]
-      },
-      {
-        to: '/mycouchettes',
-        label: 'Mes couchettes',
-        lucideIcon: BedDouble,
-        requiredRoles: [UserRole.UTILISATEUR, UserRole.ADMINISTRATEUR],
-        requiredPermissions: ['couchette']
-      }
-    ]
-  },
-
-  // Section À faire
-  {
-    title: 'À faire',
-    lucideIcon: ListChecks,
-    group: 'extra',
-    links: [
-      {
-        to: '/todos',
-        label: 'Tâches',
-        lucideIcon: ListChecks,
-        requiredRoles: [UserRole.ADMINISTRATEUR, UserRole.MECANICIEN]
       }
     ]
   },

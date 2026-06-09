@@ -137,8 +137,8 @@
               </div>
 
               <!-- Sections de navigation -->
-              <div v-for="section in filteredNavSections" :key="section.title" class="border-b px-4 py-3">
-                <p class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <div v-for="section in filteredNavSections" :key="section.title || section.links[0]?.to" class="border-b px-4 py-3">
+                <p v-if="section.title" class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   <component :is="section.lucideIcon" class="size-3.5" />
                   {{ section.title }}
                 </p>
