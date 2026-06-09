@@ -23,7 +23,7 @@
               <Input
                 v-model="searchQuery"
                 type="search"
-                placeholder="Rechercher par immatriculation, marque ou modèle..."
+                placeholder="Rechercher par immatriculation, relais, marque ou modèle..."
                 class="pl-9"
               />
             </div>
@@ -66,7 +66,17 @@
                     </div>
                   </div>
                   <div class="flex flex-col gap-0.5">
-                    <span class="font-semibold uppercase tracking-wide text-foreground">{{ item.immat }}</span>
+                    <div class="flex items-center gap-2">
+                      <span class="font-semibold uppercase tracking-wide text-foreground">{{ item.immat }}</span>
+                      <span
+                        v-if="item.relaiImmat"
+                        class="inline-flex items-center gap-1 rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-foreground"
+                        title="Véhicule relais"
+                      >
+                        <Repeat class="size-3 text-muted-foreground" />
+                        {{ item.relaiImmat }}
+                      </span>
+                    </div>
                     <span class="text-sm text-muted-foreground">{{ item.brand }} {{ item.model }}</span>
                   </div>
                 </div>
@@ -154,7 +164,17 @@
                         </div>
                       </div>
                       <div class="flex flex-col gap-0.5">
-                        <span class="font-semibold uppercase tracking-wide text-foreground">{{ item.immat }}</span>
+                        <div class="flex items-center gap-2">
+                          <span class="font-semibold uppercase tracking-wide text-foreground">{{ item.immat }}</span>
+                          <span
+                            v-if="item.relaiImmat"
+                            class="inline-flex items-center gap-1 rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-foreground"
+                            title="Véhicule relais"
+                          >
+                            <Repeat class="size-3 text-muted-foreground" />
+                            {{ item.relaiImmat }}
+                          </span>
+                        </div>
                         <span class="text-sm text-muted-foreground">{{ item.brand }} {{ item.model }}</span>
                       </div>
                     </div>
@@ -242,16 +262,30 @@
             {{ formSuccess }}
           </div>
 
-          <div class="space-y-2">
-            <label for="immat" class="text-sm font-medium text-muted-foreground">Immatriculation *</label>
-            <Input
-              id="immat"
-              :model-value="formData.immat"
-              @update:model-value="formData.immat = ($event as string).toUpperCase()"
-              required
-              :disabled="saving"
-              placeholder="AB-123-CD"
-            />
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label for="immat" class="text-sm font-medium text-muted-foreground">Immatriculation *</label>
+              <Input
+                id="immat"
+                :model-value="formData.immat"
+                @update:model-value="formData.immat = ($event as string).toUpperCase()"
+                required
+                :disabled="saving"
+                placeholder="AB-123-CD"
+                class="uppercase tracking-wide"
+              />
+            </div>
+            <div class="space-y-2">
+              <label for="relaiImmat" class="text-sm font-medium text-muted-foreground">Immat. véhicule relais</label>
+              <Input
+                id="relaiImmat"
+                :model-value="formData.relaiImmat"
+                @update:model-value="formData.relaiImmat = ($event as string).toUpperCase()"
+                :disabled="saving"
+                placeholder="AB-123-CD"
+                class="uppercase tracking-wide"
+              />
+            </div>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
@@ -593,6 +627,7 @@ import {
   MoreVertical,
   Eye,
   Wrench,
+  Repeat,
 } from 'lucide-vue-next'
 
 // DropdownMenu for mobile actions
@@ -667,6 +702,7 @@ const filteredVehicules = computed(() => {
   const query = searchQuery.value.toLowerCase().trim()
   return vehicules.value.filter(vehicule => {
     return (vehicule.immat?.toLowerCase().includes(query) ?? false) ||
+           (vehicule.relaiImmat?.toLowerCase().includes(query) ?? false) ||
            (vehicule.brand?.toLowerCase().includes(query) ?? false) ||
            (vehicule.model?.toLowerCase().includes(query) ?? false)
   })
@@ -734,6 +770,7 @@ const formError = ref('')
 const formSuccess = ref('')
 const formData = ref({
   immat: '',
+  relaiImmat: '',
   brand: '',
   model: '',
   comment: '',
@@ -802,6 +839,7 @@ const formatDate = (dateString: string | Date | undefined) => {
 const openCreateModal = () => {
   formData.value = {
     immat: '',
+    relaiImmat: '',
     brand: '',
     model: '',
     comment: '',
@@ -867,6 +905,7 @@ const handleFormSubmit = async () => {
 
     const createData = {
       ...formData.value,
+      relaiImmat: formData.value.relaiImmat || undefined,
       vin: formData.value.vin || undefined,
       numeroCarteGrise: formData.value.numeroCarteGrise || undefined,
       dateMiseEnCirculation: formData.value.dateMiseEnCirculation || undefined,

@@ -13,6 +13,7 @@ import type { SuccessMessageResponse } from '@/types'
  */
 export interface VehiculeCreateRequest {
   immat: string
+  relaiImmat?: string
   model: string
   brand: string
   comment?: string
@@ -33,6 +34,7 @@ export interface VehiculeCreateRequest {
  */
 export interface VehiculeUpdateRequest {
   immat?: string
+  relaiImmat?: string
   model?: string
   brand?: string
   comment?: string

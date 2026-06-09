@@ -100,9 +100,19 @@
 
         <!-- Vehicle info (left) -->
         <div class="flex min-w-0 flex-col justify-center gap-1">
-          <h2 v-if="!isEditing" class="text-2xl font-bold uppercase tracking-wide text-foreground">
-            {{ vehicule.immat }}
-          </h2>
+          <div v-if="!isEditing" class="flex flex-wrap items-center gap-2">
+            <h2 class="text-2xl font-bold uppercase tracking-wide text-foreground">
+              {{ vehicule.immat }}
+            </h2>
+            <span
+              v-if="vehicule.relaiImmat"
+              class="inline-flex items-center gap-1 rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-foreground"
+              title="Véhicule relais"
+            >
+              <Repeat class="size-3 text-muted-foreground" />
+              {{ vehicule.relaiImmat }}
+            </span>
+          </div>
           <Input
             v-else
             :model-value="editFormData.immat"
@@ -263,6 +273,19 @@
               :disabled="savingEdit"
             />
           </div>
+        </div>
+
+        <div class="space-y-2">
+          <label for="relaiImmat" class="text-sm font-medium text-muted-foreground">Immatriculation du véhicule relais</label>
+          <Input
+            id="relaiImmat"
+            :model-value="editFormData.relaiImmat"
+            @update:model-value="updateEditFormData({ ...editFormData, relaiImmat: ($event as string).toUpperCase() })"
+            type="text"
+            placeholder="AB-123-CD"
+            class="uppercase tracking-wide"
+            :disabled="savingEdit"
+          />
         </div>
 
         <div class="space-y-2">
@@ -452,6 +475,7 @@ import {
   Shield,
   CalendarClock,
   ClipboardCheck,
+  Repeat,
 } from 'lucide-vue-next'
 
 const carburantOptions = [
@@ -470,6 +494,7 @@ interface Props {
   editError: string
   editFormData: {
     immat: string
+    relaiImmat: string
     brand: string
     model: string
     comment: string

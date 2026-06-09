@@ -6,6 +6,8 @@ export interface VehiculeDTO {
   id?: string;
   /** Immatriculation du véhicule */
   immat?: string;
+  /** Immatriculation du véhicule relais (le cas échéant) */
+  relaiImmat?: string;
   /** Date de création du véhicule */
   createdAt?: Date | string;
   /** Modèle du véhicule */
@@ -46,6 +48,8 @@ export interface VehiculeDTO {
 export interface VehiculeCreateRequest {
   /** Immatriculation du véhicule */
   immat?: string;
+  /** Immatriculation du véhicule relais (le cas échéant) */
+  relaiImmat?: string;
   /** Modèle du véhicule */
   model?: string;
   /** Marque du véhicule */
@@ -71,6 +75,8 @@ export interface VehiculeCreateRequest {
 export interface VehiculeUpdateRequest {
   /** Immatriculation du véhicule */
   immat?: string;
+  /** Immatriculation du véhicule relais (le cas échéant) */
+  relaiImmat?: string;
   /** Modèle du véhicule */
   model?: string;
   /** Marque du véhicule */

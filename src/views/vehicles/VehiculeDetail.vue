@@ -476,6 +476,7 @@ const savingEdit = ref(false)
 const editError = ref('')
 const editFormData = ref({
   immat: '',
+  relaiImmat: '',
   brand: '',
   model: '',
   comment: '',
@@ -611,6 +612,7 @@ const startEditing = () => {
   if (!vehicule.value) return
   editFormData.value = {
     immat: vehicule.value.immat || '',
+    relaiImmat: vehicule.value.relaiImmat || '',
     brand: vehicule.value.brand || '',
     model: vehicule.value.model || '',
     comment: vehicule.value.comment || '',
@@ -647,6 +649,7 @@ const saveEditing = async () => {
   try {
     const updateData: Record<string, unknown> = {
       immat: editFormData.value.immat,
+      relaiImmat: editFormData.value.relaiImmat || null,
       brand: editFormData.value.brand,
       model: editFormData.value.model,
       comment: editFormData.value.comment,
