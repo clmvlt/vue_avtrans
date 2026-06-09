@@ -180,7 +180,8 @@
         </div>
 
         <!-- Services grouped by day -->
-        <div v-else-if="servicesByDay.length > 0" class="space-y-6">
+        <TooltipProvider v-else-if="servicesByDay.length > 0" :delay-duration="200">
+         <div class="space-y-6">
           <div v-for="day in servicesByDay" :key="day.date" class="overflow-hidden rounded-lg border bg-card shadow-sm">
             <div class="flex items-center justify-between border-b bg-muted/50 px-5 py-4">
               <div class="flex flex-col gap-0.5">
@@ -214,9 +215,25 @@
                 <div class="flex flex-1 items-center justify-between gap-3">
                   <div class="flex flex-wrap items-center gap-2 font-mono text-sm">
                     <Badge v-if="service.isBreak" variant="outline" class="border-amber-500/50 font-sans text-amber-600 dark:text-amber-400">Pause</Badge>
-                    <span class="font-medium text-foreground">{{ formatTime(service.debut) }}</span>
+                    <span class="inline-flex items-center gap-1">
+                      <span class="font-medium text-foreground">{{ formatTime(service.debut) }}</span>
+                      <Tooltip v-if="service.startDayLabel">
+                        <TooltipTrigger as-child>
+                          <span class="cursor-pointer rounded bg-muted px-1.5 py-0.5 font-sans text-[10px] font-medium capitalize text-muted-foreground">{{ service.startDayLabel }}</span>
+                        </TooltipTrigger>
+                        <TooltipContent class="capitalize">{{ service.startDayTooltip }}</TooltipContent>
+                      </Tooltip>
+                    </span>
                     <ArrowRight class="size-3 text-muted-foreground" />
-                    <span class="font-medium text-foreground">{{ formatTime(service.fin) || '--:--' }}</span>
+                    <span class="inline-flex items-center gap-1">
+                      <span class="font-medium text-foreground">{{ formatTime(service.fin) || '--:--' }}</span>
+                      <Tooltip v-if="service.endDayLabel">
+                        <TooltipTrigger as-child>
+                          <span class="cursor-pointer rounded bg-muted px-1.5 py-0.5 font-sans text-[10px] font-medium capitalize text-muted-foreground">{{ service.endDayLabel }}</span>
+                        </TooltipTrigger>
+                        <TooltipContent class="capitalize">{{ service.endDayTooltip }}</TooltipContent>
+                      </Tooltip>
+                    </span>
                     <Badge v-if="!service.fin" variant="outline" class="border-green-500/50 font-sans text-green-600 animate-pulse dark:text-green-400">En cours</Badge>
                   </div>
                   <span v-if="service.duree" class="font-mono text-sm text-muted-foreground">{{ formatDuration(service.duree) }}</span>
@@ -277,7 +294,8 @@
               </div>
             </div>
           </div>
-        </div>
+         </div>
+        </TooltipProvider>
 
         <!-- Empty state -->
         <div v-else class="flex flex-col items-center justify-center gap-4 py-16">
@@ -318,7 +336,7 @@
       <DialogContent class="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{{ showEditModal ? (formData.isBreak ? 'Modifier la pause' : 'Modifier le service') : 'Nouveau service' }}</DialogTitle>
-          <DialogDescription>{{ showEditModal ? 'Modifiez les informations du service.' : 'Creez un nouveau service ou une pause.' }}</DialogDescription>
+          <DialogDescription>{{ showEditModal ? 'Modifiez les informations puis enregistrez.' : 'Renseignez un service ou une pause, puis créez-le.' }}</DialogDescription>
         </DialogHeader>
 
         <form @submit.prevent="handleSubmit" class="space-y-4">
@@ -358,35 +376,59 @@
             </button>
           </div>
 
-          <!-- Start section -->
-          <div class="rounded-lg bg-muted/50 p-4">
-            <span class="mb-3 block text-sm font-semibold text-muted-foreground">Debut</span>
+          <!-- Début -->
+          <div class="space-y-2">
+            <div class="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <component :is="formData.isBreak ? Pause : Play" class="size-4" :class="formData.isBreak ? 'text-amber-500' : 'text-green-500'" />
+              <span>Début</span>
+            </div>
             <div class="grid grid-cols-2 gap-3">
-              <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-muted-foreground">Date</label>
-                <Input type="date" v-model="formData.debutDate" required />
-              </div>
-              <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-muted-foreground">Heure</label>
-                <Input type="time" v-model="formData.debutTime" required />
-              </div>
+              <Input type="date" v-model="formData.debutDate" required aria-label="Date de début" />
+              <Input type="time" v-model="formData.debutTime" required aria-label="Heure de début" />
             </div>
           </div>
 
-          <!-- End section -->
-          <div class="rounded-lg bg-muted/50 p-4">
-            <span class="mb-3 block text-sm font-semibold text-muted-foreground">
-              Fin <span class="font-normal text-muted-foreground/60">(optionnel)</span>
-            </span>
+          <!-- Toggle : terminé ou en cours -->
+          <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-accent/50 has-[[data-state=checked]]:border-primary/30 has-[[data-state=checked]]:bg-primary/5">
+            <Checkbox :checked="hasEnd" @update:checked="toggleHasEnd" />
+            <div class="flex flex-col gap-0.5">
+              <span class="text-sm font-medium leading-none">{{ formData.isBreak ? 'Pause terminée' : 'Service terminé' }}</span>
+              <span class="text-xs text-muted-foreground">
+                {{ hasEnd ? 'Renseignez la date et l\'heure de fin' : 'En cours — aucune heure de fin' }}
+              </span>
+            </div>
+          </label>
+
+          <!-- Fin (seulement si terminé) -->
+          <div v-if="hasEnd" class="space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Square class="size-4 text-muted-foreground" />
+                <span>Fin</span>
+              </div>
+              <span
+                v-if="durationLabel"
+                class="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary"
+              >
+                {{ durationLabel }}
+              </span>
+            </div>
             <div class="grid grid-cols-2 gap-3">
-              <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-muted-foreground">Date</label>
-                <Input type="date" v-model="formData.finDate" />
-              </div>
-              <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-muted-foreground">Heure</label>
-                <Input type="time" v-model="formData.finTime" />
-              </div>
+              <Input type="date" v-model="formData.finDate" required aria-label="Date de fin" />
+              <Input type="time" v-model="formData.finTime" required aria-label="Heure de fin" />
+            </div>
+            <!-- Aide service de nuit : fin avant le début -->
+            <div
+              v-if="durationInvalid"
+              class="flex flex-wrap items-center justify-between gap-2 rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-400"
+            >
+              <span class="flex items-center gap-1.5">
+                <CircleAlert class="size-3.5 shrink-0" />
+                La fin précède le début.
+              </span>
+              <button type="button" class="font-semibold underline underline-offset-2" @click="setEndNextDay">
+                Terminer le lendemain
+              </button>
             </div>
           </div>
 
@@ -400,7 +442,7 @@
             <Button variant="outline" type="button" @click="closeModal">Annuler</Button>
             <Button type="submit" :disabled="submitting">
               <LoaderCircle v-if="submitting" class="mr-2 size-4 animate-spin" />
-              {{ showEditModal ? 'Modifier' : 'Creer' }}
+              {{ showEditModal ? 'Enregistrer' : 'Créer' }}
             </Button>
           </DialogFooter>
         </form>
@@ -481,7 +523,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 // Lucide icons
 import {
@@ -647,34 +691,86 @@ const formData = ref({
   isBreak: false
 })
 
+// Indique si une heure de fin est renseignée (sinon : service/pause en cours)
+const hasEnd = ref(false)
+
+// Durée en minutes entre début et fin (null si incomplet)
+const durationMinutes = computed(() => {
+  const { debutDate, debutTime, finDate, finTime } = formData.value
+  if (!hasEnd.value || !debutDate || !debutTime || !finDate || !finTime) return null
+  const start = new Date(`${debutDate}T${debutTime}`)
+  const end = new Date(`${finDate}T${finTime}`)
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null
+  return Math.round((end.getTime() - start.getTime()) / 60000)
+})
+
+// Fin antérieure au début (souvent un service de nuit dont la date de fin n'a pas été avancée)
+const durationInvalid = computed(() => durationMinutes.value !== null && durationMinutes.value < 0)
+
+// Libellé lisible de la durée ("8h 30min"), vide si invalide ou incomplet
+const durationLabel = computed(() => {
+  const m = durationMinutes.value
+  if (m === null || m < 0) return ''
+  const h = Math.floor(m / 60)
+  const min = m % 60
+  return min > 0 ? `${h}h ${String(min).padStart(2, '0')}min` : `${h}h`
+})
+
+// Active/désactive l'heure de fin et pré-remplit pour ne jamais laisser un champ vide
+const toggleHasEnd = (val: boolean | 'indeterminate') => {
+  hasEnd.value = val === true
+  if (hasEnd.value) {
+    if (!formData.value.finDate) formData.value.finDate = formData.value.debutDate || getTodayDate()
+    if (!formData.value.finTime) formData.value.finTime = formData.value.debutTime || getCurrentTime()
+  }
+}
+
+// Avance la date de fin d'un jour (service de nuit)
+const setEndNextDay = () => {
+  const base = formData.value.finDate || formData.value.debutDate
+  if (!base) return
+  const [y, m, d] = base.split('-').map(Number)
+  const dt = new Date(y || 1970, (m || 1) - 1, d || 1)
+  dt.setDate(dt.getDate() + 1)
+  const yy = dt.getFullYear()
+  const mm = String(dt.getMonth() + 1).padStart(2, '0')
+  const dd = String(dt.getDate()).padStart(2, '0')
+  formData.value.finDate = `${yy}-${mm}-${dd}`
+}
+
 const openCreateModal = () => {
+  const today = getTodayDate()
+  const now = getCurrentTime()
   formData.value = {
-    debutDate: getTodayDate(),
-    debutTime: getCurrentTime(),
-    finDate: '',
-    finTime: '',
+    debutDate: today,
+    debutTime: now,
+    finDate: today,
+    finTime: now,
     latitude: null,
     longitude: null,
     latitudeEnd: null,
     longitudeEnd: null,
     isBreak: false
   }
+  hasEnd.value = true
   formError.value = ''
   showCreateModal.value = true
 }
 
 const openCreateModalForDate = (date: string) => {
+  const now = getCurrentTime()
   formData.value = {
     debutDate: date,
-    debutTime: '',
+    debutTime: now,
     finDate: date,
-    finTime: '',
+    finTime: now,
     latitude: null,
     longitude: null,
     latitudeEnd: null,
     longitudeEnd: null,
     isBreak: false
   }
+  hasEnd.value = true
   formError.value = ''
   showCreateModal.value = true
 }
@@ -695,6 +791,7 @@ const editService = (service: any) => {
     longitudeEnd: service.longitudeEnd ?? null,
     isBreak: service.isBreak
   }
+  hasEnd.value = !!service.fin
   formError.value = ''
   showEditModal.value = true
 }
@@ -711,10 +808,17 @@ const handleSubmit = async () => {
     submitting.value = true
     formError.value = ''
 
+    // Sans heure de fin = service/pause en cours : on n'envoie pas de fin
+    const payload = { ...formData.value }
+    if (!hasEnd.value) {
+      payload.finDate = ''
+      payload.finTime = ''
+    }
+
     if (showEditModal.value && serviceToEdit.value) {
-      await updateService(serviceToEdit.value.uuid, formData.value)
+      await updateService(serviceToEdit.value.uuid, payload)
     } else {
-      await createService(formData.value)
+      await createService(payload)
     }
 
     closeModal()

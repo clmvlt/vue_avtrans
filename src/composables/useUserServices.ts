@@ -91,12 +91,65 @@ export const useUserServices = (userUuid: string) => {
            searchFilters.value.isBreakString !== 'all'
   })
 
+  // Clé de date locale 'YYYY-MM-DD' (et non UTC, pour éviter les décalages de fuseau)
+  const toLocalDateKey = (d: Date): string => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
+  // Libellé court "10 juin" pour signaler un dépassement de minuit
+  const formatShortDate = (d: Date): string =>
+    d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+
+  // Texte d'infobulle indiquant le décalage : "Le lendemain · mardi 10 juin 2026"
+  const relativeDayTooltip = (target: Date, ref: Date): string => {
+    const t = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime()
+    const r = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate()).getTime()
+    const diff = Math.round((t - r) / 86_400_000)
+    const full = target.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
+    let prefix = ''
+    if (diff === 1) prefix = 'Le lendemain'
+    else if (diff === 2) prefix = 'Le surlendemain'
+    else if (diff > 0) prefix = `J+${diff}`
+    return prefix ? `${prefix} · ${full}` : full
+  }
+
   const servicesByDay = computed(() => {
+    const list = services.value
+
+    // Intervalles des services de travail : sert à rattacher une pause de nuit
+    // (ex. 02h00-02h30) au service qui la contient (ex. 21h00 -> 05h00)
+    const workIntervals = list
+      .filter((s: any) => !s.isBreak)
+      .map((s: any) => ({
+        start: new Date(s.debut).getTime(),
+        end: s.fin ? new Date(s.fin).getTime() : Infinity,
+        dateKey: toLocalDateKey(new Date(s.debut))
+      }))
+
+    // Détermine la "journée de service" d'un enregistrement.
+    // Une pause est rattachée au service de travail qui l'englobe, sinon
+    // (et pour les services) on se base sur la date locale de début.
+    const resolveDayKey = (service: any): string => {
+      if (service.isBreak) {
+        const startTime = new Date(service.debut).getTime()
+        const container = workIntervals.find(w => startTime >= w.start && startTime <= w.end)
+        if (container) return container.dateKey
+      }
+      return toLocalDateKey(new Date(service.debut))
+    }
+
     const grouped: Record<string, { date: string; services: any[] }> = {}
 
-    services.value.forEach(service => {
-      const date = new Date(service.debut)
-      const dateKey = date.toISOString().split('T')[0] || ''
+    list.forEach((service: any) => {
+      const dateKey = resolveDayKey(service)
 
       if (!grouped[dateKey]) {
         grouped[dateKey] = {
@@ -110,11 +163,30 @@ export const useUserServices = (userUuid: string) => {
 
     return Object.values(grouped)
       .map(day => {
-        const date = new Date(day.date)
+        // Parse en date locale (pas UTC) pour un affichage de jour fiable
+        const [y, m, d] = day.date.split('-').map(Number)
+        const date = new Date(y || 1970, (m || 1) - 1, d || 1)
 
         // Tri chronologique mixte (services + pauses mélangés)
         const allServices = [...day.services]
           .sort((a: any, b: any) => new Date(a.debut).getTime() - new Date(b.debut).getTime())
+          .map((s: any) => {
+            const debutDate = new Date(s.debut)
+            const finDate = s.fin ? new Date(s.fin) : null
+            const debutKey = toLocalDateKey(debutDate)
+            const finKey = finDate ? toLocalDateKey(finDate) : ''
+            const startsOtherDay = debutKey !== day.date
+            const endsOtherDay = !!finDate && finKey !== debutKey
+            return {
+              ...s,
+              // Badge sur le début si l'enregistrement démarre un autre jour que l'entête
+              startDayLabel: startsOtherDay ? formatShortDate(debutDate) : '',
+              startDayTooltip: startsOtherDay ? relativeDayTooltip(debutDate, date) : '',
+              // Badge sur la fin si l'enregistrement franchit minuit
+              endDayLabel: endsOtherDay ? formatShortDate(finDate as Date) : '',
+              endDayTooltip: endsOtherDay ? relativeDayTooltip(finDate as Date, debutDate) : ''
+            }
+          })
 
         const workSeconds = day.services
           .filter((s: any) => !s.isBreak)
