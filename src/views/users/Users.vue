@@ -57,9 +57,19 @@
                       {{ getInitials(item.firstName, item.lastName) }}
                     </span>
                   </div>
-                  <div class="flex flex-col">
+                  <div class="flex min-w-0 flex-col">
                     <span class="font-medium text-foreground">{{ item.firstName }} {{ item.lastName }}</span>
-                    <span class="text-sm text-muted-foreground">{{ item.email }}</span>
+                    <span class="truncate text-sm text-muted-foreground">{{ item.email }}</span>
+                    <div v-if="item.telPersonnel || item.telPro" class="mt-1 flex flex-col gap-0.5">
+                      <a v-if="item.telPersonnel" :href="`tel:${item.telPersonnel}`" class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary" @click.stop>
+                        <Smartphone class="size-3 shrink-0" />
+                        {{ item.telPersonnel }}
+                      </a>
+                      <a v-if="item.telPro" :href="`tel:${item.telPro}`" class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary" @click.stop>
+                        <Phone class="size-3 shrink-0" />
+                        {{ item.telPro }}
+                      </a>
+                    </div>
                   </div>
                 </div>
 
@@ -188,9 +198,19 @@
                           {{ getInitials(item.firstName, item.lastName) }}
                         </span>
                       </div>
-                      <div class="flex flex-col">
+                      <div class="flex min-w-0 flex-col">
                         <span class="font-medium text-foreground">{{ item.firstName }} {{ item.lastName }}</span>
-                        <span class="text-sm text-muted-foreground">{{ item.email }}</span>
+                        <span class="truncate text-sm text-muted-foreground">{{ item.email }}</span>
+                        <div v-if="item.telPersonnel || item.telPro" class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                          <a v-if="item.telPersonnel" :href="`tel:${item.telPersonnel}`" class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary" title="Téléphone personnel">
+                            <Smartphone class="size-3 shrink-0" />
+                            {{ item.telPersonnel }}
+                          </a>
+                          <a v-if="item.telPro" :href="`tel:${item.telPro}`" class="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary" title="Téléphone professionnel">
+                            <Phone class="size-3 shrink-0" />
+                            {{ item.telPro }}
+                          </a>
+                        </div>
                       </div>
                     </div>
                   </TableCell>
@@ -464,6 +484,8 @@ import {
   Mail,
   Car,
   ExternalLink,
+  Phone,
+  Smartphone,
 } from 'lucide-vue-next'
 
 // DropdownMenu for mobile actions

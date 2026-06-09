@@ -132,6 +132,32 @@
           />
         </div>
 
+        <!-- Coordonnées -->
+        <div class="space-y-4">
+          <h4 class="text-sm font-semibold text-foreground">Coordonnées</h4>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <InputField
+              v-model="telPersonnel"
+              label="Téléphone personnel"
+              type="tel"
+              placeholder="Ex: 06 12 34 56 78"
+              autocomplete="off"
+              :disabled="saving"
+              :icon="Smartphone"
+            />
+            <InputField
+              v-model="telPro"
+              label="Téléphone professionnel"
+              type="tel"
+              placeholder="Ex: 02 98 76 54 32"
+              autocomplete="off"
+              :disabled="saving"
+              :icon="Phone"
+            />
+          </div>
+        </div>
+
         <!-- Adresse & Permis -->
         <div class="space-y-4">
           <h4 class="text-sm font-semibold text-foreground">Adresse & Permis</h4>
@@ -237,7 +263,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { LoaderCircle, User, UserPen, Mail, Lock, AlertCircle, CircleCheck, Clock, CreditCard, MapPin } from 'lucide-vue-next'
+import { LoaderCircle, User, UserPen, Mail, Lock, AlertCircle, CircleCheck, Clock, CreditCard, MapPin, Phone, Smartphone } from 'lucide-vue-next'
 import { InputField } from '@/components/ui/input-field'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
@@ -281,6 +307,8 @@ const isActive = ref(true)
 const isCouchette = ref(false)
 const heureContratInput = ref('')
 const driverLicenseNumber = ref('')
+const telPersonnel = ref('')
+const telPro = ref('')
 const addressStreet = ref('')
 const addressCity = ref('')
 const addressPostalCode = ref('')
@@ -325,6 +353,8 @@ const populateForm = (user: UserDTO) => {
   isCouchette.value = user.isCouchette ?? false
   heureContratInput.value = user.heureContrat != null ? String(user.heureContrat) : ''
   driverLicenseNumber.value = user.driverLicenseNumber || ''
+  telPersonnel.value = user.telPersonnel || ''
+  telPro.value = user.telPro || ''
   addressStreet.value = user.address?.street || ''
   addressCity.value = user.address?.city || ''
   addressPostalCode.value = user.address?.postalCode || ''
@@ -375,6 +405,8 @@ const resetForm = () => {
   isCouchette.value = false
   heureContratInput.value = ''
   driverLicenseNumber.value = ''
+  telPersonnel.value = ''
+  telPro.value = ''
   addressStreet.value = ''
   addressCity.value = ''
   addressPostalCode.value = ''
@@ -426,6 +458,10 @@ const handleSubmit = async () => {
           country: addressCountry.value,
         },
         driverLicenseNumber: driverLicenseNumber.value,
+        // Chaîne (vide si effacé) plutôt que null : le backend ignore null,
+        // une valeur explicite est nécessaire pour réinitialiser le numéro
+        telPersonnel: telPersonnel.value.trim(),
+        telPro: telPro.value.trim(),
         heureContrat: heureContratInput.value ? parseFloat(heureContratInput.value) : null,
       }
       if (roleUuid.value) {

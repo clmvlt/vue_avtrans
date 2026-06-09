@@ -27,6 +27,10 @@ export interface UserDTO {
   address?: AddressDTO;
   /** Numéro de permis de conduire */
   driverLicenseNumber?: string;
+  /** Numéro de téléphone personnel (peut être null) */
+  telPersonnel?: string | null;
+  /** Numéro de téléphone professionnel (peut être null) */
+  telPro?: string | null;
   /** Heures mensuelles du contrat */
   heureContrat?: number | null;
 }
