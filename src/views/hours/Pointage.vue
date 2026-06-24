@@ -719,6 +719,16 @@ const requestLocation = async (): Promise<GpsLocationRequest> => {
 }
 
 const startService = async () => {
+  // Si l'utilisateur n'a pas encore saisi son kilométrage aujourd'hui,
+  // on lui demande d'abord (le service démarrera après l'enregistrement).
+  if (isUserRole.value && !hasEnteredKmToday.value) {
+    await openRequiredKmModal()
+    return
+  }
+  await doStartService()
+}
+
+const doStartService = async () => {
   actionLoading.value = true
   error.value = null
   try {
@@ -909,6 +919,8 @@ const formatHours = (hours: number): string => {
 }
 
 // Kilométrage functions
+// Vérifie le statut du kilométrage du jour SANS ouvrir le popup.
+// Le popup obligatoire ne s'affiche que lors du clic sur "Démarrer le service".
 const checkKilometrage = async () => {
   if (!isUserRole.value) {
     hasEnteredKmToday.value = true
@@ -922,19 +934,21 @@ const checkKilometrage = async () => {
     if (response.lastKilometrage?.vehiculeId) {
       lastUsedVehicleId.value = response.lastKilometrage.vehiculeId
     }
-
-    if (!response.hasEnteredToday) {
-      await loadVehicles()
-      if (lastUsedVehicleId.value) {
-        selectedVehicleId.value = lastUsedVehicleId.value
-      }
-      isKmModalRequired.value = true
-      showKmModal.value = true
-      focusKmInput()
-    }
   } catch {
     // En cas d'erreur, on ne bloque pas l'utilisateur
+    hasEnteredKmToday.value = true
   }
+}
+
+// Ouvre le popup obligatoire de saisie du kilométrage (avant de démarrer le service)
+const openRequiredKmModal = async () => {
+  await loadVehicles()
+  selectedVehicleId.value = lastUsedVehicleId.value || ''
+  kmValue.value = null
+  kmError.value = ''
+  isKmModalRequired.value = true
+  showKmModal.value = true
+  focusKmInput()
 }
 
 const loadVehicles = async () => {
@@ -971,11 +985,18 @@ const submitKilometrage = async () => {
 
     hasEnteredKmToday.value = true
     lastUsedVehicleId.value = selectedVehicleId.value
+    const wasRequired = isKmModalRequired.value
     showKmModal.value = false
+    isKmModalRequired.value = false
     messages.success('Kilométrage enregistré avec succès')
 
     selectedVehicleId.value = ''
     kmValue.value = null
+
+    // Si la saisie était requise pour démarrer le service, on le démarre maintenant
+    if (wasRequired) {
+      await doStartService()
+    }
   } catch (err: unknown) {
     kmError.value = err instanceof Error ? err.message : 'Erreur lors de l\'enregistrement du kilométrage'
   } finally {
