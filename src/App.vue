@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { usePendingUsers } from '@/composables/usePendingUsers'
+import { useSignatureReminder } from '@/composables/useSignatureReminder'
 import { Messages } from '@/components/ui/messages'
 import { UpdateBanner } from '@/components/ui/update-banner'
 import { ChangelogDialog } from '@/components/ui/changelog'
 import { ProfileCompletionDialog } from '@/components/ui/profile-completion'
+import SignatureReminderDialog from '@/components/signatures/SignatureReminderDialog.vue'
 import { useChangelog } from '@/composables/useChangelog'
 import { setMessagesInstance } from '@/composables/useMessages'
 import { useVersionCheck } from '@/composables/useVersionCheck'
@@ -17,6 +20,31 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const { canToggleViewMode, toggleViewMode } = usePermissions()
+
+// Comptes en attente d'activation (badge navbar + section page Utilisateurs).
+// Chargé globalement dès qu'on est connecté ET admin, quelle que soit la page.
+const { loadPendingUsers, reset: resetPendingUsers } = usePendingUsers()
+watch(
+  () => authStore.isAuthenticated && authStore.isAdmin,
+  (isAdminConnected) => {
+    if (isAdminConnected) loadPendingUsers()
+    else resetPendingUsers()
+  },
+  { immediate: true }
+)
+
+// Rappel de signature des heures — affiché dès qu'on est connecté (compte actif
+// + email vérifié) si l'utilisateur a des heures le mois dernier non signées.
+// Valable pour tous les rôles.
+const { showSignatureReminder, heuresLastMonth, checkSignature, markSigned, reset: resetSignatureReminder } = useSignatureReminder()
+watch(
+  () => authStore.isAuthenticated && authStore.isActive && authStore.isEmailVerified,
+  (canSign) => {
+    if (canSign) checkSignature()
+    else resetSignatureReminder()
+  },
+  { immediate: true }
+)
 
 // Vérification de version (actif uniquement en production)
 const { newVersionAvailable, newVersion, performUpdate, dismissUpdate } = useVersionCheck()
@@ -127,6 +155,14 @@ const handleChangelogClose = () => {
       v-if="authStore.isAuthenticated && needsProfileCompletion"
       :open="showProfileCompletion"
       @update:open="showProfileCompletion = $event"
+    />
+
+    <!-- Rappel de signature des heures (bloquant) — uniquement dans l'app authentifiée -->
+    <SignatureReminderDialog
+      v-if="showSignatureReminder && showNavbar"
+      :open="showSignatureReminder"
+      :heures-last-month="heuresLastMonth"
+      @signed="markSigned"
     />
   </div>
 </template>
