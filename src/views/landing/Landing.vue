@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, defineAsyncComponent, type Component } from 'vue'
+import { ref, computed, onMounted, onUnmounted, type Component } from 'vue'
 import { RouterLink } from 'vue-router'
 import {
-  Truck, Snowflake, PawPrint, MapPin, Warehouse, Clock,
+  Truck, Snowflake, MapPin, Warehouse,
   Phone, Mail, ChevronDown, ArrowRight, Menu, X,
   Shield, Zap, Globe, Package, Locate, Smartphone
 } from 'lucide-vue-next'
-
-// Lazy-load Three.js / FleetViewer (~934KB) — chargé uniquement quand visible
-const FleetViewer = defineAsyncComponent(() => import('@/components/landing/FleetViewer.vue'))
 
 import locauxImg from '@/assets/images/locaux.jpg'
 import expertiseImg from '@/assets/images/expertise-image.jpg'
@@ -92,7 +89,7 @@ const injectJsonLd = () => {
         '@id': 'https://app.avtrans-concept.com/#business',
         name: 'AVTRANS Concept',
         alternateName: 'AVTRANS',
-        description: 'Coursier et transporteur en Bretagne. Messagerie express, fret, température dirigée et transport d\'animaux vivants. Service disponible 24h/24, 7j/7 à Saint-Brieuc, Lamballe, Pommeret et dans tout le Grand Ouest.',
+        description: 'Coursier et transporteur en Bretagne. Messagerie express, fret et température dirigée à Saint-Brieuc, Lamballe, Pommeret et dans tout le Grand Ouest.',
         url: 'https://app.avtrans-concept.com',
         telephone: '+33257770777',
         email: 'contact@avtrans-concept.com',
@@ -103,8 +100,8 @@ const injectJsonLd = () => {
         paymentAccepted: 'Virement, Chèque, Carte bancaire',
         address: {
           '@type': 'PostalAddress',
-          streetAddress: 'Pommeret',
-          addressLocality: 'Pommeret',
+          streetAddress: 'ZA de Pommeret, Route de Quenhoet',
+          addressLocality: 'Hillion',
           postalCode: '22120',
           addressRegion: 'Bretagne',
           addressCountry: 'FR'
@@ -113,12 +110,6 @@ const injectJsonLd = () => {
           '@type': 'GeoCoordinates',
           latitude: 48.4614,
           longitude: -2.6989
-        },
-        openingHoursSpecification: {
-          '@type': 'OpeningHoursSpecification',
-          dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-          opens: '00:00',
-          closes: '23:59'
         },
         areaServed: [
           { '@type': 'AdministrativeArea', name: 'Bretagne' },
@@ -161,14 +152,6 @@ const injectJsonLd = () => {
               '@type': 'Offer',
               itemOffered: {
                 '@type': 'Service',
-                name: 'Transport d\'Animaux Vivants',
-                description: 'Transport réglementé d\'animaux domestiques et de rente jusqu\'à 30 kg avec soins adaptés.'
-              }
-            },
-            {
-              '@type': 'Offer',
-              itemOffered: {
-                '@type': 'Service',
                 name: 'Fret & Affrètement',
                 description: 'Solutions de fret routier et affrètement depuis la Bretagne vers la France et l\'international.'
               }
@@ -200,7 +183,7 @@ const injectJsonLd = () => {
         '@id': 'https://app.avtrans-concept.com/#webpage',
         url: 'https://app.avtrans-concept.com/',
         name: 'AVTRANS Concept — Coursier & Transport en Bretagne | Saint-Brieuc, Lamballe',
-        description: 'Coursier et transporteur en Bretagne. Messagerie express, fret, température dirigée, transport d\'animaux. 24h/24 à Saint-Brieuc, Lamballe et Grand Ouest.',
+        description: 'Coursier et transporteur en Bretagne. Messagerie express, fret et température dirigée à Saint-Brieuc, Lamballe et Grand Ouest.',
         isPartOf: { '@id': 'https://app.avtrans-concept.com/#website' },
         about: { '@id': 'https://app.avtrans-concept.com/#business' },
         inLanguage: 'fr-FR'
@@ -314,12 +297,6 @@ const services: ServiceItem[] = [
     animation: 'anim-spin'
   },
   {
-    icon: PawPrint,
-    title: 'Animaux Vivants',
-    description: 'Transport réglementé avec soins adaptés pour animaux domestiques et de rente jusqu\'à 30 kg.',
-    animation: 'anim-wiggle'
-  },
-  {
     icon: Locate,
     title: 'Suivi en Temps Réel',
     description: 'Géolocalisation de chaque envoi et traçabilité complète à chaque étape du transport.',
@@ -330,12 +307,6 @@ const services: ServiceItem[] = [
     title: 'Stockage & Affrètement',
     description: 'Entrepôt sécurisé pour vos solutions de stockage ponctuelles ou récurrentes.',
     animation: 'anim-lift'
-  },
-  {
-    icon: Clock,
-    title: 'Disponibilité 24/7',
-    description: 'Service continu jour et nuit, 7 jours sur 7, pour répondre à toutes vos urgences.',
-    animation: 'anim-rotate'
   }
 ]
 
@@ -361,7 +332,6 @@ interface StatItem {
 
 const stats = ref<StatItem[]>([
   { target: 7, suffix: '+', current: 0, label: 'Années d\'expérience' },
-  { target: 24, suffix: '/7', current: 0, label: 'Disponibilité totale' },
   { target: 60, suffix: 'm³', current: 0, label: 'Capacité véhicule max' },
   { target: 100, suffix: '%', current: 0, label: 'Traçabilité des envois' }
 ])
@@ -370,7 +340,6 @@ const footerServices = [
   'Coursier express',
   'Fret & Messagerie',
   'Température dirigée',
-  'Transport d\'animaux',
   'Suivi temps réel',
   'Stockage & Affrètement'
 ]
@@ -434,7 +403,7 @@ const footerServices = [
                   ? 'text-foreground border-border hover:bg-accent'
                   : 'text-white border-white/25 hover:bg-white/10'"
               >
-                Connexion
+                Espace Employé
               </button>
             </RouterLink>
             <a href="https://avtrans.ypsium.com" target="_blank" rel="noopener">
@@ -485,7 +454,7 @@ const footerServices = [
             <div class="flex gap-3 px-4">
               <RouterLink to="/login" class="flex-1">
                 <button class="w-full rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
-                  Connexion
+                  Espace Employé
                 </button>
               </RouterLink>
               <a href="https://avtrans.ypsium.com" target="_blank" rel="noopener" class="flex-1">
@@ -528,7 +497,7 @@ const footerServices = [
                 <span class="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span class="relative inline-flex size-2 rounded-full bg-emerald-400" />
               </span>
-              <span class="text-sm font-medium text-white/90">Disponible 24h/24 — 7j/7</span>
+              <span class="text-sm font-medium text-white/90">Coursier &amp; transport en Bretagne</span>
             </div>
           </div>
 
@@ -556,7 +525,7 @@ const footerServices = [
           <div :style="parallaxEnabled ? { transform: parallaxCta } : {}">
             <p class="reveal mb-10 max-w-xl text-lg leading-relaxed text-white/70 sm:text-xl">
               Coursier et messagerie express depuis Saint-Brieuc, Lamballe et les Côtes-d'Armor
-              vers la France entière. Fret, température dirigée et transport d'animaux vivants — 24h/24, 7j/7.
+              vers la France entière. Fret et température dirigée pour vos marchandises sensibles.
             </p>
 
             <div class="reveal flex flex-col gap-4 sm:flex-row">
@@ -669,7 +638,7 @@ const footerServices = [
             <p class="mb-8 text-base leading-relaxed text-muted-foreground">
               Coursier quotidien de Saint-Brieuc à Rennes, de Lamballe à Dinan, en passant
               par Guingamp, Lannion et Loudéac. Transport de marchandises sensibles — produits
-              pharmaceutiques sous température dirigée, animaux vivants — avec suivi en temps réel
+              pharmaceutiques sous température dirigée — avec suivi en temps réel
               par géolocalisation sur les quatre départements bretons, le Grand Ouest et l'international.
             </p>
 
@@ -713,48 +682,40 @@ const footerServices = [
           </p>
         </div>
 
-        <!-- 3D Fleet Viewer + Specs -->
-        <div class="grid gap-6 lg:grid-cols-3">
-          <!-- Interactive 3D viewer -->
-          <div class="reveal lg:col-span-2">
-            <FleetViewer />
+        <!-- Fleet photo + Specs -->
+        <div class="grid items-stretch gap-6 lg:grid-cols-2">
+          <!-- Real fleet photo -->
+          <div class="reveal overflow-hidden rounded-2xl border border-border">
+            <img
+              :src="masterImg"
+              alt="Camion AVTRANS Concept pour livraison et messagerie en Bretagne"
+              class="size-full object-cover transition-transform duration-500 hover:scale-[1.02]"
+            />
           </div>
 
-          <!-- Specs sidebar -->
-          <div class="reveal flex flex-col gap-6">
-            <!-- Real fleet photo -->
-            <div class="overflow-hidden rounded-2xl border border-border">
-              <img
-                :src="masterImg"
-                alt="Camion AVTRANS Concept pour livraison et messagerie en Bretagne"
-                class="size-full object-cover transition-transform duration-500 hover:scale-[1.02]"
-              />
-            </div>
-
-            <!-- Fleet specs card -->
-            <div class="flex-1 rounded-2xl border border-border bg-card p-6">
-              <h3 class="mb-4 text-base font-semibold text-foreground">Caractéristiques</h3>
-              <ul class="space-y-3">
-                <li class="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <Package class="size-4 text-primary" />
-                  </div>
-                  De 1m³ à 60m³ de capacité
-                </li>
-                <li class="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <Snowflake class="size-4 text-primary" />
-                  </div>
-                  Véhicules frigorifiques disponibles
-                </li>
-                <li class="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <Locate class="size-4 text-primary" />
-                  </div>
-                  Géolocalisation embarquée
-                </li>
-              </ul>
-            </div>
+          <!-- Fleet specs card -->
+          <div class="reveal flex flex-col justify-center rounded-2xl border border-border bg-card p-8">
+            <h3 class="mb-5 text-base font-semibold text-foreground">Caractéristiques</h3>
+            <ul class="space-y-4">
+              <li class="flex items-center gap-3 text-sm text-muted-foreground">
+                <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Package class="size-4 text-primary" />
+                </div>
+                De 1m³ à 60m³ de capacité
+              </li>
+              <li class="flex items-center gap-3 text-sm text-muted-foreground">
+                <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Snowflake class="size-4 text-primary" />
+                </div>
+                Véhicules frigorifiques disponibles
+              </li>
+              <li class="flex items-center gap-3 text-sm text-muted-foreground">
+                <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Locate class="size-4 text-primary" />
+                </div>
+                Géolocalisation embarquée
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -767,7 +728,7 @@ const footerServices = [
       <div class="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.05),transparent_50%)]" />
 
       <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="reveal grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="reveal grid gap-8 sm:grid-cols-3">
           <div v-for="stat in stats" :key="stat.label" class="text-center">
             <p class="stat-value text-4xl font-extrabold text-primary-foreground sm:text-5xl">{{ stat.current }}{{ stat.suffix }}</p>
             <p class="mt-2 text-sm font-medium text-primary-foreground/70">{{ stat.label }}</p>
@@ -785,7 +746,7 @@ const footerServices = [
           </h2>
           <p class="mb-10 text-lg text-muted-foreground">
             Contactez AVTRANS Concept pour un devis gratuit. Notre équipe de coursiers
-            est disponible 24h/24, 7j/7 à Saint-Brieuc, Lamballe et dans toute la Bretagne.
+            vous accompagne à Saint-Brieuc, Lamballe et dans toute la Bretagne.
           </p>
 
           <!-- Contact cards -->
@@ -859,9 +820,8 @@ const footerServices = [
               </div>
             </div>
             <p class="text-sm leading-relaxed text-muted-foreground">
-              Coursier et transporteur spécialisé : messagerie express, fret, température dirigée
-              et transport d'animaux vivants. Votre partenaire logistique à Saint-Brieuc, Lamballe
-              et dans toute la Bretagne.
+              Coursier et transporteur spécialisé : messagerie express, fret et température dirigée.
+              Votre partenaire logistique à Saint-Brieuc, Lamballe et dans toute la Bretagne.
             </p>
           </div>
 
@@ -955,13 +915,23 @@ const footerServices = [
         </div>
 
         <!-- Bottom -->
-        <div class="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
-          <p class="text-xs text-muted-foreground">
-            &copy; {{ new Date().getFullYear() }} AVTRANS Concept — SARL au capital de 3 000 &euro; — SIREN 845 350 347
-          </p>
-          <p class="text-xs text-muted-foreground">
-            Siège social : Hillion, Côtes-d'Armor (22)
-          </p>
+        <div class="mt-12 flex flex-col gap-6 border-t border-border pt-8">
+          <nav class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 sm:justify-start">
+            <RouterLink to="/mentions-legales" class="text-xs text-muted-foreground transition-colors hover:text-foreground">
+              Mentions légales
+            </RouterLink>
+            <RouterLink to="/politique-confidentialite" class="text-xs text-muted-foreground transition-colors hover:text-foreground">
+              Politique de confidentialité
+            </RouterLink>
+          </nav>
+          <div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <p class="text-xs text-muted-foreground">
+              &copy; {{ new Date().getFullYear() }} AVTRANS Concept — EURL au capital de 3 000 &euro; — SIREN 845 350 347
+            </p>
+            <p class="text-xs text-muted-foreground">
+              Siège social : ZA de Pommeret, 22120 Hillion (Côtes-d'Armor)
+            </p>
+          </div>
         </div>
       </div>
     </footer>
