@@ -1,44 +1,15 @@
 import { apiClient } from '@/api'
-import type { SignatureDTO } from '@/models'
+import type { SignatureDTO, SignatureCreateRequest, LastSignatureSummaryDTO, UserWithLastSignatureDTO } from '@/models'
 import type { SuccessMessageResponse, ApiResponse } from '@/types'
 
 /**
- * Signature create request
+ * Réponse du backend lors de la création d'une signature
+ * (cf. SignatureResponse côté API)
  */
-export interface SignatureCreateRequest {
-  signatureImage: string
-  latitude?: number
-  longitude?: number
-}
-
-/**
- * User with last signature DTO
- */
-export interface UserWithLastSignatureDTO {
-  user: {
-    uuid: string
-    firstName: string
-    lastName: string
-    email: string
-    role: {
-      uuid: string
-      nom: string
-      color?: string
-    }
-  }
-  lastSignature?: SignatureDTO
-}
-
-/**
- * Signature summary DTO (without base64 image)
- */
-export interface SignatureSummaryDTO {
-  uuid: string
-  date: string
-  location?: {
-    latitude: number
-    longitude: number
-  }
+export interface SignatureResponse {
+  success: boolean
+  message?: string
+  signature?: SignatureDTO
 }
 
 /**
@@ -48,11 +19,11 @@ export interface SignatureSummaryDTO {
 export class SignaturesService {
   /**
    * Create a signature
-   * @param data - Signature data with base64 image
+   * @param data - Signature data ({ signatureBase64, date, heuresSignees })
    * @returns Promise with created signature
    */
-  async createSignature(data: SignatureCreateRequest): Promise<ApiResponse<SignatureDTO>> {
-    return apiClient.post<ApiResponse<SignatureDTO>>('signatures', data)
+  async createSignature(data: SignatureCreateRequest): Promise<SignatureResponse> {
+    return apiClient.post<SignatureResponse>('signatures', data)
   }
 
   /**
@@ -72,11 +43,14 @@ export class SignaturesService {
   }
 
   /**
-   * Get my last signature summary (without Base64 image)
+   * Get my last signature summary (without Base64 image).
+   * Le backend renvoie un objet plat : { date, heuresSignees, needsToSign, heuresLastMonth }.
+   * `needsToSign` vaut true si l'utilisateur a fait des heures le mois dernier
+   * et n'a pas encore signé ce mois-ci — quel que soit son rôle.
    * @returns Promise with last signature summary
    */
-  async getLastSignatureSummary(): Promise<ApiResponse<SignatureSummaryDTO>> {
-    return apiClient.get<ApiResponse<SignatureSummaryDTO>>('signatures/last/summary')
+  async getLastSignatureSummary(): Promise<LastSignatureSummaryDTO> {
+    return apiClient.get<LastSignatureSummaryDTO>('signatures/last/summary')
   }
 
   /**
