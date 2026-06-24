@@ -16,6 +16,63 @@
 
         <!-- Content -->
         <div v-else class="space-y-4">
+          <!-- Comptes en attente d'activation -->
+          <section
+            v-if="pendingActivationUsers.length > 0"
+            class="rounded-xl border border-primary/30 bg-primary/5 p-4"
+          >
+            <div class="mb-1 flex items-center gap-2">
+              <UserPlus class="size-5 text-primary" />
+              <h2 class="text-sm font-semibold text-foreground">
+                {{ pendingActivationUsers.length }}
+                {{ pendingActivationUsers.length > 1 ? 'comptes créés récemment' : 'compte créé récemment' }}
+                en attente d'activation
+              </h2>
+            </div>
+            <p class="mb-3 text-xs text-muted-foreground">
+              Ces comptes ont été créés il y a moins de 7 jours et doivent être activés pour accéder à l'application.
+            </p>
+            <ul class="space-y-2">
+              <li
+                v-for="user in pendingActivationUsers"
+                :key="user.uuid"
+                class="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-3"
+              >
+                <div class="flex min-w-0 items-center gap-3">
+                  <div class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
+                    <img
+                      v-if="user.pictureUrl"
+                      :src="user.pictureUrl"
+                      :alt="`Photo de ${user.firstName}`"
+                      class="size-full object-cover"
+                    />
+                    <span v-else class="flex size-full items-center justify-center bg-primary text-sm font-semibold text-primary-foreground">
+                      {{ getInitials(user.firstName, user.lastName) }}
+                    </span>
+                  </div>
+                  <div class="flex min-w-0 flex-col">
+                    <span class="truncate text-sm font-medium text-foreground">
+                      {{ user.firstName }} {{ user.lastName }}
+                    </span>
+                    <span class="truncate text-xs text-muted-foreground">{{ user.email }}</span>
+                    <span v-if="formatCreatedAt(user.createdAt)" class="text-xs text-muted-foreground">
+                      Créé le {{ formatCreatedAt(user.createdAt) }}
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  :disabled="activatingUuid === user.uuid"
+                  @click="activateUser(user)"
+                >
+                  <LoaderCircle v-if="activatingUuid === user.uuid" class="size-4 animate-spin" />
+                  <CircleCheck v-else class="size-4" />
+                  Activer
+                </Button>
+              </li>
+            </ul>
+          </section>
+
           <!-- Search bar -->
           <div class="relative">
             <Search class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -441,6 +498,7 @@ import { useRouter } from 'vue-router'
 import { usersService } from '@/services/users'
 import { useMessages } from '@/composables/useMessages'
 import { useContextMenu } from '@/composables/useContextMenu'
+import { usePendingUsers, isPendingActivation } from '@/composables/usePendingUsers'
 import type { UserDTO, UserLastVehicleDTO } from '@/models'
 import { UserStatus, UserStatusLabels } from '@/enums'
 
@@ -486,6 +544,7 @@ import {
   ExternalLink,
   Phone,
   Smartphone,
+  UserPlus,
 } from 'lucide-vue-next'
 
 // DropdownMenu for mobile actions
@@ -525,6 +584,7 @@ interface TableColumnDef {
 
 const messages = useMessages()
 const router = useRouter()
+const { setFromUsers, removePending } = usePendingUsers()
 const users = ref<UserWithStatus[]>([])
 const lastVehiclesMap = ref<Map<string, UserLastVehicleDTO>>(new Map())
 const loading = ref(true)
@@ -725,11 +785,43 @@ const loadUsers = async () => {
     } else {
       users.value = []
     }
+
+    // Garde le badge navbar en phase avec la liste fraîchement chargée
+    setFromUsers(users.value)
   } catch (err: any) {
     error.value = err.message || 'Erreur lors du chargement des utilisateurs'
     messages.error(error.value, 'Erreur')
   } finally {
     loading.value = false
+  }
+}
+
+// Comptes récemment créés et non activés (section en tête de page)
+const pendingActivationUsers = computed(() => users.value.filter(isPendingActivation))
+const activatingUuid = ref<string | null>(null)
+
+const formatCreatedAt = (createdAt?: Date | string) => {
+  if (!createdAt) return ''
+  const date = new Date(createdAt)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+const activateUser = async (user: UserWithStatus) => {
+  if (!user.uuid) return
+  try {
+    activatingUuid.value = user.uuid
+    const { user: updated } = await usersService.updateUser(user.uuid, { isActive: true })
+    const index = users.value.findIndex(u => u.uuid === user.uuid)
+    if (index !== -1) {
+      users.value.splice(index, 1, { ...users.value[index], ...updated, isActive: true })
+    }
+    removePending(user.uuid)
+    messages.success(`Le compte de ${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() + ' a été activé', 'Compte activé')
+  } catch (err: any) {
+    messages.error(err.message || "Erreur lors de l'activation du compte", 'Erreur')
+  } finally {
+    activatingUuid.value = null
   }
 }
 
@@ -804,6 +896,8 @@ const handleUserSaved = (savedUser: UserDTO) => {
   } else {
     users.value.push(savedUser as UserWithStatus)
   }
+  // Resynchronise le badge navbar (l'édition a pu activer le compte)
+  setFromUsers(users.value)
 }
 
 const openEmailModal = (user: UserWithStatus) => {

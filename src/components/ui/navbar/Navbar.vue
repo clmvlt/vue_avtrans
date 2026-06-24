@@ -25,6 +25,12 @@
             active-class="!bg-primary/10 !text-primary !font-semibold"
           >
             <component v-if="link.lucideIcon" :is="link.lucideIcon" class="size-4 shrink-0" />
+            <span
+              v-if="linkBadge(link.to) > 0"
+              class="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-destructive-foreground"
+            >
+              {{ linkBadge(link.to) > 99 ? '99+' : linkBadge(link.to) }}
+            </span>
             <span v-show="showLabels">{{ link.label }}</span>
           </router-link>
         </div>
@@ -153,6 +159,12 @@
                   >
                     <component v-if="link.lucideIcon" :is="link.lucideIcon" class="size-4 shrink-0 text-muted-foreground" />
                     <span>{{ link.label }}</span>
+                    <span
+                      v-if="linkBadge(link.to) > 0"
+                      class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-bold text-destructive-foreground"
+                    >
+                      {{ linkBadge(link.to) > 99 ? '99+' : linkBadge(link.to) }}
+                    </span>
                   </router-link>
                 </div>
               </div>
@@ -215,6 +227,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePermissions } from '@/composables/usePermissions'
 import { useTheme } from '@/composables/useTheme'
+import { usePendingUsers } from '@/composables/usePendingUsers'
 import { mainNavLinks, fullNavSections } from '@/config/navConfig'
 import faviconUrl from '@/assets/favicon.png'
 
@@ -271,6 +284,10 @@ const route = useRoute()
 const authStore = useAuthStore()
 const { canAccess } = usePermissions()
 const { isDark, toggleTheme } = useTheme()
+const { pendingCount } = usePendingUsers()
+
+// Compteur de badge par lien (comptes en attente d'activation sur « Utilisateurs »)
+const linkBadge = (to: string) => (to === '/users' ? pendingCount.value : 0)
 
 const sheetOpen = ref(false)
 const leftSection = ref<HTMLElement | null>(null)
