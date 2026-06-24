@@ -149,6 +149,24 @@
         </Button>
       </form>
 
+      <!-- Séparateur « ou » + inscription/connexion Google -->
+      <template v-if="!successMessage">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="h-px flex-1 bg-border"></div>
+          <span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">ou</span>
+          <div class="h-px flex-1 bg-border"></div>
+        </div>
+
+        <div class="mb-6">
+          <GoogleSignInButton
+            text="signup_with"
+            :loading="googleLoading"
+            @credential="onGoogleCredential"
+            @error="onGoogleError"
+          />
+        </div>
+      </template>
+
       <div class="text-center pt-4 border-t border-border" v-if="!successMessage">
         <p class="text-muted-foreground text-sm m-0">
           Déjà un compte ?
@@ -161,11 +179,18 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { authService } from '@/services'
+import { useAuthStore } from '@/stores/auth'
 import { Button } from '@/components/ui/button'
 import { LoaderCircle, User, Mail, Lock, Shield } from 'lucide-vue-next'
 import { InputField } from '@/components/ui/input-field'
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton.vue'
+import { useGoogleSignIn } from '@/composables/useGoogleSignIn'
+
+const router = useRouter()
+const authStore = useAuthStore()
+const { submitting: googleLoading, signIn: googleSignIn } = useGoogleSignIn()
 
 const firstName = ref('')
 const lastName = ref('')
@@ -175,6 +200,32 @@ const confirmPassword = ref('')
 const loading = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
+
+const getDefaultRoute = (): string => {
+  if (authStore.isAdmin) return '/users'
+  if (authStore.isMechanic) return '/vehicules'
+  return '/pointage'
+}
+
+/**
+ * Étape 1 Google : on a reçu l'idToken. Le composable connecte directement si
+ * le compte existe déjà, sinon il redirige vers /register/google.
+ */
+const onGoogleCredential = async (idToken: string) => {
+  errorMessage.value = ''
+  const result = await googleSignIn(idToken)
+  if (result.kind === 'authenticated') {
+    router.push(getDefaultRoute())
+  } else if (result.kind === 'error') {
+    errorMessage.value = result.message
+  }
+  // kind === 'redirected' → navigation déjà effectuée vers /register/google
+}
+
+/** Erreur GIS (script indisponible, credential manquant). */
+const onGoogleError = (message: string) => {
+  errorMessage.value = message
+}
 
 // Validation en temps réel des mots de passe
 const passwordMismatch = computed(() => {

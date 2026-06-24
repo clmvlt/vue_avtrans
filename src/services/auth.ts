@@ -6,7 +6,10 @@ import type {
   RegisterResponse,
   EmailVerificationResponse,
   PasswordResetConfirmDTO,
-  ExportRequest
+  ExportRequest,
+  GoogleAuthResponse,
+  GoogleRegisterRequest,
+  GoogleRegisterResponse
 } from '@/models'
 import type { SuccessMessageResponse } from '@/types'
 import { setAuthToken, clearAuthToken } from '@/config/api'
@@ -46,6 +49,34 @@ export class AuthService {
     }
 
     return response
+  }
+
+  /**
+   * Étape 1 — Authentification via un ID token Google.
+   * Renvoie un statut discriminé :
+   * - AUTHENTICATED → user + token présents, on stocke le token (comme login()).
+   * - NEEDS_REGISTRATION → googleProfile présent, aucun token (création requise).
+   */
+  async loginWithGoogle(idToken: string): Promise<GoogleAuthResponse> {
+    const response = await apiClient.post<GoogleAuthResponse>('auth/google', { idToken })
+
+    if (response.status === 'AUTHENTICATED') {
+      const token = response.user?.token || response.token
+      if (token) {
+        setAuthToken(token)
+      }
+    }
+
+    return response
+  }
+
+  /**
+   * Étape 2 — Création d'un compte via Google.
+   * Le backend lit email + photo depuis l'idToken ; on n'envoie que les noms.
+   * Aucun token renvoyé : le compte doit être activé par un administrateur.
+   */
+  async registerWithGoogle(data: GoogleRegisterRequest): Promise<GoogleRegisterResponse> {
+    return apiClient.post<GoogleRegisterResponse>('auth/google/register', data)
   }
 
   /**

@@ -47,6 +47,23 @@
         </Button>
       </form>
 
+      <!-- Séparateur « ou » -->
+      <div class="flex items-center gap-3 mb-6">
+        <div class="h-px flex-1 bg-border"></div>
+        <span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">ou</span>
+        <div class="h-px flex-1 bg-border"></div>
+      </div>
+
+      <!-- Connexion avec Google -->
+      <div class="mb-6">
+        <GoogleSignInButton
+          text="continue_with"
+          :loading="googleLoading"
+          @credential="onGoogleCredential"
+          @error="onGoogleError"
+        />
+      </div>
+
       <div class="flex flex-col items-center gap-4">
         <RouterLink to="/forgot-password" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium hover:underline">
           <font-awesome-icon :icon="['fas', 'key']" />
@@ -79,9 +96,12 @@ import { Button } from '@/components/ui/button'
 import { LoaderCircle, Mail, Lock } from 'lucide-vue-next'
 import { InputField } from '@/components/ui/input-field'
 import HomeScreenPrompt from '@/components/home-screen/HomeScreenPrompt.vue'
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton.vue'
+import { useGoogleSignIn } from '@/composables/useGoogleSignIn'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { submitting: googleLoading, signIn: googleSignIn } = useGoogleSignIn()
 
 const email = ref('')
 const password = ref('')
@@ -94,6 +114,18 @@ const getDefaultRoute = (): string => {
 }
 const errorMessage = ref('')
 const showHomeScreenPrompt = ref(false)
+
+/**
+ * Redirige après une connexion réussie : prompt d'écran d'accueil sur mobile,
+ * sinon page par défaut selon le rôle. Partagé login email + Google.
+ */
+const redirectAfterLogin = () => {
+  if (shouldShowHomeScreenPrompt()) {
+    showHomeScreenPrompt.value = true
+  } else {
+    router.push(getDefaultRoute())
+  }
+}
 
 /**
  * Vérifie si le prompt d'écran d'accueil doit être affiché
@@ -130,13 +162,8 @@ const handleLogin = async () => {
         return
       }
 
-      // Afficher le prompt d'écran d'accueil si applicable
-      if (shouldShowHomeScreenPrompt()) {
-        showHomeScreenPrompt.value = true
-      } else {
-        // Redirection vers la page par défaut selon le rôle
-        router.push(getDefaultRoute())
-      }
+      // Redirection (prompt écran d'accueil sur mobile ou page par défaut)
+      redirectAfterLogin()
     }
   } catch (error: unknown) {
     if (error instanceof Error) {
@@ -147,6 +174,26 @@ const handleLogin = async () => {
   } finally {
     loading.value = false
   }
+}
+
+/**
+ * Étape 1 Google : on a reçu l'idToken. Le composable gère le branchement
+ * (connexion directe, ou redirection vers la création de compte).
+ */
+const onGoogleCredential = async (idToken: string) => {
+  errorMessage.value = ''
+  const result = await googleSignIn(idToken)
+  if (result.kind === 'authenticated') {
+    redirectAfterLogin()
+  } else if (result.kind === 'error') {
+    errorMessage.value = result.message
+  }
+  // kind === 'redirected' → navigation déjà effectuée vers /register/google
+}
+
+/** Erreur GIS (script indisponible, credential manquant). */
+const onGoogleError = (message: string) => {
+  errorMessage.value = message
 }
 
 /**

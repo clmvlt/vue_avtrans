@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authService } from '@/services'
-import type { LoginRequest, LoginResponse, UserDTO } from '@/models'
+import type { LoginRequest, LoginResponse, UserDTO, AuthUserDTO, GoogleAuthResponse } from '@/models'
 import { ApiError } from '@/api'
 import { USER_ROLE_UUIDS } from '@/enums'
 
@@ -29,24 +29,33 @@ export const useAuthStore = defineStore('auth', () => {
   const hasCouchettePermission = computed(() => user.value?.isCouchette === true)
 
   // Actions
+
+  /**
+   * Applique une réponse d'authentification réussie au state + localStorage.
+   * Partagé par login (email/mot de passe) et loginWithGoogle pour garantir
+   * un comportement identique (même store, même clé localStorage, même token).
+   */
+  const applySession = (response: { user?: AuthUserDTO; token?: string }): void => {
+    // Le service stocke déjà le token via setAuthToken
+    // Extraire le token depuis l'objet user ou depuis la racine (compatibilité)
+    const authToken = response.user?.token || response.token
+
+    if (authToken && response.user) {
+      user.value = response.user
+      token.value = authToken
+
+      // Sauvegarder l'utilisateur dans localStorage
+      localStorage.setItem('user', JSON.stringify(response.user))
+    }
+  }
+
   const login = async (credentials: LoginRequest): Promise<LoginResponse> => {
     try {
       loading.value = true
       error.value = null
 
       const response = await authService.login(credentials)
-
-      // Le service authService stocke déjà le token via setAuthToken
-      // Extraire le token depuis l'objet user ou depuis la racine (compatibilité)
-      const authToken = response.user?.token || response.token
-
-      if (authToken && response.user) {
-        user.value = response.user
-        token.value = authToken
-
-        // Sauvegarder l'utilisateur dans localStorage
-        localStorage.setItem('user', JSON.stringify(response.user))
-      }
+      applySession(response)
 
       return response
 
@@ -57,6 +66,39 @@ export const useAuthStore = defineStore('auth', () => {
         error.value = err.message
       } else {
         error.value = 'Erreur lors de la connexion'
+      }
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Étape 1 Google — authentification via ID token.
+   * Si le compte existe et est actif (status AUTHENTICATED), on applique la
+   * session exactement comme login(). Sinon (NEEDS_REGISTRATION) on renvoie la
+   * réponse telle quelle pour que l'appelant gère la création de compte.
+   */
+  const loginWithGoogle = async (idToken: string): Promise<GoogleAuthResponse> => {
+    try {
+      loading.value = true
+      error.value = null
+
+      const response = await authService.loginWithGoogle(idToken)
+
+      if (response.status === 'AUTHENTICATED') {
+        applySession(response)
+      }
+
+      return response
+
+    } catch (err) {
+      if (err instanceof ApiError) {
+        error.value = err.message
+      } else if (err instanceof Error) {
+        error.value = err.message
+      } else {
+        error.value = 'Erreur lors de la connexion avec Google'
       }
       throw err
     } finally {
@@ -164,6 +206,7 @@ export const useAuthStore = defineStore('auth', () => {
     hasCouchettePermission,
     // Actions
     login,
+    loginWithGoogle,
     logout,
     loadFromStorage,
     refreshUser,
