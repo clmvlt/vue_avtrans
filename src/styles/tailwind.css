@@ -165,6 +165,17 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Tailwind v4 ne met plus cursor:pointer sur les boutons — on le rétablit */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  label:has(> input[type="checkbox"]),
+  label:has(> input[type="radio"]) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
 
 /* View Transition — circular propagation for theme toggle */
