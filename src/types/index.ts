@@ -13,3 +13,8 @@ export type {
 } from './api'
 
 export { isErrorResponse, isPagedResponse } from './api'
+
+export type {
+  AddressResult,
+  GeocodingStatus
+} from './geocoding'

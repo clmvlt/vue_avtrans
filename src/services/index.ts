@@ -24,6 +24,10 @@ export { usersService } from './users'
 export * from './profile'
 export { profileService } from './profile'
 
+// Geocoding service (API externe ors.stack.bzh — autocomplétion d'adresse BAN)
+export * from './geocoding'
+export { geocodingService } from './geocoding'
+
 // Time tracking service
 export * from './userServices'
 export { userServicesService } from './userServices'

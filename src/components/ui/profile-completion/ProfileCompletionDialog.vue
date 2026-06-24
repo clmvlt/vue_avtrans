@@ -32,13 +32,14 @@
 
         <!-- Adresse -->
         <template v-if="!hasAddress">
-          <InputField
+          <AddressAutocomplete
             v-model="addressStreet"
             label="Rue"
-            type="text"
             placeholder="12 rue de la Paix"
             :disabled="saving"
             :icon="MapPin"
+            hint="Commencez à taper pour rechercher une adresse"
+            @select="onAddressSelect"
           />
 
           <div class="grid gap-4 sm:grid-cols-2">
@@ -96,8 +97,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { InputField } from '@/components/ui/input-field'
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import { LoaderCircle, AlertTriangle, AlertCircle, CreditCard, MapPin } from 'lucide-vue-next'
-import type { UpdateProfileRequest } from '@/models'
+import type { UpdateProfileRequest, AddressDTO } from '@/models'
 
 const props = defineProps<{
   open: boolean
@@ -118,6 +120,14 @@ const addressStreet = ref('')
 const addressCity = ref('')
 const addressPostalCode = ref('')
 const addressCountry = ref('France')
+
+// Remplit ville/code postal/pays quand une adresse est choisie dans l'autocomplétion
+function onAddressSelect(address: AddressDTO) {
+  if (address.street) addressStreet.value = address.street
+  if (address.city) addressCity.value = address.city
+  if (address.postalCode) addressPostalCode.value = address.postalCode
+  if (address.country) addressCountry.value = address.country
+}
 
 // Pré-remplir les champs avec les données existantes à l'ouverture
 watch(toRef(props, 'open'), (isOpen) => {

@@ -171,13 +171,14 @@
             :icon="CreditCard"
           />
 
-          <InputField
+          <AddressAutocomplete
             v-model="addressStreet"
             label="Rue"
-            type="text"
             placeholder="12 rue de la Paix"
             :disabled="saving"
             :icon="MapPin"
+            hint="Commencez à taper pour rechercher une adresse"
+            @select="onAddressSelect"
           />
 
           <div class="grid gap-4 sm:grid-cols-2">
@@ -265,9 +266,10 @@ import {
 } from '@/components/ui/dialog'
 import { LoaderCircle, User, UserPen, Mail, Lock, AlertCircle, CircleCheck, Clock, CreditCard, MapPin, Phone, Smartphone } from 'lucide-vue-next'
 import { InputField } from '@/components/ui/input-field'
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
-import type { UserDTO, UpdateUserRequest } from '@/models'
+import type { UserDTO, UpdateUserRequest, AddressDTO } from '@/models'
 
 interface Props {
   modelValue: boolean
@@ -313,6 +315,14 @@ const addressStreet = ref('')
 const addressCity = ref('')
 const addressPostalCode = ref('')
 const addressCountry = ref('France')
+
+// Remplit ville/code postal/pays quand une adresse est choisie dans l'autocomplétion
+function onAddressSelect(address: AddressDTO) {
+  if (address.street) addressStreet.value = address.street
+  if (address.city) addressCity.value = address.city
+  if (address.postalCode) addressPostalCode.value = address.postalCode
+  if (address.country) addressCountry.value = address.country
+}
 
 // Options pour le Select de rôle
 const roleOptions = [
