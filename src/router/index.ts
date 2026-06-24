@@ -35,6 +35,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/mentions-legales',
+    name: 'MentionsLegales',
+    component: () => import('../views/legal/MentionsLegales.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/politique-confidentialite',
+    name: 'PolitiqueConfidentialite',
+    component: () => import('../views/legal/PolitiqueConfidentialite.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/unauthorized',
     name: 'Unauthorized',
     component: () => import('../views/common/Unauthorized.vue'),
@@ -70,6 +82,12 @@ const routes: RouteRecordRaw[] = [
     path: '/register',
     name: 'Register',
     component: () => import('../views/auth/Register.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/register/google',
+    name: 'GoogleRegister',
+    component: () => import('../views/auth/GoogleRegister.vue'),
     meta: { requiresAuth: false }
   },
   {
@@ -294,7 +312,11 @@ const routes: RouteRecordRaw[] = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  scrollBehavior(_to, _from, savedPosition) {
+    // Restaure la position lors d'un retour navigateur, sinon remonte en haut
+    return savedPosition ?? { top: 0 }
+  }
 })
 
 // Navigation guard pour vérifier l'authentification et les rôles
