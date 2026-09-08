@@ -31,7 +31,8 @@ export class AuthService {
    * Uses extended timeout (60s) for production environments where this may take longer
    */
   async verifyEmail(token: string): Promise<EmailVerificationResponse> {
-    return apiClient.get<EmailVerificationResponse>(`auth/verify?token=${token}`, {
+    return apiClient.get<EmailVerificationResponse>('auth/verify', {
+      params: { token },
       timeout: 60000
     })
   }
@@ -80,7 +81,10 @@ export class AuthService {
   }
 
   /**
-   * Get current authenticated user
+   * Get current authenticated user — GET /auth/me
+   * Route sans @RequireRole : ne vérifie ni isActive ni le rôle.
+   * Token invalide → 400 (pas 401) "Token invalide" ; header absent → 500.
+   * Préférer profileService.getProfile() (401 propre + vérifie isActive) pour rafraîchir le profil.
    */
   async getMe(): Promise<LoginResponse> {
     return apiClient.get<LoginResponse>('auth/me')

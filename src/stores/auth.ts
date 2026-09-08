@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { authService } from '@/services'
+import { authService, profileService } from '@/services'
 import type { LoginRequest, LoginResponse, UserDTO, AuthUserDTO, GoogleAuthResponse } from '@/models'
 import { ApiError } from '@/api'
 import { USER_ROLE_UUIDS } from '@/enums'
@@ -146,7 +146,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Refresh user data from the API
-   * Calls /auth/me to get the latest user information
+   * Appelle GET /profile (et non /auth/me) : cette route renvoie un 401 propre si le token
+   * est invalide OU si le compte a été désactivé, alors que /auth/me renvoie 400 et ne
+   * vérifie pas isActive. Le token opaque n'expire jamais : on le conserve tel quel.
    * @param showLoading - Si true, affiche l'état loading (false au démarrage pour ne pas bloquer le rendu)
    */
   const refreshUser = async (showLoading = true): Promise<void> => {
@@ -154,16 +156,17 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       if (showLoading) loading.value = true
-      const response = await authService.getMe()
+      const profile = await profileService.getProfile()
 
-      if (response.user) {
-        user.value = response.user
+      if (profile?.uuid) {
+        const refreshed: AuthUserDTO = { ...profile, token: token.value }
+        user.value = refreshed
         // Update localStorage with fresh data
-        localStorage.setItem('user', JSON.stringify(response.user))
+        localStorage.setItem('user', JSON.stringify(refreshed))
       }
     } catch (err) {
       if (err instanceof ApiError) {
-        // Token expired or invalid — logout
+        // Token inconnu / compte inactif → 401 → déconnexion
         if (err.status === 401) {
           logout()
         } else if (err.code === 'NETWORK_ERROR' || err.code === 'TIMEOUT') {
