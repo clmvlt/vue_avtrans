@@ -2,179 +2,234 @@
   <div class="min-h-screen bg-background">
     <!-- Header -->
     <header class="sticky top-0 z-40 border-b bg-background">
-      <div class="mx-auto flex max-w-[1400px] items-center gap-4 px-6 py-4">
+      <div class="mx-auto flex max-w-[1100px] items-center gap-2 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4">
         <Retour fallback="/" />
-        <h1 class="text-xl font-bold text-foreground">Mes Couchettes</h1>
+        <h1 class="flex-1 text-lg font-bold text-foreground sm:text-xl">Mes couchettes</h1>
       </div>
     </header>
 
-    <main class="px-6 py-6">
-      <div class="mx-auto max-w-[1400px]">
-        <!-- Loading -->
-        <div v-if="loading" class="flex flex-col items-center justify-center gap-4 py-16">
-          <LoaderCircle class="size-10 animate-spin text-primary" />
-          <p class="text-lg text-muted-foreground">Chargement...</p>
-        </div>
-
-        <!-- Error -->
-        <div v-else-if="error" class="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-destructive">
-          {{ error }}
-        </div>
-
-        <!-- Content -->
-        <div v-else class="space-y-6">
-          <!-- Action Card -->
-          <div class="rounded-lg border bg-card p-6 shadow-sm">
-            <div class="mb-5 flex items-start gap-4">
-              <div class="flex size-14 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <BedDouble class="size-7" />
-              </div>
-              <div class="flex-1">
-                <h2 class="mb-2 text-xl font-bold text-foreground">Déclarer une couchette</h2>
-                <p v-if="hasTodayCouchette" class="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                  <CheckCircle class="size-4" />
-                  Couchette déclarée pour aujourd'hui
-                </p>
-                <p v-else class="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock class="size-4" />
-                  Aucune couchette déclarée pour aujourd'hui
-                </p>
-              </div>
-            </div>
-
-            <Button
-              v-if="!hasTodayCouchette"
-              variant="default"
-              size="lg"
-              class="w-full"
-              :disabled="creating"
-              @click="createTodayCouchette"
-            >
-              <Plus v-if="!creating" class="size-4" />
-              <LoaderCircle v-else class="size-4 animate-spin" />
-              Déclarer ma couchette du jour
-            </Button>
-            <Button
-              v-else
-              variant="destructive"
-              size="lg"
-              class="w-full"
-              :disabled="deleting"
-              @click="confirmDeleteToday"
-            >
-              <Trash2 v-if="!deleting" class="size-4" />
-              <LoaderCircle v-else class="size-4 animate-spin" />
-              Annuler ma couchette du jour
-            </Button>
+    <main class="mx-auto max-w-[1100px] px-3 py-3 sm:px-6 sm:py-6">
+      <!-- Loading (squelette de la mise en page) -->
+      <div v-if="loading && !hasLoadedOnce" class="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)] lg:gap-6">
+        <div class="space-y-4">
+          <div class="rounded-2xl border bg-card p-5 sm:p-6">
+            <Skeleton class="h-3 w-40" />
+            <Skeleton class="mt-4 h-8 w-64" />
+            <Skeleton class="mt-3 h-3 w-48" />
+            <Skeleton class="mt-6 h-14 w-full" />
           </div>
-
-          <!-- Stats Cards -->
-          <div class="grid grid-cols-2 gap-4">
-            <!-- Month Count -->
-            <div class="flex items-center gap-3 rounded-lg border bg-card p-4 shadow-sm">
-              <div class="flex size-11 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <CalendarCheck class="size-5" />
-              </div>
-              <div class="flex flex-col">
-                <span class="text-xs uppercase tracking-wider text-muted-foreground">Ce mois</span>
-                <span class="text-2xl font-bold text-foreground">{{ monthCount }}</span>
-              </div>
-            </div>
-
-            <!-- Total Count -->
-            <div class="flex items-center gap-3 rounded-lg border bg-card p-4 shadow-sm">
-              <div class="flex size-11 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <BedDouble class="size-5" />
-              </div>
-              <div class="flex flex-col">
-                <span class="text-xs uppercase tracking-wider text-muted-foreground">Total</span>
-                <span class="text-2xl font-bold text-foreground">{{ totalElements }}</span>
-              </div>
-            </div>
+          <div class="grid grid-cols-2 gap-2 sm:gap-3">
+            <Skeleton v-for="n in 2" :key="n" class="h-[68px]" />
           </div>
+        </div>
+        <div class="space-y-3">
+          <Skeleton class="h-8 w-32" />
+          <Skeleton v-for="n in 4" :key="n" class="h-16 w-full rounded-xl" />
+        </div>
+      </div>
 
-          <!-- History Section -->
-          <div class="rounded-lg border bg-card shadow-sm">
-            <div class="border-b px-6 py-4">
-              <h2 class="text-lg font-bold text-foreground">Historique</h2>
-            </div>
+      <!-- Error -->
+      <div v-else-if="error" class="rounded-xl border border-destructive bg-destructive/10 p-4 text-destructive">
+        <p class="font-medium">{{ error }}</p>
+        <Button variant="outline" size="sm" class="mt-3" @click="loadCouchettes(currentPage)">
+          <RefreshCw class="size-4" />
+          Réessayer
+        </Button>
+      </div>
 
-            <!-- Empty State -->
-            <div v-if="couchettes.length === 0" class="flex flex-col items-center gap-4 py-12 text-center">
-              <BedDouble class="size-16 opacity-50 text-muted-foreground" />
-              <p class="text-muted-foreground">Aucune couchette déclarée</p>
-            </div>
-
-            <!-- Couchettes List -->
-            <div v-else class="divide-y">
-              <div
-                v-for="couchette in couchettes"
-                :key="couchette.uuid"
-                class="flex items-center gap-4 px-6 py-4"
-              >
-                <Calendar class="size-4 text-muted-foreground flex-shrink-0" />
-                <div class="flex flex-col gap-0.5 flex-1">
-                  <span class="font-medium text-foreground">{{ formatDate(couchette.date) }}</span>
-                  <span class="text-sm text-muted-foreground capitalize">{{ getDayName(couchette.date) }}</span>
-                  <span class="text-xs text-muted-foreground">Déclaré le {{ formatDateTime(couchette.createdAt) }}</span>
-                </div>
-                <Button
-                  v-if="isToday(couchette.date)"
-                  variant="ghost"
-                  size="icon-sm"
-                  @click="confirmDelete(couchette)"
-                  title="Supprimer"
-                >
-                  <Trash2 class="size-4 text-destructive" />
-                </Button>
+      <!-- Content : 1 colonne sur mobile, 2 colonnes sur grand écran -->
+      <div v-else class="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)] lg:items-start lg:gap-6">
+        <!-- ===== Colonne gauche : état du jour + compteurs ===== -->
+        <div class="space-y-4">
+          <!-- Carte d'état (hero) -->
+          <section
+            class="relative overflow-hidden rounded-2xl border p-5 shadow-sm transition-colors sm:p-6"
+            :class="hasTodayCouchette
+              ? 'border-green-500/30 bg-linear-to-br from-green-500/10 via-card to-card'
+              : 'bg-card'"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Aujourd'hui · <span class="capitalize">{{ todayDateFormatted }}</span>
+                </p>
+                <h2 class="mt-2 text-xl font-bold text-foreground sm:text-2xl">
+                  {{ hasTodayCouchette ? 'Couchette déclarée' : 'Couchette du jour' }}
+                </h2>
+                <p class="mt-1 text-sm text-muted-foreground">
+                  <template v-if="hasTodayCouchette && todayCouchette">
+                    Déclarée le {{ formatDateTime(todayCouchette.createdAt) }}
+                  </template>
+                  <template v-else>
+                    Vous dormez en couchette ce soir ? Déclarez-la en un appui.
+                  </template>
+                </p>
               </div>
-            </div>
 
-            <!-- Pagination -->
-            <div v-if="totalPages > 1" class="flex items-center justify-center gap-4 border-t px-6 py-4">
-              <Button
-                variant="outline"
-                size="sm"
-                :disabled="currentPage === 0"
-                @click="goToPage(currentPage - 1)"
+              <!-- Pastille d'état -->
+              <span
+                class="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold"
+                :class="hasTodayCouchette
+                  ? 'border-green-500/40 bg-green-500/10 text-green-700 dark:text-green-400'
+                  : 'border-border bg-muted text-muted-foreground'"
               >
-                <ChevronLeft class="size-4" />
-                Précédent
-              </Button>
-              <span class="text-sm text-muted-foreground">
-                Page {{ currentPage + 1 }} sur {{ totalPages }}
+                <BedDouble class="size-3.5" />
+                {{ hasTodayCouchette ? 'Déclarée' : 'Non déclarée' }}
               </span>
+            </div>
+
+            <div class="mt-5">
               <Button
-                variant="outline"
-                size="sm"
-                :disabled="currentPage >= totalPages - 1"
-                @click="goToPage(currentPage + 1)"
+                v-if="!hasTodayCouchette"
+                class="h-14 w-full text-base font-semibold shadow-sm"
+                :disabled="creating"
+                @click="createTodayCouchette"
               >
-                Suivant
-                <ChevronRight class="size-4" />
+                <LoaderCircle v-if="creating" class="size-5 animate-spin" />
+                <Plus v-else class="size-5" />
+                Déclarer ma couchette du jour
+              </Button>
+              <Button
+                v-else
+                variant="outline"
+                class="h-12 w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                :disabled="deleting"
+                @click="confirmDeleteToday"
+              >
+                <LoaderCircle v-if="deleting" class="size-4 animate-spin" />
+                <Trash2 v-else class="size-4" />
+                Annuler ma couchette du jour
               </Button>
             </div>
-          </div>
+          </section>
+
+          <!-- Compteurs -->
+          <section class="grid grid-cols-2 gap-2 sm:gap-3" aria-label="Compteurs de couchettes">
+            <div class="flex items-center gap-2.5 rounded-xl border bg-card px-3 py-2.5 sm:px-4 sm:py-3">
+              <div class="hidden size-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary sm:flex">
+                <CalendarCheck class="size-4" />
+              </div>
+              <div class="flex min-w-0 flex-col gap-0.5">
+                <span class="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Ce mois</span>
+                <span class="font-mono text-base font-bold tabular-nums text-foreground sm:text-lg">{{ monthCount }}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2.5 rounded-xl border bg-card px-3 py-2.5 sm:px-4 sm:py-3">
+              <div class="hidden size-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary sm:flex">
+                <BedDouble class="size-4" />
+              </div>
+              <div class="flex min-w-0 flex-col gap-0.5">
+                <span class="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total</span>
+                <span class="font-mono text-base font-bold tabular-nums text-foreground sm:text-lg">{{ totalElements }}</span>
+              </div>
+            </div>
+          </section>
         </div>
+
+        <!-- ===== Colonne droite : historique ===== -->
+        <section class="space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-lg font-semibold text-foreground">Historique</h2>
+            <span class="text-xs text-muted-foreground">{{ countLabel }}</span>
+          </div>
+
+          <!-- Loading (changement de page) -->
+          <div v-if="loading" class="space-y-2">
+            <Skeleton v-for="n in 4" :key="n" class="h-16 w-full rounded-xl" />
+          </div>
+
+          <!-- Empty -->
+          <div v-else-if="couchettes.length === 0" class="rounded-2xl border border-dashed p-8 text-center">
+            <BedDouble class="mx-auto mb-3 size-9 text-muted-foreground/70" />
+            <p class="text-sm text-muted-foreground">Aucune couchette déclarée pour l'instant</p>
+          </div>
+
+          <!-- Liste groupée par mois -->
+          <div v-else class="flex flex-col gap-4">
+            <div v-for="group in couchettesByMonth" :key="group.key">
+              <div class="mb-2 flex items-center justify-between px-1">
+                <h3 class="text-sm font-semibold capitalize text-foreground">{{ group.label }}</h3>
+                <span class="text-xs tabular-nums text-muted-foreground">
+                  {{ group.items.length }} nuit{{ group.items.length > 1 ? 's' : '' }}
+                </span>
+              </div>
+              <ul class="flex flex-col gap-2">
+                <li
+                  v-for="couchette in group.items"
+                  :key="couchette.uuid"
+                  class="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-sm"
+                  :class="isToday(couchette.date) && 'border-green-500/40'"
+                >
+                  <!-- Tuile de date -->
+                  <div
+                    class="flex w-14 shrink-0 flex-col items-center justify-center rounded-lg py-1.5"
+                    :class="isToday(couchette.date) ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-primary/10 text-primary'"
+                  >
+                    <span class="text-xl font-bold leading-none tabular-nums">{{ getDayNumber(couchette.date) }}</span>
+                    <span class="mt-1 text-[11px] font-semibold uppercase leading-none">{{ getDayShort(couchette.date) }}</span>
+                  </div>
+
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate font-medium capitalize text-foreground">
+                      {{ isToday(couchette.date) ? "Aujourd'hui" : formatDate(couchette.date) }}
+                    </p>
+                    <p class="truncate text-xs text-muted-foreground">
+                      Déclarée le {{ formatDateTime(couchette.createdAt) }}
+                    </p>
+                  </div>
+
+                  <Button
+                    v-if="isToday(couchette.date)"
+                    variant="ghost"
+                    size="icon-sm"
+                    class="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    aria-label="Supprimer la couchette du jour"
+                    @click="confirmDelete(couchette)"
+                  >
+                    <Trash2 class="size-4" />
+                  </Button>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <div
+            v-if="!loading && totalPages > 1"
+            class="flex items-center justify-between gap-2 rounded-xl border bg-card px-3 py-2"
+          >
+            <Button variant="ghost" size="sm" :disabled="currentPage === 0" @click="goToPage(currentPage - 1)">
+              <ChevronLeft class="size-4" />
+              Précédent
+            </Button>
+            <span class="text-xs tabular-nums text-muted-foreground">
+              Page {{ currentPage + 1 }} / {{ totalPages }}
+            </span>
+            <Button variant="ghost" size="sm" :disabled="currentPage >= totalPages - 1" @click="goToPage(currentPage + 1)">
+              Suivant
+              <ChevronRight class="size-4" />
+            </Button>
+          </div>
+        </section>
       </div>
     </main>
 
     <!-- Delete Dialog -->
     <Dialog v-model:open="showDeleteModal">
-      <DialogContent class="sm:max-w-md">
+      <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Supprimer la couchette</DialogTitle>
           <DialogDescription>Cette action est irréversible.</DialogDescription>
         </DialogHeader>
 
         <div v-if="couchetteToDelete" class="space-y-3 rounded-lg border bg-muted/50 p-4">
-          <div class="flex justify-between text-sm">
+          <div class="flex justify-between gap-3 text-sm">
             <span class="text-muted-foreground">Date</span>
-            <span class="font-medium">{{ formatDate(couchetteToDelete.date) }}</span>
+            <span class="font-medium capitalize">{{ formatDate(couchetteToDelete.date) }}</span>
           </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-muted-foreground">Jour</span>
-            <span class="font-medium capitalize">{{ getDayName(couchetteToDelete.date) }}</span>
+          <div class="flex justify-between gap-3 text-sm">
+            <span class="text-muted-foreground">Déclarée le</span>
+            <span class="font-medium">{{ formatDateTime(couchetteToDelete.createdAt) }}</span>
           </div>
         </div>
 
@@ -196,8 +251,9 @@ import { couchettesService } from '@/services'
 import type { CouchetteDTO } from '@/models'
 import { useMessages } from '@/composables/useMessages'
 
-// shadcn components
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Retour } from '@/components/ui/retour'
 import {
   Dialog,
   DialogContent,
@@ -207,27 +263,28 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-// Lucide icons
 import {
   BedDouble,
   CalendarCheck,
   Plus,
   Trash2,
   LoaderCircle,
-  CheckCircle,
-  Clock,
   ChevronLeft,
   ChevronRight,
-  Calendar,
+  RefreshCw,
 } from 'lucide-vue-next'
 
-// Legacy components (kept per project rules)
-import { Retour } from '@/components/ui/retour'
+interface MonthGroup {
+  key: string
+  label: string
+  items: CouchetteDTO[]
+}
 
 const messages = useMessages()
 
 // State
 const loading = ref(true)
+const hasLoadedOnce = ref(false)
 const error = ref<string | null>(null)
 const creating = ref(false)
 const deleting = ref(false)
@@ -241,27 +298,58 @@ const pageSize = ref(20)
 const showDeleteModal = ref(false)
 const couchetteToDelete = ref<CouchetteDTO | null>(null)
 
+// Clé de date locale (YYYY-MM-DD) — évite le décalage UTC de toISOString en soirée
+const localDateKey = (date: Date): string => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const todayKey = computed(() => localDateKey(new Date()))
+
+const todayDateFormatted = computed(() =>
+  new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+)
+
 // Computed
-const hasTodayCouchette = computed(() => {
-  const today = new Date().toISOString().split('T')[0]
-  return couchettes.value.some(c => c.date === today)
-})
+const todayCouchette = computed(() => couchettes.value.find(c => c.date === todayKey.value))
+const hasTodayCouchette = computed(() => !!todayCouchette.value)
 
-const todayCouchette = computed(() => {
-  const today = new Date().toISOString().split('T')[0]
-  return couchettes.value.find(c => c.date === today)
-})
-
+// Nombre de nuits du mois courant parmi les couchettes chargées (page courante)
 const monthCount = computed(() => {
   const now = new Date()
-  const currentMonth = now.getMonth()
-  const currentYear = now.getFullYear()
-
   return couchettes.value.filter(c => {
-    if (!c.date) return false
-    const date = new Date(c.date)
-    return date.getMonth() === currentMonth && date.getFullYear() === currentYear
+    const date = parseDate(c.date)
+    return !!date && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()
   }).length
+})
+
+const countLabel = computed(() => `${totalElements.value} nuit${totalElements.value > 1 ? 's' : ''}`)
+
+// Historique groupé par mois (ordre décroissant)
+const couchettesByMonth = computed((): MonthGroup[] => {
+  const groups = new Map<string, MonthGroup>()
+
+  for (const couchette of couchettes.value) {
+    const date = parseDate(couchette.date)
+    if (!date) continue
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        label: date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+        items: []
+      })
+    }
+    groups.get(key)?.items.push(couchette)
+  }
+
+  for (const group of groups.values()) {
+    group.items.sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+  }
+
+  return Array.from(groups.values()).sort((a, b) => b.key.localeCompare(a.key))
 })
 
 // Load data
@@ -284,6 +372,7 @@ const loadCouchettes = async (page: number = 0) => {
     console.error('Error loading couchettes:', err)
   } finally {
     loading.value = false
+    hasLoadedOnce.value = true
   }
 }
 
@@ -346,49 +435,39 @@ const goToPage = (page: number) => {
 }
 
 // Helpers
-const isToday = (dateStr?: string): boolean => {
-  if (!dateStr) return false
-  const today = new Date().toISOString().split('T')[0]
-  return dateStr === today
+const parseDate = (value?: string | Date): Date | null => {
+  if (!value) return null
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+const isToday = (dateStr?: string): boolean => !!dateStr && dateStr === todayKey.value
+
+const getDayNumber = (dateStr?: string): string => {
+  const d = parseDate(dateStr)
+  return d ? String(d.getDate()) : '--'
+}
+
+const getDayShort = (dateStr?: string): string => {
+  const d = parseDate(dateStr)
+  return d ? d.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '') : ''
 }
 
 const formatDate = (dateStr?: string): string => {
-  if (!dateStr) return '-'
-  try {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    })
-  } catch {
-    return dateStr
-  }
+  const d = parseDate(dateStr)
+  if (!d) return '-'
+  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-const getDayName = (dateStr?: string): string => {
-  if (!dateStr) return ''
-  try {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('fr-FR', { weekday: 'long' })
-  } catch {
-    return ''
-  }
-}
-
-const formatDateTime = (dateStr?: Date | string): string => {
-  if (!dateStr) return '-'
-  try {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch {
-    return '-'
-  }
+const formatDateTime = (value?: Date | string): string => {
+  const d = parseDate(value)
+  if (!d) return '-'
+  return d.toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 // Lifecycle
