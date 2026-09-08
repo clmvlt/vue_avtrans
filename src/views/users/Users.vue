@@ -73,15 +73,29 @@
             </ul>
           </section>
 
-          <!-- Search bar -->
-          <div class="relative">
-            <Search class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              v-model="searchQuery"
-              type="search"
-              placeholder="Rechercher par nom ou email..."
-              class="pl-9"
-            />
+          <!-- Search bar + filtre visibilité -->
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div class="relative flex-1">
+              <Search class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                v-model="searchQuery"
+                type="search"
+                placeholder="Rechercher par nom ou email..."
+                class="pl-9"
+              />
+            </div>
+            <label
+              class="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:bg-accent/50 has-[[data-state=checked]]:border-primary/30 has-[[data-state=checked]]:bg-primary/5"
+              title="Les utilisateurs masqués n'apparaissent pas dans les services, le planning, les heures, les signatures et les véhicules"
+            >
+              <Checkbox
+                :checked="showHiddenUsers"
+                @update:checked="(val: boolean | 'indeterminate') => showHiddenUsers = val === true"
+              />
+              <EyeOff class="size-4 text-muted-foreground" />
+              <span class="whitespace-nowrap">Afficher les masqués</span>
+              <Badge v-if="hiddenUsersCount > 0" variant="secondary" class="ml-1">{{ hiddenUsersCount }}</Badge>
+            </label>
           </div>
 
           <!-- Mobile Cards View -->
@@ -99,6 +113,7 @@
               v-for="item in sortedData"
               :key="item.uuid"
               class="rounded-lg border bg-card p-4 shadow-sm"
+              :class="!isUserVisible(item) && 'border-dashed bg-muted/40'"
             >
               <!-- Header: Avatar + Name + Actions menu -->
               <div class="flex items-start justify-between gap-3">
@@ -195,6 +210,17 @@
                   {{ item.isActive ? 'Actif' : 'Inactif' }}
                 </Badge>
 
+                <!-- Visibilité (indépendante du statut actif) -->
+                <Badge
+                  v-if="!isUserVisible(item)"
+                  variant="secondary"
+                  class="gap-1"
+                  title="Masqué des services, du planning, des heures, des signatures et des véhicules"
+                >
+                  <EyeOff class="size-3" />
+                  Masqué
+                </Badge>
+
                 <!-- Email verification -->
                 <Badge :variant="item.isMailVerified ? 'default' : 'destructive'" class="gap-1">
                   <CircleCheck v-if="item.isMailVerified" class="size-3" />
@@ -240,7 +266,12 @@
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow v-for="item in sortedData" :key="item.uuid" @contextmenu="contextMenu.open($event, item)">
+                <TableRow
+                  v-for="item in sortedData"
+                  :key="item.uuid"
+                  :class="!isUserVisible(item) && 'bg-muted/40'"
+                  @contextmenu="contextMenu.open($event, item)"
+                >
                   <!-- User -->
                   <TableCell>
                     <div class="flex items-center gap-3">
@@ -308,11 +339,22 @@
                     </Badge>
                   </TableCell>
 
-                  <!-- Account status -->
+                  <!-- Account status + visibilité -->
                   <TableCell>
-                    <Badge :variant="item.isActive ? 'outline' : 'destructive'" :class="item.isActive ? 'border-green-500/50 text-green-600 dark:text-green-400' : ''">
-                      {{ item.isActive ? 'Actif' : 'Inactif' }}
-                    </Badge>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <Badge :variant="item.isActive ? 'outline' : 'destructive'" :class="item.isActive ? 'border-green-500/50 text-green-600 dark:text-green-400' : ''">
+                        {{ item.isActive ? 'Actif' : 'Inactif' }}
+                      </Badge>
+                      <Badge
+                        v-if="!isUserVisible(item)"
+                        variant="secondary"
+                        class="gap-1"
+                        title="Masqué des services, du planning, des heures, des signatures et des véhicules"
+                      >
+                        <EyeOff class="size-3" />
+                        Masqué
+                      </Badge>
+                    </div>
                   </TableCell>
 
                   <!-- Last vehicle -->
@@ -499,6 +541,7 @@ import { usersService } from '@/services/users'
 import { useMessages } from '@/composables/useMessages'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { usePendingUsers, isPendingActivation } from '@/composables/usePendingUsers'
+import { isUserVisible } from '@/utils/userVisibility'
 import type { UserDTO, UserLastVehicleDTO } from '@/models'
 import { UserStatus, UserStatusLabels } from '@/enums'
 
@@ -506,6 +549,7 @@ import { UserStatus, UserStatusLabels } from '@/enums'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -545,6 +589,7 @@ import {
   Phone,
   Smartphone,
   UserPlus,
+  EyeOff,
 } from 'lucide-vue-next'
 
 // DropdownMenu for mobile actions
@@ -640,6 +685,10 @@ const handleContextAction = (user: UserWithStatus, action: string) => {
 
 // Filtres
 const searchQuery = ref('')
+// Les masqués (isVisible = false) sont affichés par défaut : GET /users est la
+// seule liste où ils apparaissent encore.
+const showHiddenUsers = ref(true)
+const hiddenUsersCount = computed(() => users.value.filter(user => !isUserVisible(user)).length)
 
 // Sort state
 const sortKey = ref<string | null>(null)
@@ -655,6 +704,10 @@ const filteredUsers = computed(() => {
     isActiveSort: user.isActive ? 1 : 0,
     statusSort: user.status || ''
   }))
+
+  if (!showHiddenUsers.value) {
+    result = result.filter(user => isUserVisible(user))
+  }
 
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase()

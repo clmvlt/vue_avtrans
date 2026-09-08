@@ -144,6 +144,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { cartesService, typeCartesService, usersService } from '@/services'
+import { selectableUsers } from '@/utils/userVisibility'
 import { useMessages } from '@/composables/useMessages'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -208,8 +209,9 @@ const typeCarteOptions = computed(() => {
   }))
 })
 
+// Visibles uniquement (+ le titulaire actuel de la carte, même masqué, pour l'afficher en édition)
 const userOptions = computed(() => {
-  return users.value.map(user => ({
+  return selectableUsers(users.value, [formData.value.userUuid]).map(user => ({
     value: user.uuid || '',
     label: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Utilisateur inconnu'
   }))

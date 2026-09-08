@@ -414,6 +414,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { absencesService, absenceTypesService, usersService } from '@/services'
+import { selectableUsers } from '@/utils/userVisibility'
 import type { AbsenceDTO, AbsenceTypeDTO, UserDTO } from '@/models'
 import type { AbsenceSearchParams, AbsenceStatus, AbsenceListResponse } from '@/services/absences'
 import type { AbsenceTypeListResponse } from '@/services/absenceTypes'
@@ -627,7 +628,8 @@ const filterConfig = computed<FilterConfig[]>(() => [
     label: 'Employé',
     type: 'select',
     placeholder: 'Tous les employés',
-    options: users.value
+    // Visibles uniquement (+ l'employé déjà sélectionné, même masqué, pour garder le libellé)
+    options: selectableUsers(users.value, [searchFilters.value.userUuid as string | undefined])
       .filter(user => user.uuid && user.firstName)
       .map(user => ({
         value: user.uuid!,

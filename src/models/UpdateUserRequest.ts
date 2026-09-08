@@ -15,6 +15,11 @@ export interface UpdateUserRequest {
   roleUuid?: string;
   /** Indique si l'utilisateur a la permission couchette */
   isCouchette?: boolean;
+  /**
+   * Visibilité dans les listes admin (services, planning, heures, signatures,
+   * véhicules). Omettre (ou null) = inchangé côté API.
+   */
+  isVisible?: boolean;
   /** Adresse de l'utilisateur */
   address?: AddressDTO;
   /** Numéro de permis de conduire */

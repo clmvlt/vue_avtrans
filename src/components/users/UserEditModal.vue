@@ -116,6 +116,30 @@
               <span class="text-xs text-muted-foreground">Permet de déclarer des couchettes</span>
             </div>
           </label>
+
+          <!-- Visibilité (édition uniquement : PUT /users/{uuid}, réservé admin) -->
+          <label
+            v-if="!isCreating"
+            class="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-accent/50 has-[[data-state=checked]]:border-primary/30 has-[[data-state=checked]]:bg-primary/5"
+          >
+            <Checkbox
+              :checked="isVisible"
+              @update:checked="(val: boolean | 'indeterminate') => isVisible = val === true"
+              :disabled="saving"
+            />
+            <div class="flex flex-col gap-0.5">
+              <span class="flex items-center gap-1.5 text-sm font-medium leading-none">
+                <Eye v-if="isVisible" class="size-3.5 text-muted-foreground" />
+                <EyeOff v-else class="size-3.5 text-muted-foreground" />
+                Visible dans les services et le planning
+              </span>
+              <span class="text-xs text-muted-foreground">
+                Un utilisateur masqué n'apparaît plus dans le tableau de bord des services, le planning,
+                les heures, les signatures et les véhicules. Il reste visible dans la liste des utilisateurs
+                et peut toujours utiliser l'application.
+              </span>
+            </div>
+          </label>
         </div>
 
         <!-- Heures contrat -->
@@ -264,12 +288,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { LoaderCircle, User, UserPen, Mail, Lock, AlertCircle, CircleCheck, Clock, CreditCard, MapPin, Phone, Smartphone } from 'lucide-vue-next'
+import { LoaderCircle, User, UserPen, Mail, Lock, AlertCircle, CircleCheck, Clock, CreditCard, MapPin, Phone, Smartphone, Eye, EyeOff } from 'lucide-vue-next'
 import { InputField } from '@/components/ui/input-field'
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
 import type { UserDTO, UpdateUserRequest, AddressDTO } from '@/models'
+import { isUserVisible } from '@/utils/userVisibility'
 
 interface Props {
   modelValue: boolean
@@ -307,6 +332,8 @@ const password = ref('')
 const roleUuid = ref<string | null>(null)
 const isActive = ref(true)
 const isCouchette = ref(false)
+// Visibilité dans les listes admin — défaut true (champ absent ⇒ visible, cf. contrat API)
+const isVisible = ref(true)
 const heureContratInput = ref('')
 const driverLicenseNumber = ref('')
 const telPersonnel = ref('')
@@ -361,6 +388,7 @@ const populateForm = (user: UserDTO) => {
   roleUuid.value = user.role?.uuid || null
   isActive.value = user.isActive ?? true
   isCouchette.value = user.isCouchette ?? false
+  isVisible.value = isUserVisible(user)
   heureContratInput.value = user.heureContrat != null ? String(user.heureContrat) : ''
   driverLicenseNumber.value = user.driverLicenseNumber || ''
   telPersonnel.value = user.telPersonnel || ''
@@ -372,9 +400,11 @@ const populateForm = (user: UserDTO) => {
 }
 
 // Extraire le UserDTO depuis la réponse API
+// PUT /users/{uuid} renvoie l'utilisateur sous la clé `user` (pas `data`) ;
+// GET /users/{uuid} peut renvoyer le DTO nu.
 const extractUser = (response: unknown): UserDTO | undefined => {
   const r = response as any
-  const candidate = r?.data || r?.user || r
+  const candidate = r?.user || r?.data || r
   if (candidate && (candidate.uuid || candidate.email)) {
     return candidate as UserDTO
   }
@@ -413,6 +443,7 @@ const resetForm = () => {
   roleUuid.value = null
   isActive.value = true
   isCouchette.value = false
+  isVisible.value = true
   heureContratInput.value = ''
   driverLicenseNumber.value = ''
   telPersonnel.value = ''
@@ -476,6 +507,10 @@ const handleSubmit = async () => {
       }
       if (roleUuid.value) {
         dataToSend.roleUuid = roleUuid.value
+      }
+      // isVisible : envoyé uniquement s'il a changé (l'API ignore les champs absents)
+      if (isVisible.value !== isUserVisible(userData.value)) {
+        dataToSend.isVisible = isVisible.value
       }
 
       const response = await usersService.updateUser(props.userUuid, dataToSend)

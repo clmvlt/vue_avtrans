@@ -19,6 +19,14 @@ export interface UserDTO {
   pictureUrl?: string;
   /** Indique si l'utilisateur a la permission couchette */
   isCouchette?: boolean;
+  /**
+   * Indique si l'utilisateur apparaît dans les listes admin (services, planning,
+   * heures, signatures, véhicules). Jamais null côté API ; si absent (ancienne
+   * version d'API), le client doit le considérer comme `true` — utiliser
+   * `isUserVisible()` de `@/utils/userVisibility` plutôt que lire le champ.
+   * Modifiable uniquement par un Administrateur via PUT /users/{uuid}.
+   */
+  isVisible?: boolean;
   /** Préférences de notification de l'utilisateur */
   notificationPreferences?: NotificationPreferencesDTO;
   /** Statut de présence de l'utilisateur */

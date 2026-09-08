@@ -220,6 +220,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { couchettesService, usersService } from '@/services'
+import { selectableUsers } from '@/utils/userVisibility'
 import type { CouchetteDTO, UserDTO } from '@/models'
 import type { CouchetteSearchParams } from '@/services/couchettes'
 import { useMessages } from '@/composables/useMessages'
@@ -359,7 +360,8 @@ const filterConfig = computed<FilterConfig[]>(() => [
     label: 'Employé',
     type: 'select',
     placeholder: 'Tous les employés',
-    options: users.value
+    // Visibles uniquement (+ l'employé déjà sélectionné, même masqué, pour garder le libellé)
+    options: selectableUsers(users.value, [searchFilters.value.userUuid as string | undefined])
       .filter(user => user.uuid && user.firstName)
       .map(user => ({
         value: user.uuid!,

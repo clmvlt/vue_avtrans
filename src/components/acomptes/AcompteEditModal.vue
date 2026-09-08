@@ -91,6 +91,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { acomptesService, usersService } from '@/services'
+import { selectableUsers } from '@/utils/userVisibility'
 import { useMessages } from '@/composables/useMessages'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -140,8 +141,10 @@ const formData = ref({
 })
 
 // Options pour Select
+// GET /users renvoie aussi les utilisateurs masqués (isVisible = false) :
+// on ne propose que les visibles pour créer une entrée à leur nom.
 const userOptions = computed(() => {
-  return users.value
+  return selectableUsers(users.value)
     .filter(user => user.uuid)
     .map(user => ({
       value: user.uuid!,

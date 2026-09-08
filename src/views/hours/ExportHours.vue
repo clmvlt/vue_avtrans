@@ -220,6 +220,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { usersService, exportService } from '@/services'
+import { selectableUsers } from '@/utils/userVisibility'
 import type { ExportHoursRequest } from '@/services/export'
 import type { UserDTO } from '@/models'
 
@@ -256,13 +257,15 @@ const exportParams = ref({
   endDate: formatDateToISO(lastDayOfMonth)
 })
 
-// Filtered users
+// Filtered users — GET /users renvoie aussi les masqués : on ne propose à
+// l'export que les utilisateurs visibles.
 const filteredUsers = computed(() => {
+  const visibleUsers = selectableUsers(users.value)
   if (!searchQuery.value.trim()) {
-    return users.value
+    return visibleUsers
   }
   const query = searchQuery.value.toLowerCase()
-  return users.value.filter(user => {
+  return visibleUsers.filter(user => {
     const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase()
     const email = (user.email || '').toLowerCase()
     return fullName.includes(query) || email.includes(query)
