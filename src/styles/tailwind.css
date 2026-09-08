@@ -176,6 +176,22 @@
   [role="button"][aria-disabled="true"] {
     cursor: not-allowed;
   }
+  /* Les champs date/heure natifs (iOS Safari surtout) ont une largeur intrinsèque
+     qui ignore le conteneur et fait déborder les grilles : on les force à suivre la largeur du parent */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="month"] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+  }
+  input::-webkit-date-and-time-value {
+    text-align: left;
+    min-height: 1.5em;
+  }
 }
 
 /* View Transition — circular propagation for theme toggle */
