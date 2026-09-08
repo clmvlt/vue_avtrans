@@ -211,9 +211,16 @@ const injectJsonLd = () => {
 // --- Force light mode on landing page ---
 const wasDark = ref(false)
 
+// --- Mise à l'échelle grands écrans ---
+// La page est entièrement dimensionnée en rem (conteneurs, textes, espacements, icônes).
+// Cette classe fait grossir la taille de police racine au-delà de 1920px de large
+// (voir le style :global en bas du fichier), donc toute la page suit proportionnellement.
+const FLUID_SCALE_CLASS = 'landing-fluid'
+
 onMounted(() => {
   wasDark.value = document.documentElement.classList.contains('dark')
   document.documentElement.classList.remove('dark')
+  document.documentElement.classList.add(FLUID_SCALE_CLASS)
 
   window.addEventListener('scroll', onScroll, { passive: true })
 
@@ -260,6 +267,7 @@ onMounted(() => {
 onUnmounted(() => {
   // Restore dark mode if it was active before
   if (wasDark.value) document.documentElement.classList.add('dark')
+  document.documentElement.classList.remove(FLUID_SCALE_CLASS)
 
   window.removeEventListener('scroll', onScroll)
   observer?.disconnect()
@@ -371,7 +379,7 @@ const footerServices = [
                 AVTRANS
               </span>
               <span
-                class="text-[11px] font-medium uppercase tracking-wider transition-colors duration-300"
+                class="text-[0.6875rem] font-medium uppercase tracking-wider transition-colors duration-300"
                 :class="isScrolled ? 'text-muted-foreground' : 'text-white/60'"
               >
                 Solutions Transport
@@ -958,6 +966,18 @@ const footerServices = [
 </template>
 
 <style scoped>
+/* ── Mise à l'échelle grands écrans ──
+   Toute la page est en rem : on fait grossir la police racine proportionnellement
+   à la largeur de la fenêtre au-delà de 1920px (0.8333vw = 16px à 1920px).
+   - < 1920px  : 100 % (inchangé, référence écran 24")
+   - 2560px    : ~133 % (21.3px)
+   - ≥ 3120px  : plafonné à 162.5 % (26px)
+   Les breakpoints Tailwind (rem dans les media queries) ne sont pas affectés :
+   ils se basent toujours sur la taille de police initiale du navigateur. */
+:global(html.landing-fluid) {
+  font-size: clamp(100%, 0.8333vw, 162.5%);
+}
+
 /* Hero image slow zoom */
 .hero-bg {
   animation: hero-zoom 25s ease-out forwards;
