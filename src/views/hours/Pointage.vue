@@ -1,317 +1,311 @@
 <template>
-  <div class="min-h-screen bg-background">
+  <div class="min-h-screen bg-background pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:pb-8">
     <!-- Header -->
     <header class="sticky top-0 z-40 border-b bg-background">
-      <div class="mx-auto flex max-w-[1000px] items-center gap-4 px-6 py-4">
+      <div class="mx-auto flex max-w-[1100px] items-center gap-2 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4">
         <Retour fallback="/" />
-        <h1 class="flex-1 text-xl font-bold text-foreground">Pointage</h1>
-        <Button variant="outline" size="sm" @click="openKmModal">
+        <h1 class="flex-1 text-lg font-bold text-foreground sm:text-xl">Pointage</h1>
+        <Button variant="outline" size="sm" aria-label="Saisir le kilométrage" @click="openKmModal">
           <Gauge class="size-4" />
-          Kilométrage
+          <span class="max-sm:sr-only">Kilométrage</span>
         </Button>
       </div>
     </header>
 
-    <main class="px-6 py-6 max-sm:px-3 max-sm:py-3">
-      <div class="mx-auto max-w-[1000px]">
-        <!-- Loading State -->
-        <div v-if="loading && !activeService" class="flex flex-col items-center justify-center gap-4 py-16">
-          <LoaderCircle class="size-10 animate-spin text-primary" />
-          <p class="text-lg text-muted-foreground">Chargement...</p>
+    <main class="mx-auto max-w-[1100px] px-3 py-3 sm:px-6 sm:py-6">
+      <!-- Loading State (squelette de la mise en page) -->
+      <div v-if="loading && !activeService" class="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)] lg:gap-6">
+        <div class="space-y-4">
+          <div class="rounded-2xl border bg-card p-5 sm:p-6">
+            <Skeleton class="h-3 w-40" />
+            <Skeleton class="mt-4 h-12 w-56" />
+            <Skeleton class="mt-3 h-3 w-48" />
+            <div class="mt-6 hidden md:block">
+              <Skeleton class="h-14 w-full" />
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2 sm:gap-3">
+            <Skeleton v-for="n in 3" :key="n" class="h-[68px]" />
+          </div>
+          <Skeleton class="h-40 w-full rounded-2xl" />
         </div>
-
-        <!-- Error State -->
-        <div v-else-if="error" class="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-destructive">
-          {{ error }}
+        <div class="space-y-3">
+          <Skeleton class="h-8 w-32" />
+          <Skeleton v-for="n in 3" :key="n" class="h-16 w-full rounded-xl" />
         </div>
+      </div>
 
-        <!-- Main Content -->
-        <div v-else class="space-y-6">
-          <!-- Current Status Card -->
-          <div class="rounded-lg border bg-card p-6 shadow-sm max-md:p-4">
-            <div class="mb-5 flex items-center justify-between">
-              <h2 class="text-xl font-semibold text-foreground">État actuel</h2>
-              <Badge
-                :variant="!activeService ? 'secondary' : 'outline'"
-                :class="activeService && !activeService.isBreak
-                  ? 'border-green-500/50 text-green-600 dark:text-green-400'
-                  : activeService?.isBreak
-                    ? 'border-amber-500/50 text-amber-600 dark:text-amber-400'
-                    : ''"
+      <!-- Error State -->
+      <div v-else-if="error" class="rounded-xl border border-destructive bg-destructive/10 p-4 text-destructive">
+        <p class="font-medium">{{ error }}</p>
+        <Button variant="outline" size="sm" class="mt-3" @click="loadData">
+          <RefreshCw class="size-4" />
+          Réessayer
+        </Button>
+      </div>
+
+      <!-- Main Content : 1 colonne sur mobile, 2 colonnes sur grand écran -->
+      <div v-else class="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)] lg:items-start lg:gap-6">
+        <!-- ===== Colonne gauche : état + compteurs + services du jour ===== -->
+        <div class="space-y-4">
+          <!-- Carte d'état (hero) -->
+          <section
+            class="relative overflow-hidden rounded-2xl border p-5 shadow-sm transition-colors sm:p-6"
+            :class="heroClass"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Aujourd'hui · <span class="capitalize">{{ todayDateFormatted }}</span>
+                </p>
+                <p class="mt-2 font-mono text-4xl font-bold leading-none tabular-nums text-foreground sm:text-5xl">
+                  {{ todayClock }}
+                </p>
+                <p class="mt-2 text-sm text-muted-foreground">{{ heroSubtitle }}</p>
+              </div>
+
+              <!-- Pastille d'état -->
+              <span
+                class="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold"
+                :class="statusPillClass"
               >
+                <span class="relative flex size-2">
+                  <span
+                    v-if="pointageStatus !== 'off'"
+                    class="absolute inline-flex size-full animate-ping rounded-full opacity-60"
+                    :class="pointageStatus === 'working' ? 'bg-green-500' : 'bg-amber-500'"
+                  />
+                  <span
+                    class="relative inline-flex size-2 rounded-full"
+                    :class="pointageStatus === 'working' ? 'bg-green-500' : pointageStatus === 'break' ? 'bg-amber-500' : 'bg-muted-foreground/50'"
+                  />
+                </span>
                 {{ statusText }}
-              </Badge>
+              </span>
             </div>
 
-            <!-- Action Buttons -->
-            <div class="flex flex-col gap-3">
-              <template v-if="!activeService">
-                <Button
-                  class="h-14 w-full bg-green-600 text-base text-white hover:bg-green-700"
-                  size="lg"
-                  :disabled="actionLoading"
-                  @click="startService"
-                >
-                  <LoaderCircle v-if="actionLoading" class="size-4 animate-spin" />
-                  <Play v-else class="size-4" />
-                  Démarrer le service
-                </Button>
-              </template>
+            <!-- Rappels contextuels -->
+            <div v-if="locationPermission === 'denied' || (isUserRole && !hasEnteredKmToday)" class="mt-4 flex flex-wrap gap-2">
+              <button
+                v-if="locationPermission === 'denied'"
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-full border border-destructive/40 bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/15"
+                @click="requestLocation()"
+              >
+                <MapPinOff class="size-3.5" />
+                Localisation refusée · Réessayer
+              </button>
+              <button
+                v-if="isUserRole && !hasEnteredKmToday"
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15"
+                @click="openKmModal"
+              >
+                <Gauge class="size-3.5" />
+                Kilométrage du jour à saisir
+              </button>
+            </div>
 
-              <template v-else-if="!activeService.isBreak">
-                <Button
-                  class="h-14 w-full bg-amber-600 text-base text-white hover:bg-amber-700"
-                  size="lg"
-                  :disabled="actionLoading"
-                  @click="startBreak"
-                >
-                  <LoaderCircle v-if="actionLoading" class="size-4 animate-spin" />
-                  <Pause v-else class="size-4" />
-                  Commencer une pause
-                </Button>
-                <Button
-                  class="h-14 w-full bg-rose-600 text-base text-white hover:bg-rose-700"
-                  size="lg"
-                  :disabled="actionLoading"
-                  @click="endService"
-                >
-                  <LoaderCircle v-if="actionLoading" class="size-4 animate-spin" />
-                  <Square v-else class="size-4" />
-                  Terminer le service
-                </Button>
-              </template>
+            <!-- Actions (PC uniquement — sur mobile elles sont dans la barre fixe en bas) -->
+            <div class="mt-5 hidden md:block">
+              <PointageActions
+                :status="pointageStatus"
+                :loading="actionLoading"
+                layout="row"
+                @start="startService"
+                @pause="startBreak"
+                @resume="endBreak"
+                @end="endService"
+              />
+            </div>
+          </section>
 
-              <template v-else>
-                <Button
-                  class="h-14 w-full bg-green-600 text-base text-white hover:bg-green-700"
-                  size="lg"
-                  :disabled="actionLoading"
-                  @click="endBreak"
-                >
-                  <LoaderCircle v-if="actionLoading" class="size-4 animate-spin" />
-                  <Play v-else class="size-4" />
-                  Reprendre le service
-                </Button>
-              </template>
+          <!-- Compteurs (le jour est déjà affiché en direct dans la carte d'état) -->
+          <section class="grid grid-cols-3 gap-2 sm:gap-3" aria-label="Heures travaillées">
+            <div
+              v-for="stat in stats"
+              :key="stat.label"
+              class="flex items-center gap-2.5 rounded-xl border bg-card px-3 py-2.5 sm:px-4 sm:py-3"
+            >
+              <div
+                class="hidden size-9 shrink-0 items-center justify-center rounded-md sm:flex"
+                :class="stat.iconClass"
+              >
+                <component :is="stat.icon" class="size-4" />
+              </div>
+              <div class="flex min-w-0 flex-col gap-0.5">
+                <span class="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{{ stat.label }}</span>
+                <span class="truncate font-mono text-base font-bold tabular-nums text-foreground sm:text-lg">{{ stat.value }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Services du jour -->
+          <section class="rounded-2xl border bg-card shadow-sm">
+            <div class="flex items-center justify-between gap-3 border-b px-4 py-3 sm:px-5">
+              <h2 class="text-base font-semibold text-foreground">Services du jour</h2>
+              <span class="text-xs text-muted-foreground">{{ todayCountLabel }}</span>
+            </div>
+            <div class="px-4 py-2 sm:px-5">
+              <ServiceTimeline
+                :services="todayServices"
+                :active-uuid="activeService?.uuid"
+                :elapsed-ms="elapsedTime"
+                empty-text="Aucun service enregistré aujourd'hui"
+              />
+            </div>
+          </section>
+        </div>
+
+        <!-- ===== Colonne droite : historique ===== -->
+        <section class="space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-lg font-semibold text-foreground">Historique</h2>
+            <Button
+              :variant="activeFilterCount > 0 ? 'default' : 'outline'"
+              size="sm"
+              @click="showFilters = true"
+            >
+              <Filter class="size-4" />
+              Filtres
+              <span
+                v-if="activeFilterCount > 0"
+                class="flex size-5 items-center justify-center rounded-full bg-background/20 text-[11px] font-bold"
+              >
+                {{ activeFilterCount }}
+              </span>
+            </Button>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="historyLoading" class="space-y-2">
+            <Skeleton v-for="n in 4" :key="n" class="h-16 w-full rounded-xl" />
+          </div>
+
+          <!-- Empty -->
+          <div v-else-if="historyByDay.length === 0" class="rounded-2xl border bg-card p-8 text-center">
+            <ClipboardList class="mx-auto mb-3 size-9 text-muted-foreground/70" />
+            <p class="text-sm text-muted-foreground">Aucun service trouvé</p>
+            <Button v-if="activeFilterCount > 0" variant="ghost" size="sm" class="mt-3" @click="resetFilters">
+              Réinitialiser les filtres
+            </Button>
+          </div>
+
+          <!-- Accordéon par jour -->
+          <div v-else class="flex flex-col gap-2">
+            <div
+              v-for="day in historyByDay"
+              :key="day.date"
+              class="overflow-hidden rounded-xl border bg-card"
+            >
+              <button
+                type="button"
+                class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+                :aria-expanded="isDayOpen(day.date)"
+                @click="toggleDay(day.date)"
+              >
+                <div class="min-w-0">
+                  <p class="truncate font-semibold capitalize text-foreground">{{ day.dayName }} {{ day.dateFormatted }}</p>
+                  <p class="text-xs text-muted-foreground">{{ day.countLabel }}</p>
+                </div>
+                <div class="flex shrink-0 items-center gap-2">
+                  <span class="rounded-md bg-primary/10 px-2 py-1 font-mono text-sm font-semibold tabular-nums text-primary">
+                    {{ day.totalHours }}
+                  </span>
+                  <ChevronDown
+                    class="size-4 text-muted-foreground transition-transform duration-200"
+                    :class="isDayOpen(day.date) && 'rotate-180'"
+                  />
+                </div>
+              </button>
+
+              <div v-if="isDayOpen(day.date)" class="border-t px-4 py-1">
+                <ServiceTimeline :services="day.services" />
+              </div>
             </div>
           </div>
 
-          <!-- Hours Summary -->
-          <section class="grid grid-cols-4 gap-4 max-md:grid-cols-2 max-md:gap-3">
-            <div class="flex items-center gap-3 rounded-lg border bg-card p-4 max-md:p-3">
-              <div class="flex size-10 shrink-0 items-center justify-center rounded-md bg-violet-500/15 text-violet-500 max-md:size-9">
-                <Sun class="size-5" />
-              </div>
-              <div class="flex min-w-0 flex-col gap-0.5">
-                <span class="text-xs uppercase tracking-wide text-muted-foreground">Jour</span>
-                <span class="font-mono text-lg font-bold text-foreground max-md:text-base">{{ formatHours(workedHours.day || 0) }}</span>
-              </div>
-            </div>
-            <div class="flex items-center gap-3 rounded-lg border bg-card p-4 max-md:p-3">
-              <div class="flex size-10 shrink-0 items-center justify-center rounded-md bg-green-500/15 text-green-500 max-md:size-9">
-                <CalendarDays class="size-5" />
-              </div>
-              <div class="flex min-w-0 flex-col gap-0.5">
-                <span class="text-xs uppercase tracking-wide text-muted-foreground">Semaine</span>
-                <span class="font-mono text-lg font-bold text-foreground max-md:text-base">{{ formatHours(workedHours.week || 0) }}</span>
-              </div>
-            </div>
-            <div class="flex items-center gap-3 rounded-lg border bg-card p-4 max-md:p-3">
-              <div class="flex size-10 shrink-0 items-center justify-center rounded-md bg-amber-500/15 text-amber-500 max-md:size-9">
-                <CalendarRange class="size-5" />
-              </div>
-              <div class="flex min-w-0 flex-col gap-0.5">
-                <span class="text-xs uppercase tracking-wide text-muted-foreground">Mois</span>
-                <span class="font-mono text-lg font-bold text-foreground max-md:text-base">{{ formatHours(workedHours.month || 0) }}</span>
-              </div>
-            </div>
-            <div class="flex items-center gap-3 rounded-lg border bg-card p-4 max-md:p-3">
-              <div class="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary max-md:size-9">
-                <Calendar class="size-5" />
-              </div>
-              <div class="flex min-w-0 flex-col gap-0.5">
-                <span class="text-xs uppercase tracking-wide text-muted-foreground">Mois dernier</span>
-                <span class="font-mono text-lg font-bold text-foreground max-md:text-base">{{ formatHours(workedHours.lastMonth || 0) }}</span>
-              </div>
-            </div>
-          </section>
-
-          <!-- Today's Services -->
-          <section class="overflow-hidden rounded-lg border bg-card shadow-sm">
-            <div class="flex items-center justify-between border-b bg-muted/50 px-5 py-4 max-sm:flex-col max-sm:gap-2 max-sm:text-center max-md:px-4 max-md:py-3">
-              <div class="flex flex-col gap-1 max-sm:items-center">
-                <h2 class="text-lg font-semibold text-foreground">Aujourd'hui</h2>
-                <span class="text-sm capitalize text-muted-foreground">{{ todayDateFormatted }}</span>
-              </div>
-              <div class="flex flex-wrap items-center justify-center gap-2 rounded-md bg-background px-4 py-2 text-sm text-primary max-md:gap-1 max-md:px-3">
-                <Clock class="size-4" />
-                <span class="font-mono text-lg font-bold max-md:text-base">{{ todayWorkedTimeFormatted }}</span>
-                <span
-                  v-if="activeService && !activeService.isBreak"
-                  class="ml-2 flex items-center gap-1 border-l border-border pl-2 text-xs font-medium text-green-600 max-md:ml-0 max-md:w-full max-md:justify-center max-md:border-l-0 max-md:pl-0 max-md:mt-1"
-                >
-                  <span class="size-2 animate-pulse rounded-full bg-green-500"></span>
-                  En cours
-                </span>
-              </div>
-            </div>
-
-            <div v-if="todayServices.length === 0" class="flex flex-col items-center justify-center gap-3 py-8">
-              <ClipboardList class="size-8 text-muted-foreground" />
-              <p class="text-sm text-muted-foreground">Aucun service enregistré aujourd'hui</p>
-            </div>
-
-            <div v-else class="flex flex-col gap-2 p-3 max-md:p-2">
-              <div
-                v-for="service in todayServices"
-                :key="service.uuid"
-                class="flex items-center gap-3 rounded-md bg-muted/50 px-4 py-3 transition-colors hover:bg-muted max-md:px-3 max-md:py-2"
-              >
-                <div
-                  class="h-8 w-1 shrink-0 rounded-full"
-                  :class="service.isBreak ? 'bg-amber-500' : 'bg-green-500'"
-                ></div>
-                <div class="flex flex-1 items-center justify-between gap-3 max-md:flex-col max-md:items-start">
-                  <div class="flex items-center gap-2 font-mono">
-                    <Badge v-if="service.isBreak" variant="outline" class="border-amber-500/50 font-sans text-xs text-amber-600 dark:text-amber-400">Pause</Badge>
-                    <span class="font-medium text-foreground">{{ formatTime(service.debut) }}</span>
-                    <ArrowRight class="size-3 text-muted-foreground" />
-                    <span class="font-medium text-foreground">{{ service.fin ? formatTime(service.fin) : 'En cours' }}</span>
-                  </div>
-                  <span class="whitespace-nowrap font-mono text-sm text-muted-foreground">{{ getServiceDuration(service) }}</span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- History Section -->
-          <section class="space-y-4">
-            <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold text-foreground max-md:text-lg">Historique</h2>
-              <Button
-                :variant="showFilters ? 'default' : 'ghost'"
-                size="sm"
-                @click="showFilters = !showFilters"
-              >
-                <Filter class="size-4" />
-                {{ showFilters ? 'Masquer' : 'Filtres' }}
-              </Button>
-            </div>
-
-            <!-- Filters Panel -->
-            <Transition
-              enter-active-class="transition duration-200 ease-out"
-              enter-from-class="scale-[0.98] opacity-0"
-              enter-to-class="scale-100 opacity-100"
-              leave-active-class="transition duration-150 ease-in"
-              leave-from-class="scale-100 opacity-100"
-              leave-to-class="scale-[0.98] opacity-0"
-            >
-              <div v-if="showFilters" class="rounded-lg border bg-card p-4">
-                <div class="mb-4 grid grid-cols-3 gap-4 max-md:grid-cols-1">
-                  <div class="flex flex-col gap-2">
-                    <label class="text-sm font-medium text-muted-foreground">Date de début</label>
-                    <Input type="date" v-model="filters.startDate" />
-                  </div>
-                  <div class="flex flex-col gap-2">
-                    <label class="text-sm font-medium text-muted-foreground">Date de fin</label>
-                    <Input type="date" v-model="filters.endDate" />
-                  </div>
-                  <div class="flex flex-col gap-2">
-                    <Select
-                      v-model="filters.isBreakString"
-                      label="Type"
-                      :options="typeFilterOptions"
-                      :searchable="false"
-                    />
-                  </div>
-                </div>
-                <div class="flex justify-end gap-2">
-                  <Button variant="ghost" size="sm" @click="resetFilters">Réinitialiser</Button>
-                  <Button variant="default" size="sm" @click="loadHistory">Appliquer</Button>
-                </div>
-              </div>
-            </Transition>
-
-            <!-- History Loading -->
-            <div v-if="historyLoading" class="flex items-center justify-center gap-3 py-8">
-              <LoaderCircle class="size-6 animate-spin text-primary" />
-              <p class="text-muted-foreground">Chargement de l'historique...</p>
-            </div>
-
-            <!-- History Empty -->
-            <div v-else-if="historyByDay.length === 0" class="rounded-lg border bg-card p-12 text-center max-sm:p-8">
-              <ClipboardList class="mx-auto mb-4 size-12 text-muted-foreground max-sm:size-9" />
-              <p class="text-muted-foreground">Aucun service trouvé</p>
-            </div>
-
-            <!-- History grouped by day -->
-            <div v-else class="flex flex-col gap-4">
-              <div v-for="day in historyByDay" :key="day.date" class="overflow-hidden rounded-lg border bg-card">
-                <div class="flex items-center justify-between border-b bg-muted/50 px-5 py-4 max-md:px-4 max-md:py-3">
-                  <div class="flex flex-col gap-1">
-                    <span class="font-semibold capitalize text-foreground">{{ day.dayName }}</span>
-                    <span class="text-sm text-muted-foreground">{{ day.dateFormatted }}</span>
-                  </div>
-                  <div class="flex items-center gap-2 rounded-md bg-background px-3 py-2 text-sm font-semibold text-primary">
-                    <Clock class="size-4" />
-                    <span>{{ day.totalHours }}</span>
-                  </div>
-                </div>
-
-                <div class="flex flex-col gap-2 p-3 max-md:p-2">
-                  <div
-                    v-for="service in day.services"
-                    :key="service.uuid"
-                    class="flex items-center gap-3 rounded-md bg-muted/50 px-4 py-3 transition-colors hover:bg-muted max-md:px-3 max-md:py-2"
-                  >
-                    <div
-                      class="h-8 w-1 shrink-0 rounded-full"
-                      :class="service.isBreak ? 'bg-amber-500' : 'bg-green-500'"
-                    ></div>
-                    <div class="flex flex-1 items-center justify-between gap-3 max-md:flex-col max-md:items-start">
-                      <div class="flex items-center gap-2 font-mono">
-                        <Badge v-if="service.isBreak" variant="outline" class="border-amber-500/50 font-sans text-xs text-amber-600 dark:text-amber-400">Pause</Badge>
-                        <span class="font-medium text-foreground">{{ formatTime(service.debut) }}</span>
-                        <ArrowRight class="size-3 text-muted-foreground" />
-                        <span class="font-medium text-foreground">{{ service.fin ? formatTime(service.fin) : '--:--' }}</span>
-                      </div>
-                      <span class="whitespace-nowrap font-mono text-sm text-muted-foreground">{{ formatDurationFromSeconds(service.duree || 0) }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Pagination -->
-            <div v-if="!historyLoading && totalPages > 1" class="flex items-center justify-between rounded-lg border bg-card p-4 max-md:flex-col max-md:gap-3">
-              <span class="text-sm text-muted-foreground">
-                Page {{ currentPage + 1 }}/{{ totalPages }}
-                <span class="opacity-60">({{ totalElements }})</span>
-              </span>
-              <div class="flex gap-1">
-                <Button variant="ghost" size="icon-sm" @click="changePage(0)" :disabled="currentPage === 0">
-                  <ChevronsLeft class="size-4" />
-                </Button>
-                <Button variant="ghost" size="icon-sm" @click="changePage(currentPage - 1)" :disabled="currentPage === 0">
-                  <ChevronLeft class="size-4" />
-                </Button>
-                <Button variant="ghost" size="icon-sm" @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages - 1">
-                  <ChevronRight class="size-4" />
-                </Button>
-                <Button variant="ghost" size="icon-sm" @click="changePage(totalPages - 1)" :disabled="currentPage === totalPages - 1">
-                  <ChevronsRight class="size-4" />
-                </Button>
-              </div>
-            </div>
-          </section>
-        </div>
+          <!-- Pagination -->
+          <div
+            v-if="!historyLoading && totalPages > 1"
+            class="flex items-center justify-between gap-2 rounded-xl border bg-card px-3 py-2"
+          >
+            <Button variant="ghost" size="sm" :disabled="currentPage === 0" @click="changePage(currentPage - 1)">
+              <ChevronLeft class="size-4" />
+              Précédent
+            </Button>
+            <span class="text-xs tabular-nums text-muted-foreground">
+              Page {{ currentPage + 1 }} / {{ totalPages }}
+              <span class="opacity-60">({{ totalElements }})</span>
+            </span>
+            <Button variant="ghost" size="sm" :disabled="currentPage >= totalPages - 1" @click="changePage(currentPage + 1)">
+              Suivant
+              <ChevronRight class="size-4" />
+            </Button>
+          </div>
+        </section>
       </div>
     </main>
 
+    <!-- Barre d'actions fixe (mobile uniquement, zone du pouce) -->
+    <div
+      v-if="!(loading && !activeService) && !error"
+      class="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden"
+    >
+      <div class="mx-auto max-w-[1100px]">
+        <PointageActions
+          :status="pointageStatus"
+          :loading="actionLoading"
+          layout="row"
+          @start="startService"
+          @pause="startBreak"
+          @resume="endBreak"
+          @end="endService"
+        />
+      </div>
+    </div>
+
+    <!-- Filtres de l'historique : panneau bas sur mobile, latéral sur PC -->
+    <Sheet :open="showFilters" @update:open="showFilters = $event">
+      <SheetContent
+        :side="isMobile ? 'bottom' : 'right'"
+        :class="isMobile ? 'rounded-t-2xl pb-[env(safe-area-inset-bottom)]' : ''"
+      >
+        <SheetHeader>
+          <SheetTitle>Filtrer l'historique</SheetTitle>
+          <SheetDescription>Limitez l'historique à une période ou à un type.</SheetDescription>
+        </SheetHeader>
+
+        <form class="flex flex-col gap-4 px-4" @submit.prevent="applyFilters">
+          <div class="grid gap-3">
+            <div class="flex flex-col gap-1.5">
+              <label for="filter-start" class="text-sm font-medium text-muted-foreground">Du</label>
+              <Input id="filter-start" v-model="filters.startDate" type="date" />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label for="filter-end" class="text-sm font-medium text-muted-foreground">Au</label>
+              <Input id="filter-end" v-model="filters.endDate" type="date" />
+            </div>
+          </div>
+          <Select
+            v-model="filters.isBreakString"
+            label="Type"
+            :options="typeFilterOptions"
+            :searchable="false"
+            :teleport="false"
+          />
+        </form>
+
+        <SheetFooter class="flex-row gap-2 sm:justify-end">
+          <Button variant="ghost" class="flex-1 sm:flex-none" @click="resetFilters">Réinitialiser</Button>
+          <Button class="flex-1 sm:flex-none" @click="applyFilters">Appliquer</Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+
     <!-- Kilometrage Modal -->
     <Dialog :open="showKmModal" @update:open="(v: boolean) => { if (!v && isKmModalRequired) return; showKmModal = v }">
-      <DialogContent class="sm:max-w-md" :show-close-button="!isKmModalRequired">
+      <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-md" :show-close-button="!isKmModalRequired">
         <DialogHeader>
           <div class="flex items-center gap-3">
             <Gauge class="size-5 text-primary" />
@@ -375,28 +369,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, type Component } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 import { userServicesService, type WorkedHoursDTO, type GpsLocationRequest } from '@/services/userServices'
 import { usersService, vehiclesService } from '@/services'
 import type { ServiceDTO, VehiculeDTO } from '@/models'
 import { useMessages } from '@/composables/useMessages'
 import { useAuthStore } from '@/stores/auth'
 import { USER_ROLE_UUIDS } from '@/enums'
+import { formatDuration, formatHours } from '@/utils/timeFormatters'
 import { Retour } from '@/components/ui/retour'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet'
+import PointageActions, { type PointageStatus } from '@/components/hours/PointageActions.vue'
+import ServiceTimeline from '@/components/hours/ServiceTimeline.vue'
 import {
-  Gauge, Play, Pause, Square, Sun, CalendarDays, CalendarRange,
-  Calendar, Clock, ClipboardList, ArrowRight, Filter,
-  Check, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight,
-  LoaderCircle
+  Gauge, CalendarDays, CalendarRange, Calendar, ClipboardList, Filter,
+  Check, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, MapPinOff, RefreshCw
 } from 'lucide-vue-next'
 
 const messages = useMessages()
 const authStore = useAuthStore()
+const isMobile = useMediaQuery('(max-width: 639px)')
 
 // Computed pour vérifier si l'utilisateur a le rôle "User" (pas mécanicien ni admin)
 const isUserRole = computed(() => {
@@ -409,6 +407,7 @@ interface DayGroup {
   dayName: string
   dateFormatted: string
   totalHours: string
+  countLabel: string
   services: ServiceDTO[]
 }
 
@@ -431,6 +430,7 @@ const currentPage = ref(0)
 const totalPages = ref(0)
 const totalElements = ref(0)
 const showFilters = ref(false)
+const openDays = ref<Set<string>>(new Set())
 
 // Elapsed time calculation
 const elapsedTime = ref(0)
@@ -466,10 +466,57 @@ const savingKm = ref(false)
 const kmError = ref('')
 const kmInputRef = ref<{ $el: HTMLInputElement } | null>(null)
 
-// Computed
+// ===== État du pointage =====
+const pointageStatus = computed<PointageStatus>(() => {
+  if (!activeService.value) return 'off'
+  return activeService.value.isBreak ? 'break' : 'working'
+})
+
 const statusText = computed(() => {
-  if (!activeService.value) return 'Hors service'
-  return activeService.value.isBreak ? 'En pause' : 'En service'
+  switch (pointageStatus.value) {
+    case 'working': return 'En service'
+    case 'break': return 'En pause'
+    default: return 'Hors service'
+  }
+})
+
+const heroClass = computed(() => {
+  switch (pointageStatus.value) {
+    case 'working':
+      return 'border-green-500/30 bg-linear-to-br from-green-500/10 via-card to-card'
+    case 'break':
+      return 'border-amber-500/30 bg-linear-to-br from-amber-500/10 via-card to-card'
+    default:
+      return 'bg-card'
+  }
+})
+
+const statusPillClass = computed(() => {
+  switch (pointageStatus.value) {
+    case 'working':
+      return 'border-green-500/40 bg-green-500/10 text-green-700 dark:text-green-400'
+    case 'break':
+      return 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400'
+    default:
+      return 'border-border bg-muted text-muted-foreground'
+  }
+})
+
+const toTime = (date?: Date | string): string => {
+  if (!date) return '--:--'
+  const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return '--:--'
+  return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+}
+
+const heroSubtitle = computed(() => {
+  const since = toTime(activeService.value?.debut)
+  const elapsed = formatDuration(Math.floor(elapsedTime.value / 1000))
+  if (pointageStatus.value === 'working') return `En service depuis ${since} · ${elapsed}`
+  if (pointageStatus.value === 'break') return `En pause depuis ${since} · ${elapsed}`
+
+  const lastEnded = [...todayServices.value].reverse().find(s => !s.isBreak && s.fin)
+  return lastEnded ? `Dernier service terminé à ${toTime(lastEnded.fin)}` : 'Aucun service en cours'
 })
 
 // Vehicle select options for Select component
@@ -510,11 +557,9 @@ const todayWorkedTime = computed(() => {
           totalBreakMs += endTime - startTime
         }
       }
-      // Note: we don't add break in progress - work time stays frozen
     } else {
       // Work service
       if (service.fin) {
-        // Completed work service
         if (service.duree) {
           totalWorkMs += service.duree * 1000
         } else {
@@ -535,19 +580,48 @@ const todayWorkedTime = computed(() => {
   return Math.max(0, totalWorkMs - totalBreakMs)
 })
 
-// Format today's worked time (avec secondes)
-const todayWorkedTimeFormatted = computed(() => {
-  return formatDuration(todayWorkedTime.value, true)
+// Chrono du jour au format HH:MM:SS (largeur stable, lisible d'un coup d'œil)
+const todayClock = computed(() => {
+  const totalSeconds = Math.floor(todayWorkedTime.value / 1000)
+  const h = Math.floor(totalSeconds / 3600)
+  const m = Math.floor((totalSeconds % 3600) / 60)
+  const s = totalSeconds % 60
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 })
 
-// Get duration for a service (real-time for active service)
-const getServiceDuration = (service: ServiceDTO): string => {
-  if (service.fin) {
-    return formatDurationFromSeconds(service.duree || 0)
-  } else if (activeService.value && service.uuid === activeService.value.uuid) {
-    return formatDuration(elapsedTime.value)
-  }
-  return '--:--'
+const countLabel = (services: ServiceDTO[]): string => {
+  const nbServices = services.filter(s => !s.isBreak).length
+  const nbPauses = services.filter(s => s.isBreak).length
+  const parts: string[] = []
+  if (nbServices > 0) parts.push(`${nbServices} service${nbServices > 1 ? 's' : ''}`)
+  if (nbPauses > 0) parts.push(`${nbPauses} pause${nbPauses > 1 ? 's' : ''}`)
+  return parts.join(' · ')
+}
+
+const todayCountLabel = computed(() => countLabel(todayServices.value))
+
+// Compteurs (semaine / mois / mois dernier). Le jour est affiché en direct dans la carte d'état.
+const stats = computed<{ label: string; value: string; icon: Component; iconClass: string }[]>(() => [
+  { label: 'Semaine', value: formatHours(workedHours.value.week || 0), icon: CalendarDays, iconClass: 'bg-green-500/15 text-green-600 dark:text-green-400' },
+  { label: 'Mois', value: formatHours(workedHours.value.month || 0), icon: CalendarRange, iconClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
+  { label: 'Mois dernier', value: formatHours(workedHours.value.lastMonth || 0), icon: Calendar, iconClass: 'bg-primary/15 text-primary' },
+])
+
+// Filtres actifs (badge sur le bouton)
+const activeFilterCount = computed(() => {
+  let n = 0
+  if (filters.value.startDate) n++
+  if (filters.value.endDate) n++
+  if (filters.value.isBreakString !== 'all') n++
+  return n
+})
+
+// Clé de date locale (YYYY-MM-DD) — évite le décalage UTC de toISOString en soirée
+const localDateKey = (date: Date): string => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 // Group history by day
@@ -560,7 +634,8 @@ const historyByDay = computed((): DayGroup[] => {
     if (!service.debut) continue
 
     const date = new Date(service.debut)
-    const dateKey = date.toISOString().split('T')[0] || ''
+    if (Number.isNaN(date.getTime())) continue
+    const dateKey = localDateKey(date)
 
     if (!groups.has(dateKey)) {
       const dayName = date.toLocaleDateString('fr-FR', { weekday: 'long' })
@@ -575,14 +650,12 @@ const historyByDay = computed((): DayGroup[] => {
         dayName,
         dateFormatted,
         totalHours: '0h 00m',
+        countLabel: '',
         services: []
       })
     }
 
-    const group = groups.get(dateKey)
-    if (group) {
-      group.services.push(service)
-    }
+    groups.get(dateKey)?.services.push(service)
   }
 
   for (const group of groups.values()) {
@@ -595,10 +668,18 @@ const historyByDay = computed((): DayGroup[] => {
     const hours = Math.floor(totalSeconds / 3600)
     const minutes = Math.floor((totalSeconds % 3600) / 60)
     group.totalHours = `${hours}h ${minutes.toString().padStart(2, '0')}m`
+    group.countLabel = countLabel(group.services)
   }
 
   return Array.from(groups.values()).sort((a, b) => b.date.localeCompare(a.date))
 })
+
+// Accordéon de l'historique
+const isDayOpen = (date: string): boolean => openDays.value.has(date)
+const toggleDay = (date: string) => {
+  if (openDays.value.has(date)) openDays.value.delete(date)
+  else openDays.value.add(date)
+}
 
 // Methods
 const loadData = async () => {
@@ -673,16 +754,46 @@ const getLocationDeniedMessage = (): string => {
   return 'Localisation refusée. Cliquez sur l\'icône à gauche de la barre d\'adresse → Autoriser la localisation.'
 }
 
-const requestLocation = async (): Promise<GpsLocationRequest> => {
+// Toutes les notifications de géolocalisation partagent le même id :
+// une nouvelle erreur remplace la précédente au lieu de s'empiler.
+const GEO_MESSAGE_ID = 'pointage-geolocation'
+
+// L'API accepte des coordonnées null : on n'envoie pas de fausse position (0,0)
+const NO_LOCATION: GpsLocationRequest = { latitude: null, longitude: null }
+
+const showGeoError = (text: string, title?: string, duration = 7000, retryLabel?: string) => {
+  messages.showMessage({
+    id: GEO_MESSAGE_ID,
+    text,
+    title,
+    variant: 'danger',
+    duration,
+    action: retryLabel ? { label: retryLabel, onClick: () => requestLocation() } : undefined
+  })
+}
+
+// Une seule demande de position à la fois : les appels rapprochés partagent la même promesse
+let pendingLocation: Promise<GpsLocationRequest> | null = null
+
+/**
+ * Demande la position GPS.
+ * `silent` : pas de notification en cas d'échec (utilisé au chargement de la page,
+ * la puce "Localisation refusée" de la carte d'état suffit).
+ */
+const requestLocation = async (options: { silent?: boolean } = {}): Promise<GpsLocationRequest> => {
   if (!navigator.geolocation) {
-    messages.error('La géolocalisation n\'est pas disponible sur cet appareil')
-    return { latitude: 0, longitude: 0 }
+    locationPermission.value = 'unsupported'
+    if (!options.silent) showGeoError('La géolocalisation n\'est pas disponible sur cet appareil')
+    return NO_LOCATION
   }
 
-  return new Promise((resolve) => {
+  if (pendingLocation) return pendingLocation
+
+  pendingLocation = new Promise<GpsLocationRequest>((resolve) => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         locationPermission.value = 'granted'
+        messages.removeMessage(GEO_MESSAGE_ID)
         resolve({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude
@@ -691,23 +802,17 @@ const requestLocation = async (): Promise<GpsLocationRequest> => {
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
           locationPermission.value = 'denied'
-          messages.error(
-            getLocationDeniedMessage(),
-            'Localisation bloquée',
-            12000,
-            { label: 'Réessayer la localisation', onClick: () => requestLocation() }
-          )
+          if (!options.silent) {
+            showGeoError(getLocationDeniedMessage(), 'Localisation bloquée', 12000, 'Réessayer la localisation')
+          }
         } else if (err.code === err.TIMEOUT) {
-          messages.error(
-            'Impossible d\'obtenir la position (délai dépassé)',
-            undefined,
-            7000,
-            { label: 'Réessayer', onClick: () => requestLocation() }
-          )
-        } else {
-          messages.error('Erreur de géolocalisation')
+          if (!options.silent) {
+            showGeoError('Impossible d\'obtenir la position (délai dépassé)', undefined, 7000, 'Réessayer')
+          }
+        } else if (!options.silent) {
+          showGeoError('Erreur de géolocalisation')
         }
-        resolve({ latitude: 0, longitude: 0 })
+        resolve(NO_LOCATION)
       },
       {
         enableHighAccuracy: true,
@@ -715,7 +820,11 @@ const requestLocation = async (): Promise<GpsLocationRequest> => {
         maximumAge: 0
       }
     )
+  }).finally(() => {
+    pendingLocation = null
   })
+
+  return pendingLocation
 }
 
 const startService = async () => {
@@ -753,6 +862,8 @@ const endService = async () => {
     await userServicesService.endService(location)
     activeService.value = null
     await loadData()
+    // Le service terminé apparaît aussitôt dans l'historique
+    loadHistory()
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'Erreur lors de l\'arrêt du service'
     error.value = errorMessage
@@ -814,13 +925,24 @@ const loadHistory = async () => {
     history.value = response.content || []
     totalPages.value = response.totalPages || 0
     totalElements.value = response.totalElements || 0
+
+    // Par défaut, seul le jour le plus récent est déplié
+    const next = new Set<string>()
+    const first = historyByDay.value[0]
+    if (first) next.add(first.date)
+    openDays.value = next
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'Erreur lors du chargement de l\'historique'
-    error.value = errorMessage
     messages.error(errorMessage)
   } finally {
     historyLoading.value = false
   }
+}
+
+const applyFilters = () => {
+  currentPage.value = 0
+  showFilters.value = false
+  loadHistory()
 }
 
 const resetFilters = () => {
@@ -833,89 +955,13 @@ const resetFilters = () => {
     size: 20
   }
   currentPage.value = 0
+  showFilters.value = false
   loadHistory()
 }
 
 const changePage = (page: number) => {
   currentPage.value = page
   loadHistory()
-}
-
-// Formatters
-const formatTime = (date: Date | string | undefined): string => {
-  if (!date) return '-'
-  const d = new Date(date)
-  return d.toLocaleTimeString('fr-FR', {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-const formatDuration = (milliseconds: number, showSeconds = false): string => {
-  if (milliseconds < 0) milliseconds = 0
-
-  const totalSeconds = Math.floor(milliseconds / 1000)
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-
-  // Moins d'une minute : afficher en secondes
-  if (hours === 0 && minutes === 0) {
-    return `${seconds} s`
-  }
-
-  // Moins d'une heure : afficher minutes et secondes
-  if (hours === 0) {
-    return showSeconds && seconds > 0 ? `${minutes} min ${seconds} s` : `${minutes} min`
-  }
-
-  // Une heure ou plus : afficher heures et minutes
-  if (showSeconds && seconds > 0) {
-    return `${hours}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`
-  }
-  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
-}
-
-const formatDurationFromSeconds = (seconds: number): string => {
-  if (seconds < 0) seconds = 0
-
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const secs = Math.floor(seconds % 60)
-
-  // Moins d'une minute : afficher en secondes
-  if (hours === 0 && minutes === 0) {
-    return `${secs} s`
-  }
-
-  // Moins d'une heure : afficher minutes et secondes
-  if (hours === 0) {
-    return secs > 0 ? `${minutes} min ${secs} s` : `${minutes} min`
-  }
-
-  // Une heure ou plus : afficher heures et minutes
-  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`
-}
-
-const formatHours = (hours: number): string => {
-  // Convertir en secondes totales pour un calcul précis
-  const totalSeconds = Math.round(hours * 3600)
-  const h = Math.floor(totalSeconds / 3600)
-  const m = Math.floor((totalSeconds % 3600) / 60)
-  const s = totalSeconds % 60
-
-  // Moins d'une minute : afficher en secondes
-  if (h === 0 && m === 0) {
-    return `${s} s`
-  }
-
-  // Moins d'une heure : afficher minutes et secondes
-  if (h === 0) {
-    return s > 0 ? `${m} min ${s} s` : `${m} min`
-  }
-
-  // Une heure ou plus : afficher heures et minutes
-  return m > 0 ? `${h}h ${m}m` : `${h}h`
 }
 
 // Kilométrage functions
@@ -1039,8 +1085,9 @@ onMounted(async () => {
   // Vérifier/demander la permission de géolocalisation dès le chargement
   await checkLocationPermission()
   if (locationPermission.value === 'prompt') {
-    // Déclencher le prompt du navigateur immédiatement
-    requestLocation()
+    // Déclencher le prompt du navigateur immédiatement, sans notification en cas de refus :
+    // la puce "Localisation refusée" de la carte d'état prend le relais.
+    requestLocation({ silent: true })
   }
 
   await checkKilometrage()
