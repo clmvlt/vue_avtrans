@@ -2,263 +2,197 @@
   <div class="min-h-screen bg-background">
     <!-- Header -->
     <header class="sticky top-0 z-40 border-b bg-background">
-      <div class="mx-auto flex max-w-[1400px] items-center gap-4 px-4 py-3 sm:px-6 sm:py-4">
+      <div class="mx-auto flex max-w-[1100px] items-center gap-2 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4">
         <Retour fallback="/" />
-        <h1 class="text-lg font-bold text-foreground sm:text-xl">Mes absences</h1>
-        <div class="ml-auto">
-          <Button variant="default" size="sm" class="sm:hidden" @click="openCreateModal">
-            <Plus class="size-4" />
-          </Button>
-          <Button variant="default" size="sm" class="hidden sm:inline-flex" @click="openCreateModal">
-            <Plus class="size-4" />
-            Nouvelle demande
-          </Button>
-        </div>
+        <h1 class="flex-1 text-lg font-bold text-foreground sm:text-xl">Mes absences</h1>
+        <Button variant="default" size="sm" aria-label="Nouvelle demande d'absence" @click="openCreateModal">
+          <Plus class="size-4" />
+          <span class="max-sm:sr-only">Nouvelle demande</span>
+        </Button>
       </div>
     </header>
 
-    <main class="px-4 py-4 sm:px-6 sm:py-6">
-      <div class="mx-auto max-w-[1400px]">
-        <!-- Loading -->
-        <div v-if="loading" class="flex flex-col items-center justify-center gap-4 py-16">
-          <LoaderCircle class="size-10 animate-spin text-primary" />
-          <p class="text-lg text-muted-foreground">Chargement...</p>
+    <main class="mx-auto max-w-[1100px] px-3 py-3 sm:px-6 sm:py-6">
+      <!-- Barre de filtres : puces de statut + bouton Filtres -->
+      <div class="flex items-center gap-2">
+        <div
+          class="flex flex-1 gap-2 overflow-x-auto py-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          role="tablist"
+          aria-label="Filtrer par statut"
+        >
+          <button
+            v-for="chip in statusChips"
+            :key="chip.value"
+            type="button"
+            role="tab"
+            class="shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="currentStatus === chip.value
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
+            :aria-selected="currentStatus === chip.value"
+            :disabled="loading || searchLoading"
+            @click="selectStatus(chip.value)"
+          >
+            {{ chip.label }}
+          </button>
         </div>
 
-        <!-- Error -->
-        <div v-else-if="error" class="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-destructive">
-          {{ error }}
-        </div>
-
-        <!-- Content -->
-        <div v-else class="space-y-4">
-          <!-- Filtres -->
-          <SearchFilters
-            ref="searchFiltersRef"
-            v-model="searchFilters"
-            :filters="filterConfig"
-            :loading="searchLoading"
-            :columns="4"
-            :hint="activeFiltersText"
-            @search="applyFilters"
-            @reset="resetFilters"
-          />
-
-          <!-- Empty state -->
-          <div v-if="absences.length === 0" class="flex flex-col items-center gap-5 rounded-lg border border-dashed py-16 text-center">
-            <div class="flex size-16 items-center justify-center rounded-full bg-muted">
-              <CalendarX class="size-8 text-muted-foreground" />
-            </div>
-            <div class="space-y-1">
-              <p class="font-medium text-foreground">Aucune demande d'absence</p>
-              <p class="text-sm text-muted-foreground">Commencez par créer votre première demande</p>
-            </div>
-            <Button variant="default" size="sm" @click="openCreateModal">
-              <Plus class="size-4" />
-              Faire une demande
-            </Button>
-          </div>
-
-          <!-- Desktop Table -->
-          <div v-else class="hidden md:block overflow-hidden rounded-lg border shadow-sm">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead
-                    v-for="col in tableColumns"
-                    :key="col.key"
-                    :class="[
-                      col.sortable && 'cursor-pointer select-none hover:text-foreground',
-                      sortKey === col.key && 'text-primary',
-                      col.align === 'right' && 'text-right',
-                    ]"
-                    @click="col.sortable && handleSort(col.key)"
-                  >
-                    {{ col.label }}
-                    <template v-if="col.sortable">
-                      <ArrowUpDown v-if="sortKey !== col.key" class="ml-1 inline size-3 opacity-30" />
-                      <ArrowUp v-else-if="sortDirection === 'asc'" class="ml-1 inline size-3" />
-                      <ArrowDown v-else class="ml-1 inline size-3" />
-                    </template>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow v-for="item in sortedData" :key="item.uuid">
-                  <!-- Type -->
-                  <TableCell>
-                    <Badge
-                      v-if="item.absenceType"
-                      variant="outline"
-                      :style="{
-                        backgroundColor: item.absenceType.color + '20',
-                        color: item.absenceType.color,
-                        borderColor: item.absenceType.color
-                      }"
-                    >
-                      {{ item.absenceType.name }}
-                    </Badge>
-                    <Badge v-else-if="item.customType" variant="secondary">
-                      {{ item.customType }}
-                    </Badge>
-                    <span v-else class="text-sm text-muted-foreground">-</span>
-                  </TableCell>
-
-                  <!-- Period -->
-                  <TableCell>
-                    <div class="flex flex-col gap-1">
-                      <span class="font-medium text-foreground">
-                        {{ formatDate(item.startDate) }}
-                        <span v-if="item.startDate !== item.endDate">
-                          → {{ formatDate(item.endDate) }}
-                        </span>
-                      </span>
-                      <span class="text-xs text-muted-foreground">
-                        {{ calculateAbsenceDuration(item.startDate, item.endDate, item.period) }}
-                        <template v-if="isHalfDay(item.period)"> · {{ getPeriodLabel(item.period) }}</template>
-                      </span>
-                    </div>
-                  </TableCell>
-
-                  <!-- Status -->
-                  <TableCell>
-                    <Badge :variant="getStatusVariant(item.status)" :class="getStatusClasses(item.status)">
-                      {{ getStatusText(item.status) }}
-                    </Badge>
-                  </TableCell>
-
-                  <!-- Created date -->
-                  <TableCell>
-                    <span class="text-sm text-muted-foreground">{{ formatDateTime(item.createdAt) }}</span>
-                  </TableCell>
-
-                  <!-- Actions -->
-                  <TableCell class="text-right">
-                    <div class="flex flex-wrap justify-end gap-1.5">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        @click.stop="openDetailModal(item)"
-                        title="Détails"
-                      >
-                        Détails
-                      </Button>
-                      <Button
-                        v-if="item.status === 'PENDING'"
-                        size="sm"
-                        variant="destructive"
-                        @click.stop="openCancelModal(item)"
-                        title="Annuler"
-                      >
-                        Annuler
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-
-                <!-- Empty state (shouldn't show due to outer v-else, but kept for consistency) -->
-                <TableRow v-if="sortedData.length === 0">
-                  <TableCell :colspan="tableColumns.length" class="py-12 text-center">
-                    <div class="flex flex-col items-center gap-3 text-muted-foreground">
-                      <CalendarX class="size-10 opacity-50" />
-                      <p>Aucune absence trouvée</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-
-          <!-- Mobile Cards -->
-          <div v-if="absences.length > 0" class="flex flex-col gap-3 md:hidden">
-            <div class="mb-1">
-              <span class="text-sm font-medium text-muted-foreground">{{ pagination.totalElements }} demande{{ pagination.totalElements > 1 ? 's' : '' }}</span>
-            </div>
-            <div
-              v-for="absence in sortedData"
-              :key="absence.uuid"
-              class="overflow-hidden rounded-lg border bg-card shadow-sm transition-colors active:bg-accent/50"
-              :class="getCardBorderClass(absence.status)"
-              @click="openDetailModal(absence)"
-            >
-              <div class="p-4">
-                <!-- Top: type + status -->
-                <div class="flex items-center justify-between gap-2">
-                  <Badge
-                    v-if="absence.absenceType"
-                    variant="outline"
-                    :style="{
-                      backgroundColor: absence.absenceType.color + '20',
-                      color: absence.absenceType.color,
-                      borderColor: absence.absenceType.color
-                    }"
-                  >
-                    {{ absence.absenceType.name }}
-                  </Badge>
-                  <Badge v-else-if="absence.customType" variant="secondary">
-                    {{ absence.customType }}
-                  </Badge>
-                  <Badge :variant="getStatusVariant(absence.status)" :class="getStatusClasses(absence.status)">
-                    {{ getStatusText(absence.status) }}
-                  </Badge>
-                </div>
-
-                <!-- Dates -->
-                <div class="mt-3 flex items-center gap-2.5">
-                  <Calendar class="size-4 shrink-0 text-muted-foreground" />
-                  <span class="text-sm font-medium text-foreground">
-                    {{ formatDateCompact(absence.startDate) }}
-                    <span v-if="absence.startDate !== absence.endDate">
-                      → {{ formatDateCompact(absence.endDate) }}
-                    </span>
-                  </span>
-                  <span class="text-xs text-muted-foreground">
-                    ({{ calculateAbsenceDuration(absence.startDate, absence.endDate, absence.period) }}<template v-if="isHalfDay(absence.period)"> · {{ getPeriodLabel(absence.period) }}</template>)
-                  </span>
-                </div>
-
-                <!-- Reason (truncated) -->
-                <p v-if="absence.reason" class="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                  {{ absence.reason }}
-                </p>
-              </div>
-
-              <!-- Footer -->
-              <div class="flex items-center justify-between border-t bg-muted/30 px-4 py-2.5">
-                <span class="text-xs text-muted-foreground">{{ formatDateCompact(absence.createdAt) }}</span>
-                <div class="flex items-center gap-2">
-                  <Button
-                    v-if="absence.status === 'PENDING'"
-                    size="sm"
-                    variant="destructive"
-                    class="h-8 text-xs"
-                    @click.stop="openCancelModal(absence)"
-                  >
-                    Annuler
-                  </Button>
-                  <ChevronRight class="size-4 text-muted-foreground" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Pagination -->
-          <div v-if="pagination.totalPages > 1" class="flex items-center justify-center gap-2 pt-4 sm:gap-4">
-            <Button variant="outline" size="sm" class="h-9 w-9 p-0 sm:h-auto sm:w-auto sm:px-3 sm:py-1.5" :disabled="pagination.currentPage === 0" @click="loadAbsences(pagination.currentPage - 1)">
-              <ChevronLeft class="size-4" />
-              <span class="hidden sm:inline">Précédent</span>
-            </Button>
-            <span class="text-sm text-muted-foreground">
-              {{ pagination.currentPage + 1 }} / {{ pagination.totalPages }}
-            </span>
-            <Button variant="outline" size="sm" class="h-9 w-9 p-0 sm:h-auto sm:w-auto sm:px-3 sm:py-1.5" :disabled="pagination.currentPage >= pagination.totalPages - 1" @click="loadAbsences(pagination.currentPage + 1)">
-              <span class="hidden sm:inline">Suivant</span>
-              <ChevronRight class="size-4" />
-            </Button>
-          </div>
-        </div>
+        <Button
+          :variant="activeFilterCount > 0 ? 'default' : 'outline'"
+          size="sm"
+          class="shrink-0"
+          aria-label="Autres filtres"
+          @click="showFilters = true"
+        >
+          <SlidersHorizontal class="size-4" />
+          <span class="max-sm:sr-only">Filtres</span>
+          <span
+            v-if="activeFilterCount > 0"
+            class="flex size-5 items-center justify-center rounded-full bg-background/20 text-[11px] font-bold"
+          >
+            {{ activeFilterCount }}
+          </span>
+        </Button>
       </div>
+
+      <!-- Résumé des filtres + compteur -->
+      <p class="mt-2 truncate text-xs text-muted-foreground">
+        {{ activeFiltersText }}
+        <template v-if="!loading && !error"> · {{ countLabel }}</template>
+      </p>
+
+      <!-- Loading (squelette des cartes) -->
+      <div v-if="loading || searchLoading" class="mt-4 grid gap-3 lg:grid-cols-2">
+        <Skeleton v-for="n in 4" :key="n" class="h-[84px] w-full rounded-xl" />
+      </div>
+
+      <!-- Error -->
+      <div v-else-if="error" class="mt-4 rounded-xl border border-destructive bg-destructive/10 p-4 text-destructive">
+        <p class="font-medium">{{ error }}</p>
+        <Button variant="outline" size="sm" class="mt-3" @click="loadAbsences(pagination.currentPage)">
+          <RefreshCw class="size-4" />
+          Réessayer
+        </Button>
+      </div>
+
+      <!-- Empty state -->
+      <div
+        v-else-if="absences.length === 0"
+        class="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-dashed px-4 py-12 text-center"
+      >
+        <div class="flex size-14 items-center justify-center rounded-full bg-muted">
+          <CalendarX class="size-7 text-muted-foreground" />
+        </div>
+        <div class="space-y-1">
+          <p class="font-medium text-foreground">
+            {{ hasAnyFilter ? 'Aucune demande ne correspond' : 'Aucune demande d\'absence' }}
+          </p>
+          <p class="text-sm text-muted-foreground">
+            {{ hasAnyFilter ? 'Essayez d\'élargir vos filtres.' : 'Commencez par créer votre première demande.' }}
+          </p>
+        </div>
+        <Button v-if="hasAnyFilter" variant="ghost" size="sm" @click="resetFilters">
+          <RotateCcw class="size-4" />
+          Réinitialiser les filtres
+        </Button>
+        <Button v-else variant="default" size="sm" @click="openCreateModal">
+          <Plus class="size-4" />
+          Faire une demande
+        </Button>
+      </div>
+
+      <!-- Liste des demandes : 1 colonne sur mobile, 2 sur grand écran -->
+      <template v-else>
+        <div class="mt-4 grid gap-3 lg:grid-cols-2">
+          <MyAbsenceCard
+            v-for="absence in absences"
+            :key="absence.uuid"
+            :absence="absence"
+            @open="openDetailModal"
+            @cancel="openCancelModal"
+          />
+        </div>
+
+        <!-- Pagination -->
+        <div
+          v-if="pagination.totalPages > 1"
+          class="mt-4 flex items-center justify-between gap-2 rounded-xl border bg-card px-3 py-2"
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            :disabled="pagination.currentPage === 0"
+            @click="loadAbsences(pagination.currentPage - 1)"
+          >
+            <ChevronLeft class="size-4" />
+            Précédent
+          </Button>
+          <span class="text-xs tabular-nums text-muted-foreground">
+            Page {{ pagination.currentPage + 1 }} / {{ pagination.totalPages }}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            :disabled="pagination.currentPage >= pagination.totalPages - 1"
+            @click="loadAbsences(pagination.currentPage + 1)"
+          >
+            Suivant
+            <ChevronRight class="size-4" />
+          </Button>
+        </div>
+      </template>
     </main>
+
+    <!-- Filtres : panneau bas sur mobile, latéral sur PC -->
+    <Sheet :open="showFilters" @update:open="showFilters = $event">
+      <SheetContent
+        :side="isMobile ? 'bottom' : 'right'"
+        :class="isMobile ? 'rounded-t-2xl pb-[env(safe-area-inset-bottom)]' : ''"
+      >
+        <SheetHeader>
+          <SheetTitle>Filtrer mes absences</SheetTitle>
+          <SheetDescription>Limitez la liste à un type d'absence ou à une période.</SheetDescription>
+        </SheetHeader>
+
+        <form class="flex flex-col gap-4 px-4" @submit.prevent="applyFilters">
+          <Select
+            :model-value="String(searchFilters.absenceTypeUuid || '')"
+            label="Type d'absence"
+            :options="absenceTypeOptions"
+            placeholder="Tous les types"
+            :searchable="absenceTypeOptions.length > 5"
+            :clearable="true"
+            :teleport="false"
+            @update:model-value="searchFilters.absenceTypeUuid = $event"
+          />
+          <div class="grid gap-3">
+            <div class="flex flex-col gap-1.5">
+              <label for="filter-start" class="text-sm font-medium text-muted-foreground">Du</label>
+              <Input
+                id="filter-start"
+                type="date"
+                :model-value="String(searchFilters.startDate || '')"
+                @update:model-value="searchFilters.startDate = String($event)"
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label for="filter-end" class="text-sm font-medium text-muted-foreground">Au</label>
+              <Input
+                id="filter-end"
+                type="date"
+                :model-value="String(searchFilters.endDate || '')"
+                @update:model-value="searchFilters.endDate = String($event)"
+              />
+            </div>
+          </div>
+        </form>
+
+        <SheetFooter class="flex-row gap-2 sm:justify-end">
+          <Button variant="ghost" class="flex-1 sm:flex-none" @click="resetFilters">Réinitialiser</Button>
+          <Button class="flex-1 sm:flex-none" @click="applyFilters">Appliquer</Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
 
     <!-- Modal de création -->
     <MyAbsenceEditModal
@@ -277,34 +211,34 @@
 
     <!-- Modal d'annulation -->
     <Dialog v-model:open="showCancelModal">
-      <DialogContent class="sm:max-w-md">
+      <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Annuler la demande</DialogTitle>
           <DialogDescription>Cette action est irréversible.</DialogDescription>
         </DialogHeader>
 
         <div v-if="selectedAbsence" class="space-y-3 rounded-lg border bg-muted/50 p-4">
-          <div class="flex justify-between text-sm">
+          <div class="flex justify-between gap-3 text-sm">
             <span class="text-muted-foreground">Type</span>
-            <span class="font-medium">
+            <span class="text-right font-medium">
               {{ selectedAbsence.absenceType?.name || selectedAbsence.customType || '-' }}
             </span>
           </div>
-          <div class="flex justify-between text-sm">
+          <div class="flex justify-between gap-3 text-sm">
             <span class="text-muted-foreground">Période</span>
-            <span class="font-medium">
+            <span class="text-right font-medium">
               {{ formatDateCompact(selectedAbsence.startDate) }}
               <span v-if="selectedAbsence.startDate !== selectedAbsence.endDate">
                 → {{ formatDateCompact(selectedAbsence.endDate) }}
               </span>
             </span>
           </div>
-          <div class="flex justify-between text-sm">
+          <div class="flex justify-between gap-3 text-sm">
             <span class="text-muted-foreground">Durée</span>
             <span class="font-medium">{{ calculateAbsenceDuration(selectedAbsence.startDate, selectedAbsence.endDate, selectedAbsence.period) }}</span>
           </div>
-          <div v-if="isHalfDay(selectedAbsence.period)" class="flex justify-between text-sm">
-            <span class="text-muted-foreground">Période</span>
+          <div v-if="isHalfDay(selectedAbsence.period)" class="flex justify-between gap-3 text-sm">
+            <span class="text-muted-foreground">Moment</span>
             <span class="font-medium">{{ getPeriodLabel(selectedAbsence.period) }}</span>
           </div>
         </div>
@@ -323,6 +257,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 import { absencesService, absenceTypesService } from '@/services'
 import type { AbsenceDTO, AbsenceTypeDTO } from '@/models'
 import type { AbsenceSearchParams, AbsenceStatus, AbsenceListResponse } from '@/services/absences'
@@ -330,17 +265,11 @@ import type { AbsenceTypeListResponse } from '@/services/absenceTypes'
 import { useMessages } from '@/composables/useMessages'
 import { calculateAbsenceDuration, isHalfDay, getPeriodLabel } from '@/utils/absenceFormatters'
 
-// shadcn components
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Retour } from '@/components/ui/retour'
 import {
   Dialog,
   DialogContent,
@@ -349,36 +278,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import SearchFilters, { type FilterConfig } from '@/components/ui/search-filters/SearchFilters.vue'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet'
 
-// Lucide icons
 import {
   Plus,
   LoaderCircle,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
   CalendarX,
   ChevronLeft,
   ChevronRight,
-  Calendar,
+  SlidersHorizontal,
+  RotateCcw,
+  RefreshCw,
 } from 'lucide-vue-next'
 
-// Legacy components (kept per project rules)
-import { Retour } from '@/components/ui/retour'
-
-// Custom components
+import MyAbsenceCard from '@/components/myabsences/MyAbsenceCard.vue'
 import MyAbsenceEditModal from '@/components/myabsences/MyAbsenceEditModal.vue'
 import MyAbsenceDetailModal from '@/components/myabsences/MyAbsenceDetailModal.vue'
 
-interface TableColumnDef {
-  key: string
-  label: string
-  sortable?: boolean
-  align?: 'left' | 'center' | 'right'
-}
-
 const messages = useMessages()
+const isMobile = useMediaQuery('(max-width: 639px)')
 
 // Données
 const absences = ref<AbsenceDTO[]>([])
@@ -389,6 +307,7 @@ const loading = ref(true)
 const searchLoading = ref(false)
 const error = ref('')
 const cancelling = ref(false)
+const showFilters = ref(false)
 
 // Pagination
 const pagination = ref({
@@ -398,44 +317,65 @@ const pagination = ref({
 })
 
 // Filtres
-const searchFilters = ref<Record<string, unknown>>({
+const searchFilters = ref<Record<string, string>>({
   status: '',
   absenceTypeUuid: '',
   startDate: '',
   endDate: ''
 })
 
-// Sort state
-const sortKey = ref<string | null>(null)
-const sortDirection = ref<'asc' | 'desc'>('asc')
+// Puces de statut (filtre le plus fréquent, toujours visible)
+const statusChips: { value: string; label: string }[] = [
+  { value: '', label: 'Toutes' },
+  { value: 'PENDING', label: 'En attente' },
+  { value: 'APPROVED', label: 'Approuvées' },
+  { value: 'REJECTED', label: 'Refusées' },
+]
+
+const currentStatus = computed(() => searchFilters.value.status || '')
+
+const selectStatus = (status: string) => {
+  if (currentStatus.value === status) return
+  searchFilters.value.status = status
+  loadAbsences(0)
+}
+
+// Options du filtre type
+const absenceTypeOptions = computed(() =>
+  absenceTypes.value
+    .filter(type => type.uuid && type.name)
+    .map(type => ({ value: type.uuid!, label: type.name! }))
+)
+
+// Filtres du panneau (hors statut) actifs → badge sur le bouton
+const activeFilterCount = computed(() => {
+  let n = 0
+  if (searchFilters.value.absenceTypeUuid) n++
+  if (searchFilters.value.startDate) n++
+  if (searchFilters.value.endDate) n++
+  return n
+})
+
+const hasAnyFilter = computed(() => activeFilterCount.value > 0 || !!currentStatus.value)
 
 // Texte descriptif des filtres actifs
 const activeFiltersText = computed(() => {
   const parts: string[] = []
 
-  // Statut
-  const status = searchFilters.value.status as string
+  const status = searchFilters.value.status
   if (status) {
-    const statusLabels: Record<string, string> = {
-      'PENDING': 'En attente',
-      'APPROVED': 'Approuvées',
-      'REJECTED': 'Refusées'
-    }
-    parts.push(statusLabels[status] || status)
+    const chip = statusChips.find(c => c.value === status)
+    if (chip) parts.push(chip.label)
   }
 
-  // Type d'absence
-  const absenceTypeUuid = searchFilters.value.absenceTypeUuid as string
+  const absenceTypeUuid = searchFilters.value.absenceTypeUuid
   if (absenceTypeUuid) {
     const type = absenceTypes.value.find(t => t.uuid === absenceTypeUuid)
-    if (type) {
-      parts.push(type.name || '')
-    }
+    if (type?.name) parts.push(type.name)
   }
 
-  // Dates
-  const startDate = searchFilters.value.startDate as string
-  const endDate = searchFilters.value.endDate as string
+  const startDate = searchFilters.value.startDate
+  const endDate = searchFilters.value.endDate
   if (startDate && endDate) {
     parts.push(`du ${formatDateShort(startDate)} au ${formatDateShort(endDate)}`)
   } else if (startDate) {
@@ -447,13 +387,17 @@ const activeFiltersText = computed(() => {
   return parts.length > 0 ? parts.join(' · ') : 'Toutes vos demandes d\'absence'
 })
 
-// Format court pour les dates dans le hint
+const countLabel = computed(() => {
+  const n = pagination.value.totalElements
+  return `${n} demande${n > 1 ? 's' : ''}`
+})
+
+// Format court pour les dates dans le résumé
 const formatDateShort = (dateString: string): string => {
   if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'short'
-  })
+  const d = new Date(dateString)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
 // Modals
@@ -461,119 +405,6 @@ const showCreateModal = ref(false)
 const showDetailModal = ref(false)
 const showCancelModal = ref(false)
 const selectedAbsence = ref<AbsenceDTO | null>(null)
-
-// Colonnes du tableau
-const tableColumns = computed<TableColumnDef[]>(() => [
-  { key: 'typeName', label: `Demandes (${pagination.value.totalElements})`, sortable: true },
-  { key: 'startDate', label: 'Période', sortable: true },
-  { key: 'status', label: 'Statut', sortable: true },
-  { key: 'createdAt', label: 'Demandé le', sortable: true },
-  { key: 'actions', label: 'Actions', align: 'right' }
-])
-
-// Configuration des filtres
-const filterConfig = computed<FilterConfig[]>(() => [
-  {
-    key: 'status',
-    label: 'Statut',
-    type: 'select',
-    placeholder: 'Tous les statuts',
-    options: [
-      { value: 'PENDING', label: 'En attente' },
-      { value: 'APPROVED', label: 'Approuvées' },
-      { value: 'REJECTED', label: 'Refusées' }
-    ]
-  },
-  {
-    key: 'absenceTypeUuid',
-    label: "Type d'absence",
-    type: 'select',
-    placeholder: 'Tous les types',
-    options: absenceTypes.value
-      .filter(type => type.uuid && type.name)
-      .map(type => ({
-        value: type.uuid!,
-        label: type.name!
-      }))
-  },
-  {
-    key: 'startDate',
-    label: 'Date de début',
-    type: 'date'
-  },
-  {
-    key: 'endDate',
-    label: 'Date de fin',
-    type: 'date'
-  }
-])
-
-// Sort handler
-const handleSort = (key: string) => {
-  if (sortKey.value === key) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortKey.value = key
-    sortDirection.value = 'asc'
-  }
-}
-
-const getValue = (item: any, key: string): any => {
-  // Handle nested properties for sorting
-  if (key === 'typeName') {
-    return item.absenceType?.name || item.customType || ''
-  }
-  return key.split('.').reduce((obj: any, k: string) => obj?.[k], item)
-}
-
-const sortedData = computed(() => {
-  if (!sortKey.value) return absences.value
-
-  return [...absences.value].sort((a, b) => {
-    const aValue = getValue(a, sortKey.value!)
-    const bValue = getValue(b, sortKey.value!)
-
-    if (aValue == null && bValue == null) return 0
-    if (aValue == null) return sortDirection.value === 'asc' ? 1 : -1
-    if (bValue == null) return sortDirection.value === 'asc' ? -1 : 1
-
-    const aDate = Date.parse(aValue)
-    const bDate = Date.parse(bValue)
-    if (!isNaN(aDate) && !isNaN(bDate)) {
-      return sortDirection.value === 'asc' ? aDate - bDate : bDate - aDate
-    }
-
-    if (typeof aValue === 'number' && typeof bValue === 'number') {
-      return sortDirection.value === 'asc' ? aValue - bValue : bValue - aValue
-    }
-
-    const aStr = String(aValue).toLowerCase()
-    const bStr = String(bValue).toLowerCase()
-    const comparison = aStr.localeCompare(bStr, 'fr')
-    return sortDirection.value === 'asc' ? comparison : -comparison
-  })
-})
-
-// Badge variant/class pour le statut
-const getStatusVariant = (status?: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
-  switch (status) {
-    case 'REJECTED': return 'destructive'
-    case 'CANCELLED': return 'secondary'
-    default: return 'outline'
-  }
-}
-
-const getStatusClasses = (status?: string): string => {
-  switch (status) {
-    case 'PENDING': return 'border-amber-500/50 text-amber-600 dark:text-amber-400'
-    case 'APPROVED': return 'border-green-500/50 text-green-600 dark:text-green-400'
-    default: return ''
-  }
-}
-
-const getCardBorderClass = (_status?: string): string => {
-  return ''
-}
 
 // Chargement des données
 const loadAbsences = async (page = 0, isInitialLoad = false) => {
@@ -592,11 +423,7 @@ const loadAbsences = async (page = 0, isInitialLoad = false) => {
       sortDirection: 'desc'
     }
 
-    const startDate = searchFilters.value.startDate as string
-    const endDate = searchFilters.value.endDate as string
-    const status = searchFilters.value.status as string
-    const absenceTypeUuid = searchFilters.value.absenceTypeUuid as string
-
+    const { startDate, endDate, status, absenceTypeUuid } = searchFilters.value
     if (startDate) apiFilters.startDate = startDate
     if (endDate) apiFilters.endDate = endDate
     if (status) apiFilters.status = status as AbsenceStatus
@@ -630,6 +457,7 @@ const loadAbsenceTypes = async () => {
 
 // Filtres
 const applyFilters = () => {
+  showFilters.value = false
   loadAbsences(0)
 }
 
@@ -640,46 +468,16 @@ const resetFilters = () => {
     startDate: '',
     endDate: ''
   }
+  showFilters.value = false
   loadAbsences(0)
 }
 
 // Helpers de formatage
-const formatDate = (dateString?: string | Date): string => {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  })
-}
-
 const formatDateCompact = (dateString?: string | Date): string => {
   if (!dateString) return '-'
-  return new Date(dateString).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'short'
-  })
-}
-
-const formatDateTime = (dateString?: string | Date): string => {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleString('fr-FR', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-const getStatusText = (status?: string): string => {
-  switch (status) {
-    case 'PENDING': return 'En attente'
-    case 'APPROVED': return 'Approuvée'
-    case 'REJECTED': return 'Refusée'
-    case 'CANCELLED': return 'Annulée'
-    default: return 'Inconnu'
-  }
+  const d = new Date(dateString)
+  if (Number.isNaN(d.getTime())) return '-'
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
 // Modals

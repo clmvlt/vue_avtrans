@@ -44,3 +44,29 @@ export function calculateAbsenceDuration(startDate?: string | Date, endDate?: st
 
   return `${diffDays} jour${diffDays > 1 ? 's' : ''}`
 }
+
+/**
+ * Libellé français d'un statut d'absence
+ */
+export function getAbsenceStatusLabel(status?: string): string {
+  switch (status) {
+    case 'PENDING': return 'En attente'
+    case 'APPROVED': return 'Approuvée'
+    case 'REJECTED': return 'Refusée'
+    case 'CANCELLED': return 'Annulée'
+    default: return 'Inconnu'
+  }
+}
+
+/**
+ * Classes Tailwind (bordure, fond, texte) d'une pastille de statut d'absence
+ */
+export function getAbsenceStatusClasses(status?: string): string {
+  switch (status) {
+    case 'PENDING': return 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400'
+    case 'APPROVED': return 'border-green-500/40 bg-green-500/10 text-green-700 dark:text-green-400'
+    case 'REJECTED': return 'border-destructive/40 bg-destructive/10 text-destructive'
+    case 'CANCELLED': return 'border-border bg-muted text-muted-foreground'
+    default: return 'border-border bg-muted text-muted-foreground'
+  }
+}

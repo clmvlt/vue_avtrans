@@ -44,18 +44,18 @@
         <!-- Période -->
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-foreground">Période</label>
-          <div class="flex gap-2">
-            <Button type="button" size="sm"
+          <div class="grid grid-cols-3 gap-2">
+            <Button type="button" size="sm" class="w-full px-2"
               :variant="formData.period === 'FULL_DAY' ? 'default' : 'outline'"
               @click="formData.period = 'FULL_DAY'"
               :disabled="saving"
-            >Journée entière</Button>
-            <Button type="button" size="sm"
+            >Journée</Button>
+            <Button type="button" size="sm" class="w-full px-2"
               :variant="formData.period === 'MORNING' ? 'default' : 'outline'"
               @click="formData.period = 'MORNING'"
               :disabled="saving"
             >Matin</Button>
-            <Button type="button" size="sm"
+            <Button type="button" size="sm" class="w-full px-2"
               :variant="formData.period === 'AFTERNOON' ? 'default' : 'outline'"
               @click="formData.period = 'AFTERNOON'"
               :disabled="saving"
