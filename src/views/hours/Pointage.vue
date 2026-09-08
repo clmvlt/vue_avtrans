@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-background pb-[calc(5.75rem+env(safe-area-inset-bottom))] md:pb-8">
+  <div class="min-h-screen bg-background pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-8">
     <!-- Header -->
     <header class="sticky top-0 z-40 border-b bg-background">
       <div class="mx-auto flex max-w-[1100px] items-center gap-2 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4">
@@ -247,10 +247,17 @@
       </div>
     </main>
 
-    <!-- Barre d'actions fixe (mobile uniquement, zone du pouce) -->
+    <!--
+      Barre d'actions fixe (mobile uniquement, zone du pouce).
+      Le fond s'étend jusqu'au bord de l'écran, mais les boutons restent au-dessus de la
+      zone système (barre de gestes / home indicator) et à l'écart des coins arrondis :
+      - px-4 + rounded-xl sur les boutons : un coin d'écran arrondi (r ≈ 40-60px) ne les rogne pas
+      - pb = max(1rem, inset + 0.5rem) : plancher si le navigateur ne remonte aucun inset
+      (nécessite viewport-fit=cover dans index.html, sinon env() vaut toujours 0)
+    -->
     <div
       v-if="!(loading && !activeService) && !error"
-      class="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden"
+      class="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-4 pt-2.5 pb-[max(1rem,calc(env(safe-area-inset-bottom)+0.5rem))] backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden"
     >
       <div class="mx-auto max-w-[1100px]">
         <PointageActions

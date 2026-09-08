@@ -27,7 +27,7 @@ const emit = defineEmits<{
     <!-- Hors service -->
     <Button
       v-if="props.status === 'off'"
-      class="h-14 flex-1 bg-green-600 text-base font-semibold text-white shadow-sm hover:bg-green-700"
+      class="h-14 flex-1 rounded-xl bg-green-600 text-base font-semibold text-white shadow-sm hover:bg-green-700"
       :disabled="props.loading"
       @click="emit('start')"
     >
@@ -40,7 +40,7 @@ const emit = defineEmits<{
     <template v-else-if="props.status === 'working'">
       <Button
         variant="outline"
-        class="h-14 flex-1 border-amber-500/60 bg-amber-500/5 text-base font-semibold text-amber-700 hover:bg-amber-500/15 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
+        class="h-14 flex-1 rounded-xl border-amber-500/60 bg-amber-500/5 text-base font-semibold text-amber-700 hover:bg-amber-500/15 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
         :disabled="props.loading"
         @click="emit('pause')"
       >
@@ -49,7 +49,7 @@ const emit = defineEmits<{
         {{ props.layout === 'row' ? 'Pause' : 'Commencer une pause' }}
       </Button>
       <Button
-        class="h-14 flex-1 bg-rose-600 text-base font-semibold text-white shadow-sm hover:bg-rose-700"
+        class="h-14 flex-1 rounded-xl bg-rose-600 text-base font-semibold text-white shadow-sm hover:bg-rose-700"
         :disabled="props.loading"
         @click="emit('end')"
       >
@@ -62,7 +62,7 @@ const emit = defineEmits<{
     <!-- En pause -->
     <Button
       v-else
-      class="h-14 flex-1 bg-green-600 text-base font-semibold text-white shadow-sm hover:bg-green-700"
+      class="h-14 flex-1 rounded-xl bg-green-600 text-base font-semibold text-white shadow-sm hover:bg-green-700"
       :disabled="props.loading"
       @click="emit('resume')"
     >
