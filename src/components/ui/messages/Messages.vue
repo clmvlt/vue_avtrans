@@ -50,6 +50,7 @@
           <!-- Progress bar -->
           <div
             v-if="message.duration && message.duration > 0"
+            :key="message.seq"
             class="progress-bar absolute bottom-0 left-0 right-0 h-1 origin-left"
             :class="variantProgressClass(message.variant)"
             :style="{ '--progress-duration': `${message.duration}ms` }"
@@ -92,6 +93,8 @@ export interface Message {
 
 interface MessageInternal extends Message {
   timeout?: number
+  /** Incrémenté à chaque remplacement pour relancer l'animation de la barre de progression */
+  seq: number
 }
 
 const messages = ref<MessageInternal[]>([])
@@ -151,12 +154,30 @@ const addMessage = (config: Omit<Message, 'id'> & { id?: string }): string => {
   const duration = config.duration ?? 5000
   const variant = config.variant ?? 'info'
 
+  // Un message portant un id déjà affiché est mis à jour sur place (pas de doublon)
+  const existing = messages.value.find(m => m.id === id)
+  if (existing) {
+    if (existing.timeout) clearTimeout(existing.timeout)
+    existing.title = config.title
+    existing.text = config.text
+    existing.variant = variant
+    existing.duration = duration
+    existing.action = config.action
+    existing.seq += 1
+    existing.timeout = duration > 0
+      ? window.setTimeout(() => removeMessage(id), duration)
+      : undefined
+    return id
+  }
+
   const message: MessageInternal = {
     id,
     title: config.title,
     text: config.text,
     variant,
-    duration
+    duration,
+    action: config.action,
+    seq: 0
   }
 
   messages.value.push(message)

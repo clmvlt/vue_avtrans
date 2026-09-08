@@ -6,6 +6,8 @@ interface MessageAction {
 }
 
 interface Message {
+  /** Id stable optionnel : un nouvel appel avec le même id met à jour le message existant au lieu d'en empiler un autre */
+  id?: string
   title?: string
   text: string
   variant?: 'primary' | 'success' | 'warning' | 'danger' | 'info'
