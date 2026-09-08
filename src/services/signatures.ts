@@ -3,13 +3,23 @@ import type { SignatureDTO, SignatureCreateRequest, LastSignatureSummaryDTO, Use
 import type { SuccessMessageResponse, ApiResponse } from '@/types'
 
 /**
- * Réponse du backend lors de la création d'une signature
- * (cf. SignatureResponse côté API)
+ * Réponse du backend pour une signature unique
+ * (POST /signatures, GET /signatures/last — `signature` est null si aucune signature, avec HTTP 200)
  */
 export interface SignatureResponse {
   success: boolean
   message?: string
-  signature?: SignatureDTO
+  signature: SignatureDTO | null
+}
+
+/**
+ * Réponse du backend pour une liste de signatures (GET /signatures)
+ * Chaque élément contient le Base64 complet → réponse lourde
+ */
+export interface SignatureListResponse {
+  success: boolean
+  message?: string
+  signatures: SignatureDTO[]
 }
 
 /**
@@ -30,16 +40,16 @@ export class SignaturesService {
    * Get all my signatures
    * @returns Promise with list of signatures
    */
-  async getSignatures(): Promise<ApiResponse<SignatureDTO[]>> {
-    return apiClient.get<ApiResponse<SignatureDTO[]>>('signatures')
+  async getSignatures(): Promise<SignatureListResponse> {
+    return apiClient.get<SignatureListResponse>('signatures')
   }
 
   /**
    * Get my last signature with Base64 image
    * @returns Promise with last signature (includes full image data)
    */
-  async getLastSignature(): Promise<ApiResponse<SignatureDTO>> {
-    return apiClient.get<ApiResponse<SignatureDTO>>('signatures/last')
+  async getLastSignature(): Promise<SignatureResponse> {
+    return apiClient.get<SignatureResponse>('signatures/last')
   }
 
   /**
@@ -57,7 +67,7 @@ export class SignaturesService {
    * Get signature history for current user
    * @returns Promise with list of signatures
    */
-  async getSignatureHistory(): Promise<ApiResponse<SignatureDTO[]>> {
+  async getSignatureHistory(): Promise<SignatureListResponse> {
     return this.getSignatures()
   }
 

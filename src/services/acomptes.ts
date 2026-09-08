@@ -4,8 +4,12 @@ import type { SuccessMessageResponse, ApiResponse, PaginationParams } from '@/ty
 
 /**
  * Acompte status enum
+ * Valeurs API exactes : PENDING | APPROVED | REJECTED.
+ * Ne pas envoyer d'autre valeur dans un filtre `status` : POST /acomptes/my n'a pas de
+ * try/catch côté serveur → 500 "Internal server error" sur un enum inconnu.
+ * Le paiement est porté par `isPaid` (boolean), pas par un statut.
  */
-export type AcompteStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'PAID'
+export type AcompteStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 /**
  * Acompte create request
@@ -66,6 +70,16 @@ export interface AcompteSearchParams extends PaginationParams {
 }
 
 /**
+ * Réponse API pour un acompte unique
+ * (POST /acomptes → clé `acompte`, PAS `data`)
+ */
+export interface AcompteResponse {
+  success: boolean
+  message?: string
+  acompte: AcompteDTO | null
+}
+
+/**
  * Acompte search response from API
  */
 export interface AcompteSearchResponse {
@@ -74,6 +88,15 @@ export interface AcompteSearchResponse {
   totalPages: number
   totalElements: number
   currentPage: number
+}
+
+/**
+ * Retire les clés `undefined`, `null` et chaînes vides d'un objet de filtres
+ */
+function stripEmpty<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== '')
+  ) as Partial<T>
 }
 
 /**
@@ -86,8 +109,8 @@ export class AcomptesService {
    * @param data - Acompte data
    * @returns Promise with created acompte
    */
-  async createAcompteRequest(data: AcompteCreateRequest): Promise<ApiResponse<AcompteDTO>> {
-    return apiClient.post<ApiResponse<AcompteDTO>>('acomptes', data)
+  async createAcompteRequest(data: AcompteCreateRequest): Promise<AcompteResponse> {
+    return apiClient.post<AcompteResponse>('acomptes', data)
   }
 
   /**
@@ -96,11 +119,16 @@ export class AcomptesService {
    * @returns Promise with paginated acomptes
    */
   async getAcomptes(filters?: AcompteSearchParams): Promise<AcompteSearchResponse> {
-    return apiClient.post<AcompteSearchResponse>('acomptes/my', filters || {})
+    // Défaut serveur sans dates : createdAt dans [aujourd'hui - 30 j ; +10 ans].
+    // Les chaînes vides sont retirées (une date "" n'est pas un yyyy-MM-dd valide).
+    return apiClient.post<AcompteSearchResponse>('acomptes/my', stripEmpty(filters || {}))
   }
 
   /**
    * Cancel an acompte request (if pending)
+   * 200 : { success, message, acompte: null }
+   * 400 : "Vous ne pouvez annuler que vos propres demandes" | "Seules les demandes en attente peuvent être annulées"
+   * 500 (pas 400) si l'UUID n'existe pas — n'appeler qu'avec un UUID issu de la liste.
    * @param uuid - Acompte UUID
    * @returns Promise with success message
    */

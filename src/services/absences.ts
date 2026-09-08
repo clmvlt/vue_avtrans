@@ -79,6 +79,15 @@ export interface AbsenceResponse {
 }
 
 /**
+ * API response for DELETE routes (absence is always null)
+ */
+export interface AbsenceDeleteResponse {
+  success: boolean
+  message?: string
+  absence: null
+}
+
+/**
  * API response for a list of absences (paginated)
  */
 export interface AbsenceListResponse {
@@ -131,6 +140,15 @@ export interface PlanningUserDTO {
 }
 
 /**
+ * Retire les clés `undefined`, `null` et chaînes vides d'un objet de filtres
+ */
+function stripEmpty<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined && v !== null && v !== '')
+  ) as Partial<T>
+}
+
+/**
  * Absence management service
  * Handles absence requests, validation, and planning
  */
@@ -146,20 +164,25 @@ export class AbsencesService {
 
   /**
    * Get my absence requests with filters
+   * POST /absences/my — filtre : absence ENTIÈREMENT dans [startDate ; endDate].
+   * Défaut serveur sans aucune date : [aujourd'hui - 30 j ; aujourd'hui + 10 ans].
+   * `userUuid` et `includePast` sont ignorés sur cette route.
+   * sortBy sûrs : startDate | endDate | createdAt | status
    * @param filters - Search filters
    * @returns Promise with paginated absences
    */
   async getAbsences(filters?: AbsenceSearchParams): Promise<AbsenceListResponse> {
-    return apiClient.post<AbsenceListResponse>('absences/my', filters || {})
+    return apiClient.post<AbsenceListResponse>('absences/my', stripEmpty(filters || {}))
   }
 
   /**
    * Cancel an absence request (if pending)
+   * 200 : { success, message: "Absence annulée avec succès", absence: null }
    * @param uuid - Absence UUID
-   * @returns Promise with cancelled absence
+   * @returns Promise with success message
    */
-  async cancelAbsence(uuid: string): Promise<AbsenceResponse> {
-    return apiClient.delete<AbsenceResponse>(`absences/${uuid}`)
+  async cancelAbsence(uuid: string): Promise<AbsenceDeleteResponse> {
+    return apiClient.delete<AbsenceDeleteResponse>(`absences/${uuid}`)
   }
 
   // Admin methods

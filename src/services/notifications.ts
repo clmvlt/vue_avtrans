@@ -18,6 +18,8 @@ export interface NotificationCreateRequest {
  * Notification unread count response
  */
 export interface UnreadCountResponse {
+  success: boolean
+  message?: string
   count: number
 }
 

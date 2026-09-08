@@ -214,11 +214,18 @@ export class ApiClient {
       // Check if response is ok
       if (!response.ok) {
         const errorData = data as unknown as ErrorResponse
+        // 400 "Validation error" : l'API joint un tableau `errors` ("champ: message").
+        // On l'intègre au message pour que l'UI affiche quelque chose d'exploitable.
+        const validationErrors = Array.isArray(errorData.errors) ? errorData.errors : undefined
+        const baseMessage = errorData.message || 'Une erreur s\'est produite'
+        const message = validationErrors && validationErrors.length > 0
+          ? `${baseMessage} : ${validationErrors.join(' ; ')}`
+          : baseMessage
         throw ApiError.fromErrorResponse({
-          message: errorData.message || 'Une erreur s\'est produite',
+          message,
           status: response.status,
           code: errorData.code,
-          details: errorData.details
+          details: validationErrors ?? errorData.details
         })
       }
 

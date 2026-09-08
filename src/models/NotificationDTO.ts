@@ -10,7 +10,9 @@ export interface NotificationDTO {
   description?: string;
   createdAt?: Date | string;
   isRead?: boolean;
-  refType?: string;
+  /** acompte | absence | user | rapport_vehicule | todo — sert à la navigation profonde avec refId */
+  refType?: 'acompte' | 'absence' | 'user' | 'rapport_vehicule' | 'todo' | string;
+  /** UUID de la ressource référencée */
   refId?: string;
 }
 

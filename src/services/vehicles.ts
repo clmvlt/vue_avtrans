@@ -4,7 +4,8 @@ import type {
   VehiculeKilometrageDTO,
   VehiculePictureDTO,
   VehiculeFileDTO,
-  VehiculeAdjustInfoDTO
+  VehiculeAdjustInfoDTO,
+  VehiculeAdjustInfoPictureDTO
 } from '@/models'
 import type { SuccessMessageResponse } from '@/types'
 
@@ -30,7 +31,10 @@ export interface VehiculeCreateRequest {
 }
 
 /**
- * Vehicle update request
+ * Vehicle update request — PUT /vehicules/{id}
+ * REMPLACEMENT COMPLET côté serveur : tout champ absent est remis à null.
+ * Toujours renvoyer tous les champs. Exception : `pictureBase64` null ou vide = photo inchangée
+ * (il n'existe pas de moyen de supprimer la photo via cette route).
  */
 export interface VehiculeUpdateRequest {
   immat?: string
@@ -107,10 +111,13 @@ export interface VehiculeResponse {
 export interface KilometragesListResponse {
   success: boolean
   kilometrages: VehiculeKilometrageDTO[]
-  page: number
-  size: number
+  /** null si size=-1 (tout sans pagination) */
+  page: number | null
+  /** null si size=-1 */
+  size: number | null
   totalElements: number
-  totalPages: number
+  /** null si size=-1 */
+  totalPages: number | null
 }
 
 export interface KilometrageResponse {
@@ -142,7 +149,13 @@ export interface AdjustInfosListResponse {
 export interface AdjustInfoResponse {
   success: boolean
   message?: string
+  /** Sans les photos : les récupérer via GET /vehicules/adjust-infos/{id}/pictures */
   adjustInfo: VehiculeAdjustInfoDTO
+}
+
+export interface AdjustInfoPicturesListResponse {
+  success: boolean
+  pictures: VehiculeAdjustInfoPictureDTO[]
 }
 
 /**
@@ -216,7 +229,8 @@ export class VehiclesService {
   }
 
   /**
-   * Add vehicle kilometrage
+   * Add vehicle kilometrage — POST /vehicules/kilometrages
+   * Aucune validation serveur (pas de contrôle km >= latestKm, km null → 400 technique).
    * @param data - Kilometrage data
    * @returns Promise with created kilometrage
    */
@@ -256,6 +270,7 @@ export class VehiclesService {
 
   /**
    * [MECHANIC] Add vehicle picture
+   * Route absente du contrat d'API (non vérifiée) — la photo de profil passe par `pictureBase64` (POST/PUT /vehicules)
    * @param id - Vehicle ID
    * @param pictureData - Picture data (base64)
    * @returns Promise with created picture
@@ -266,6 +281,7 @@ export class VehiclesService {
 
   /**
    * Get vehicle pictures
+   * Route absente du contrat d'API (non vérifiée)
    * @param id - Vehicle ID
    * @returns Promise with list of pictures
    */
@@ -275,6 +291,7 @@ export class VehiclesService {
 
   /**
    * [MECHANIC] Delete vehicle picture
+   * Route absente du contrat d'API (non vérifiée)
    * @param pictureId - Picture ID
    * @returns Promise with success message
    */
@@ -335,8 +352,8 @@ export class VehiclesService {
    * @param adjustInfoId - Adjustment info ID
    * @returns Promise with list of pictures
    */
-  async getAdjustInfoPictures(adjustInfoId: string): Promise<PicturesListResponse> {
-    return apiClient.get<PicturesListResponse>(`vehicules/adjust-infos/${adjustInfoId}/pictures`)
+  async getAdjustInfoPictures(adjustInfoId: string): Promise<AdjustInfoPicturesListResponse> {
+    return apiClient.get<AdjustInfoPicturesListResponse>(`vehicules/adjust-infos/${adjustInfoId}/pictures`)
   }
 }
 

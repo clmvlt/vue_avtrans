@@ -1,28 +1,23 @@
 import { apiClient } from '@/api'
 import type { ServiceDTO } from '@/models'
-import type { SuccessMessageResponse, ApiResponse, PagedResponse, PaginationParams } from '@/types'
+import type { SuccessMessageResponse, ApiResponse, PagedResponse } from '@/types'
 
 /**
- * Service start request data
+ * Body commun aux 4 actions de pointage (POST /services/start|end|break/start|break/end).
+ * Les coordonnées sont optionnelles (null accepté). `userUuid` est réservé aux admins
+ * (→ 403 si fourni par un non-admin).
  */
-export interface ServiceStartRequest {
-  vehiculeId?: string
-  startDate?: string
-  comment?: string
-  latitude?: number
-  longitude?: number
+export interface GpsLocationRequest {
+  latitude: number | null
+  longitude: number | null
+  userUuid?: string // Admin only - to perform action for another user
 }
 
-/**
- * Service end request data
- */
-export interface ServiceEndRequest {
-  vehiculeId?: string
-  endDate?: string
-  comment?: string
-  latitude?: number
-  longitude?: number
-}
+/** @deprecated alias de GpsLocationRequest — l'API n'a ni vehiculeId, ni startDate, ni comment */
+export type ServiceStartRequest = GpsLocationRequest
+
+/** @deprecated alias de GpsLocationRequest — l'API n'a ni vehiculeId, ni endDate, ni comment */
+export type ServiceEndRequest = GpsLocationRequest
 
 /**
  * Worked hours response
@@ -37,21 +32,32 @@ export interface WorkedHoursDTO {
 }
 
 /**
- * Service search filters
+ * Service search filters — body de POST /services/history
+ * (l'API ne connaît que `sortBy` / `sortDirection`, pas `sort` / `direction`)
  */
-export interface ServiceSearchParams extends PaginationParams {
+export interface ServiceSearchParams {
+  /** Numéro de page (0-indexé) */
+  page?: number
+  /** Taille de page */
+  size?: number
+  /** true = pauses seules, false = services seuls, undefined = tout */
   isBreak?: boolean
+  /** yyyy-MM-dd — filtre debut >= startDate 00:00 */
   startDate?: string
+  /** yyyy-MM-dd — jour de fin INCLUS (le service ajoute +1 jour pour compenser la borne serveur à minuit) */
   endDate?: string
-  sortBy?: string
+  /** Valeurs sûres : debut | fin | duree (autre → 400 technique) */
+  sortBy?: 'debut' | 'fin' | 'duree'
+  /** "asc" ; toute autre valeur = desc */
   sortDirection?: 'asc' | 'desc'
 }
 
 /**
- * Hours query parameters
+ * Hours query parameters — GET /services/hours
+ * `week` (n° ISO) n'est fiable que pour l'année courante.
  */
 export interface HoursQueryParams {
-  period?: 'day' | 'week' | 'month' | 'year'
+  period?: 'day' | 'week' | 'month' | 'year' | 'lastmonth'
   year?: number
   month?: number
   week?: number
@@ -106,12 +112,15 @@ export interface ActiveServiceResponse {
 }
 
 /**
- * GPS location request for service operations
+ * Ajoute un jour à une date yyyy-MM-dd (calcul en local, sans décalage UTC)
  */
-export interface GpsLocationRequest {
-  latitude: number
-  longitude: number
-  userUuid?: string // Admin only - to perform action for another user
+function addOneDay(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  if (!y || !m || !d) return isoDate
+  const next = new Date(y, m - 1, d + 1)
+  const mm = String(next.getMonth() + 1).padStart(2, '0')
+  const dd = String(next.getDate()).padStart(2, '0')
+  return `${next.getFullYear()}-${mm}-${dd}`
 }
 
 /**
@@ -174,7 +183,12 @@ export class UserServicesService {
    * @returns Promise with worked hours
    */
   async getWorkedHours(params?: HoursQueryParams): Promise<WorkedHoursDTO> {
-    const queryString = params ? '?' + new URLSearchParams(params as any).toString() : ''
+    // Ne jamais sérialiser une clé undefined ("period=undefined" → 400 "Invalid period")
+    const query = new URLSearchParams()
+    Object.entries(params ?? {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') query.append(key, String(value))
+    })
+    const queryString = query.toString() ? `?${query.toString()}` : ''
     return apiClient.get<WorkedHoursDTO>(`services/hours${queryString}`)
   }
 
@@ -199,7 +213,20 @@ export class UserServicesService {
    * @returns Promise with paginated services
    */
   async getServiceHistory(filters?: ServiceSearchParams): Promise<PagedResponse<ServiceDTO>> {
-    return apiClient.post<PagedResponse<ServiceDTO>>('services/history', filters || {})
+    const body: ServiceSearchParams = {}
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          (body as Record<string, unknown>)[key] = value
+        }
+      })
+    }
+    // Piège serveur : la borne endDate est MINUIT du jour de fin → le jour de fin est exclu.
+    // On envoie jour + 1 pour que la date saisie par l'utilisateur soit incluse.
+    if (body.endDate) {
+      body.endDate = addOneDay(body.endDate)
+    }
+    return apiClient.post<PagedResponse<ServiceDTO>>('services/history', body)
   }
 
   /**
@@ -239,7 +266,11 @@ export class UserServicesService {
    * @returns Promise with worked hours
    */
   async getUserWorkedHours(userUuid: string, params?: HoursQueryParams): Promise<ApiResponse<WorkedHoursDTO>> {
-    const queryString = params ? '?' + new URLSearchParams(params as any).toString() : ''
+    const query = new URLSearchParams()
+    Object.entries(params ?? {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') query.append(key, String(value))
+    })
+    const queryString = query.toString() ? `?${query.toString()}` : ''
     return apiClient.get<ApiResponse<WorkedHoursDTO>>(`services/admin/hours/${userUuid}${queryString}`)
   }
 

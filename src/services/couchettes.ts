@@ -33,11 +33,13 @@ export class CouchettesService {
 
   /**
    * Créer une couchette pour soi-même
+   * POST /couchettes — renvoie le CouchetteDTO NU (pas d'enveloppe `success`).
+   * 400 : "L'utilisateur n'a pas la permission couchette" | "Une couchette existe déjà pour cette date"
    * @param data - Données de la couchette (date optionnelle, défaut = aujourd'hui)
    * @returns Promise avec la couchette créée
    */
-  async createCouchette(data?: CouchetteCreateRequest): Promise<ApiResponse<CouchetteDTO>> {
-    return apiClient.post<ApiResponse<CouchetteDTO>>('couchettes', data || {})
+  async createCouchette(data?: CouchetteCreateRequest): Promise<CouchetteDTO> {
+    return apiClient.post<CouchetteDTO>('couchettes', data || {})
   }
 
   /**
@@ -54,7 +56,8 @@ export class CouchettesService {
   }
 
   /**
-   * Supprimer une de mes couchettes
+   * Supprimer une de mes couchettes (doit m'appartenir ET être datée d'aujourd'hui)
+   * DELETE /couchettes/{uuid} — 204 No Content (corps vide, ApiClient renvoie { success: true })
    * @param uuid - UUID de la couchette à supprimer
    * @returns Promise avec message de succès
    */

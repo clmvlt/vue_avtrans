@@ -40,8 +40,10 @@ export interface AppVersionCheckResponse {
   success: boolean
   updateAvailable: boolean
   currentVersionCode: number
-  latestVersionCode: number
-  latestVersion?: AppVersionDTO
+  /** null si aucune version active */
+  latestVersionCode: number | null
+  /** Non null UNIQUEMENT si updateAvailable === true */
+  latestVersion: AppVersionDTO | null
 }
 
 /**

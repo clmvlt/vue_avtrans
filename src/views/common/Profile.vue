@@ -561,8 +561,8 @@ const loadProfile = async () => {
 // Load notification preferences separately if not in profile
 const loadNotificationPreferences = async () => {
   try {
-    const response = await usersService.getMyNotificationPreferences()
-    const prefs = response.data
+    // GET /users/me/notification-preferences renvoie le DTO nu (pas de clé `data`)
+    const prefs = await usersService.getMyNotificationPreferences()
 
     if (prefs) {
       notificationForm.acompte = prefs.acompte || 'SITE'

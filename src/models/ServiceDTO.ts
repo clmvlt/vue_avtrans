@@ -5,7 +5,7 @@ export interface ServiceDTO {
   uuid?: string;
   debut?: Date | string;
   fin?: Date | string;
-  /** Duration in milliseconds or seconds */
+  /** Durée en SECONDES. Si fin == null : durée calculée à la volée (now - debut) */
   duree?: number;
   isBreak?: boolean;
   /** Latitude GPS de début */

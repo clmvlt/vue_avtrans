@@ -35,10 +35,11 @@ export interface CreateTodoCategoryRequest {
 }
 
 /**
- * Request pour mettre à jour une catégorie
+ * Request pour mettre à jour une catégorie — PUT /todo-categories/{uuid}
+ * `name` est obligatoire (remplacé) ; `color` absent/null = inchangée
  */
 export interface UpdateTodoCategoryRequest {
-  name?: string
+  name: string
   color?: string
 }
 
@@ -52,7 +53,8 @@ export interface CreateTodoRequest {
 }
 
 /**
- * Request pour mettre à jour un todo
+ * Request pour mettre à jour un todo — PUT /todos/{uuid}
+ * Tous les champs optionnels (null = inchangé). Impossible de retirer la catégorie.
  */
 export interface UpdateTodoRequest {
   title?: string

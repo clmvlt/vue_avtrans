@@ -81,6 +81,7 @@ export class UsersService {
 
   /**
    * Get current user's last kilometrage entry
+   * GET /users/me/kilometrage — DTO nu { lastKilometrage, hasEnteredToday }
    * @returns Promise with last kilometrage and whether user has entered today
    */
   async getMyLastKilometrage(): Promise<UserLastKilometrageResponse> {
@@ -89,21 +90,25 @@ export class UsersService {
 
   /**
    * Get current user's notification preferences
+   * GET /users/me/notification-preferences — renvoie le DTO NU (pas d'enveloppe `success`/`data`)
    * @returns Promise with notification preferences
    */
-  async getMyNotificationPreferences(): Promise<ApiResponse<NotificationPreferencesDTO>> {
-    return apiClient.get<ApiResponse<NotificationPreferencesDTO>>('users/me/notification-preferences')
+  async getMyNotificationPreferences(): Promise<NotificationPreferencesDTO> {
+    return apiClient.get<NotificationPreferencesDTO>('users/me/notification-preferences')
   }
 
   /**
    * Update current user's notification preferences
+   * PUT /users/me/notification-preferences — seules les clés non nulles sont modifiées.
+   * Valeurs strictement NONE | SITE | EMAIL (autre → 400 "Invalid JSON format").
+   * Renvoie le DTO NU à jour.
    * @param preferences - Notification preferences to update
    * @returns Promise with updated notification preferences
    */
   async updateMyNotificationPreferences(
     preferences: UpdateNotificationPreferencesRequest
-  ): Promise<ApiResponse<NotificationPreferencesDTO>> {
-    return apiClient.put<ApiResponse<NotificationPreferencesDTO>>(
+  ): Promise<NotificationPreferencesDTO> {
+    return apiClient.put<NotificationPreferencesDTO>(
       'users/me/notification-preferences',
       preferences
     )

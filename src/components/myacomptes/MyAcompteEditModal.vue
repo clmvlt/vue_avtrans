@@ -131,7 +131,7 @@ const handleSubmit = async () => {
       raison: formData.value.raison || undefined
     })
 
-    emit('saved', response.data as AcompteDTO)
+    emit('saved', response.acompte as AcompteDTO)
     messages.success('Demande d\'acompte envoyée avec succès', 'Succès')
     handleClose()
   } catch (err: unknown) {

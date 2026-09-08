@@ -16,6 +16,11 @@ export interface ErrorResponse {
   details?: unknown
   /** Timestamp when the error occurred */
   timestamp?: string
+  /**
+   * Erreurs de validation (400 "Validation error" côté API).
+   * Format : "champ: message" (ex. "montant: Le montant doit être positif")
+   */
+  errors?: string[]
 }
 
 /**
@@ -46,8 +51,8 @@ export interface PagedResponse<T> {
   first: boolean
   /** Whether this is the last page */
   last: boolean
-  /** Whether the page has content */
-  empty: boolean
+  /** Whether the page has content (absent côté API AVTrans, conservé pour compatibilité) */
+  empty?: boolean
 }
 
 /**

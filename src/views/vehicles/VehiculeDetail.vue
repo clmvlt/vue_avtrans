@@ -747,9 +747,10 @@ const loadKilometrages = async (page: number = 0, showAll: boolean = false) => {
     const size = showAll ? -1 : kmSize.value
     const response = await vehiclesService.getKilometrageHistory(vehiculeId, page, size)
     kilometrages.value = response.kilometrages || []
-    kmPage.value = response.page
-    kmTotalPages.value = response.totalPages
-    kmTotalElements.value = response.totalElements
+    // page / totalPages sont null quand size=-1 (tout sans pagination)
+    kmPage.value = response.page ?? 0
+    kmTotalPages.value = response.totalPages ?? 0
+    kmTotalElements.value = response.totalElements ?? 0
     kmShowAll.value = showAll
 
     // Mettre a jour le graphique si on est sur l'onglet kilometrages
@@ -804,9 +805,10 @@ const loadRapports = async (page: number = 0, showAll: boolean = false) => {
     const size = showAll ? -1 : rapportsSize.value
     const response = await rapportsService.getRapports(vehiculeId, page, size)
     rapports.value = response.data || []
-    rapportsPage.value = response.page
-    rapportsTotalPages.value = response.totalPages
-    rapportsTotalElements.value = response.totalElements
+    // page / totalPages sont null quand size=-1 (tout sans pagination)
+    rapportsPage.value = response.page ?? 0
+    rapportsTotalPages.value = response.totalPages ?? 0
+    rapportsTotalElements.value = response.totalElements ?? 0
     rapportsShowAll.value = showAll
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Erreur lors du chargement des rapports'

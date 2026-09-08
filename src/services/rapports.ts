@@ -7,8 +7,9 @@ import type { SuccessMessageResponse, ApiResponse } from '@/types'
  */
 export interface RapportVehiculeCreateRequest {
   vehiculeId: string
-  commentaire: string
-  picturesB64?: string[]
+  commentaire?: string | null
+  /** Data URI ("data:image/jpeg;base64,...") ou base64 brut */
+  picturesB64?: string[] | null
 }
 
 /**
@@ -16,6 +17,7 @@ export interface RapportVehiculeCreateRequest {
  */
 export interface RapportPictureDTO {
   id: string
+  rapportVehiculeId?: string
   pictureUrl: string
   createdAt: string
 }
@@ -34,10 +36,13 @@ export interface RapportsListResponse {
   success: boolean
   message?: string
   data: RapportVehiculeDTO[]
-  page: number
-  size: number
+  /** null si size=-1 */
+  page: number | null
+  /** null si size=-1 */
+  size: number | null
   totalElements: number
-  totalPages: number
+  /** null si size=-1 */
+  totalPages: number | null
 }
 
 /**
@@ -56,6 +61,9 @@ export class RapportsService {
 
   /**
    * Get current user's latest report
+   * GET /rapports/me/latest → { success, message, data: RapportVehiculeDTO }
+   * 400 "Aucun rapport trouvé pour cet utilisateur" si aucun rapport : à traiter
+   * comme un état vide (ApiError.status === 400), pas comme une erreur.
    * @returns Promise with latest report
    */
   async getMyLatestRapport(): Promise<ApiResponse<RapportVehiculeDTO>> {
@@ -74,16 +82,8 @@ export class RapportsService {
   }
 
   /**
-   * Get report by ID
-   * @param id - Report ID
-   * @returns Promise with report details
-   */
-  async getRapportById(id: string): Promise<ApiResponse<RapportVehiculeDTO>> {
-    return apiClient.get<ApiResponse<RapportVehiculeDTO>>(`rapports/${id}`)
-  }
-
-  /**
    * Get report pictures
+   * Route absente du contrat d'API (non vérifiée)
    * @param id - Report ID
    * @returns Promise with list of pictures
    */
@@ -93,6 +93,7 @@ export class RapportsService {
 
   /**
    * Add picture to a report
+   * Route absente du contrat d'API (non vérifiée)
    * @param id - Report ID
    * @param pictureData - Picture data (base64)
    * @returns Promise with created picture
@@ -103,6 +104,7 @@ export class RapportsService {
 
   /**
    * [MECHANIC] Delete report picture
+   * Route absente du contrat d'API (non vérifiée)
    * @param pictureId - Picture ID
    * @returns Promise with success message
    */
