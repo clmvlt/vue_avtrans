@@ -65,6 +65,23 @@ npm run build
 npm run preview
 ```
 
+## Deploiement
+
+Le deploiement se fait via `deploy/deploy.py` (script local ignore par git, il contient les acces SSH) :
+
+```bash
+pip install paramiko
+
+python deploy/deploy.py            # bump patch + build + upload SSH
+python deploy/deploy.py --minor    # bump minor (ou --major)
+python deploy/deploy.py --no-bump  # redeploie la version courante
+python deploy/deploy.py --dry-run  # build + etat distant, sans rien modifier
+```
+
+La version de `package.json` est incrementee avant le build, injectee dans `dist/version.json`
+par Vite, puis verifiee sur le serveur et en ligne. En cas d'echec, le bump est annule et le site
+distant restaure depuis son backup.
+
 ## Structure du projet
 
 ```
