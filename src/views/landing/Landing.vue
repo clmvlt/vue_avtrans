@@ -136,7 +136,16 @@ const wasDark = ref(false)
 const FLUID_SCALE_CLASS = 'landing-fluid'
 
 onMounted(() => {
-  wasDark.value = document.documentElement.classList.contains('dark')
+  // index.html n'applique pas .dark sur « / » (HTML pré-rendu en clair) : on relit la
+  // préférence pour la restaurer en quittant la page
+  let storedTheme: string | null = null
+  try {
+    storedTheme = localStorage.getItem('theme-preference')
+  } catch {
+    /* stockage indisponible */
+  }
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  wasDark.value = storedTheme === 'dark' || (storedTheme !== 'light' && prefersDark)
   document.documentElement.classList.remove('dark')
   document.documentElement.classList.add(FLUID_SCALE_CLASS)
 
@@ -161,8 +170,15 @@ onMounted(() => {
     { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
   )
 
+  // Contenu pré-rendu déjà affiché (voir scripts/prerender.cjs) : les éléments visibles à
+  // l'écran sont révélés immédiatement pour ne pas disparaître puis réapparaître au montage.
+  const prerendered = Boolean((window as Window & { __PRERENDERED__?: boolean }).__PRERENDERED__)
   document.querySelectorAll('.reveal').forEach((el) => {
-    observer?.observe(el)
+    if (prerendered && el.getBoundingClientRect().top < window.innerHeight) {
+      el.classList.add('revealed')
+    } else {
+      observer?.observe(el)
+    }
   })
 
   // Stats count-up observer
