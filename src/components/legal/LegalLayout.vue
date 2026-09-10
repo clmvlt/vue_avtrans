@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import { ArrowLeft } from 'lucide-vue-next'
-import logoImg from '@/assets/favicon.png'
+import logoImg from '@/assets/logo.png'
 
 defineProps<{
   title: string
@@ -16,7 +16,7 @@ defineProps<{
     <header class="border-b border-border bg-card/80 backdrop-blur-sm">
       <div class="mx-auto flex max-w-3xl items-center justify-between px-4 py-4 sm:px-6">
         <RouterLink to="/" class="flex items-center gap-3">
-          <img :src="logoImg" alt="AVTRANS Concept" class="size-9 rounded-xl shadow-sm" />
+          <img :src="logoImg" alt="Logo AVTRANS Concept" width="36" height="36" class="size-9 rounded-xl shadow-sm" />
           <div class="flex flex-col">
             <span class="text-base font-bold tracking-tight">AVTRANS</span>
             <span class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
