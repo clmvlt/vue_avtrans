@@ -5,14 +5,18 @@ import {
   Truck, Snowflake, MapPin, Warehouse,
   Phone, Mail, ChevronDown, ArrowRight, Menu, X,
   Shield, Zap, Globe, Package, Locate, Smartphone,
-  Container, Weight, Boxes, ArrowUpFromLine
+  Container, Weight, Boxes, ArrowUpFromLine, CircleHelp
 } from 'lucide-vue-next'
 
-import locauxImg from '@/assets/images/locaux.jpg'
-import expertiseImg from '@/assets/images/expertise-image.jpg'
-import masterImg from '@/assets/images/master.png'
-import porteurImg from '@/assets/images/porteur.png'
-import logoImg from '@/assets/favicon.png'
+import { SITE_URL, DEFAULT_TITLE, DEFAULT_DESCRIPTION, JSONLD_BUSINESS_ID, JSONLD_WEBSITE_ID } from '@/config/seo'
+
+// Images optimisées (WebP) : le hero est l'élément LCP, il a une variante mobile 800px
+import locauxImg from '@/assets/images/locaux.webp'
+import locauxImgSm from '@/assets/images/locaux-800.webp'
+import expertiseImg from '@/assets/images/expertise-image.webp'
+import masterImg from '@/assets/images/master.webp'
+import porteurImg from '@/assets/images/porteur.webp'
+import logoImg from '@/assets/logo.png'
 
 // --- State ---
 const isScrolled = ref(false)
@@ -83,131 +87,35 @@ const animateCountUp = () => {
 let jsonLdScript: HTMLScriptElement | null = null
 
 const injectJsonLd = () => {
+  // LocalBusiness et WebSite sont déclarés statiquement dans index.html (visibles sans JS) ;
+  // ici uniquement les entités propres à cette page, reliées par leurs @id.
   const schema = {
     '@context': 'https://schema.org',
     '@graph': [
       {
-        '@type': 'LocalBusiness',
-        '@id': 'https://app.avtrans-concept.com/#business',
-        name: 'AVTRANS Concept',
-        alternateName: 'AVTRANS',
-        description: 'Coursier et transporteur en Bretagne. Messagerie express, fret, livraison en poids lourd et température dirigée à Saint-Brieuc, Lamballe, Pommeret et dans tout le Grand Ouest.',
-        url: 'https://app.avtrans-concept.com',
-        telephone: '+33257770777',
-        email: 'contact@avtrans-concept.com',
-        image: 'https://app.avtrans-concept.com/icons/icon-512x512.png',
-        logo: 'https://app.avtrans-concept.com/icons/icon-512x512.png',
-        priceRange: '€€',
-        currenciesAccepted: 'EUR',
-        paymentAccepted: 'Virement, Chèque, Carte bancaire',
-        address: {
-          '@type': 'PostalAddress',
-          streetAddress: 'ZA de Pommeret, Route de Quenhoet',
-          addressLocality: 'Hillion',
-          postalCode: '22120',
-          addressRegion: 'Bretagne',
-          addressCountry: 'FR'
-        },
-        geo: {
-          '@type': 'GeoCoordinates',
-          latitude: 48.4614,
-          longitude: -2.6989
-        },
-        areaServed: [
-          { '@type': 'AdministrativeArea', name: 'Bretagne' },
-          { '@type': 'AdministrativeArea', name: 'Côtes-d\'Armor' },
-          { '@type': 'City', name: 'Saint-Brieuc' },
-          { '@type': 'City', name: 'Lamballe' },
-          { '@type': 'City', name: 'Pommeret' },
-          { '@type': 'City', name: 'Dinan' },
-          { '@type': 'City', name: 'Guingamp' },
-          { '@type': 'City', name: 'Lannion' },
-          { '@type': 'City', name: 'Loudéac' },
-          { '@type': 'City', name: 'Rennes' },
-          { '@type': 'City', name: 'Brest' },
-          { '@type': 'City', name: 'Vannes' },
-          { '@type': 'City', name: 'Lorient' },
-          { '@type': 'AdministrativeArea', name: 'Grand Ouest' },
-          { '@type': 'Country', name: 'France' }
-        ],
-        hasOfferCatalog: {
-          '@type': 'OfferCatalog',
-          name: 'Services de transport AVTRANS',
-          itemListElement: [
-            {
-              '@type': 'Offer',
-              itemOffered: {
-                '@type': 'Service',
-                name: 'Coursier & Messagerie Express',
-                description: 'Service de coursier et messagerie express en Bretagne. Du simple pli à la palette de 1000 kg, livraisons locales, nationales et internationales.'
-              }
-            },
-            {
-              '@type': 'Offer',
-              itemOffered: {
-                '@type': 'Service',
-                name: 'Transport sous Température Dirigée',
-                description: 'Transport frigorifique et chaîne du froid pour produits pharmaceutiques et marchandises sensibles en Bretagne et Grand Ouest.'
-              }
-            },
-            {
-              '@type': 'Offer',
-              itemOffered: {
-                '@type': 'Service',
-                name: 'Fret & Affrètement',
-                description: 'Solutions de fret routier et affrètement depuis la Bretagne vers la France et l\'international.'
-              }
-            },
-            {
-              '@type': 'Offer',
-              itemOffered: {
-                '@type': 'Service',
-                name: 'Transport Poids Lourd',
-                description: 'Livraison en poids lourd avec porteur jusqu\'à 60 m³ : palettes, lots volumineux et chargements complets depuis la Bretagne vers le Grand Ouest et la France entière.'
-              }
-            },
-            {
-              '@type': 'Offer',
-              itemOffered: {
-                '@type': 'Service',
-                name: 'Stockage & Entreposage',
-                description: 'Entrepôt sécurisé dans les Côtes-d\'Armor pour solutions de stockage ponctuelles ou récurrentes.'
-              }
-            }
-          ]
-        },
-        sameAs: [
-          'https://avtrans-concept.com'
-        ]
-      },
-      {
-        '@type': 'WebSite',
-        '@id': 'https://app.avtrans-concept.com/#website',
-        url: 'https://app.avtrans-concept.com',
-        name: 'AVTRANS Concept — Coursier & Transport Bretagne',
-        publisher: { '@id': 'https://app.avtrans-concept.com/#business' },
-        inLanguage: 'fr-FR'
-      },
-      {
         '@type': 'WebPage',
-        '@id': 'https://app.avtrans-concept.com/#webpage',
-        url: 'https://app.avtrans-concept.com/',
-        name: 'AVTRANS Concept — Coursier & Transport en Bretagne | Saint-Brieuc, Lamballe',
-        description: 'Coursier et transporteur en Bretagne. Messagerie express, fret, poids lourd et température dirigée à Saint-Brieuc, Lamballe et Grand Ouest.',
-        isPartOf: { '@id': 'https://app.avtrans-concept.com/#website' },
-        about: { '@id': 'https://app.avtrans-concept.com/#business' },
+        '@id': `${SITE_URL}/#webpage`,
+        url: `${SITE_URL}/`,
+        name: DEFAULT_TITLE,
+        description: DEFAULT_DESCRIPTION,
+        isPartOf: { '@id': JSONLD_WEBSITE_ID },
+        about: { '@id': JSONLD_BUSINESS_ID },
+        primaryImageOfPage: {
+          '@type': 'ImageObject',
+          url: `${SITE_URL}/og-image.jpg`,
+          width: 1200,
+          height: 630
+        },
         inLanguage: 'fr-FR'
       },
       {
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          {
-            '@type': 'ListItem',
-            position: 1,
-            name: 'Accueil',
-            item: 'https://app.avtrans-concept.com/'
-          }
-        ]
+        '@type': 'FAQPage',
+        '@id': `${SITE_URL}/#faq`,
+        mainEntity: faq.map((item) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: { '@type': 'Answer', text: item.answer }
+        }))
       }
     ]
   }
@@ -291,6 +199,7 @@ const navLinks = [
   { id: 'services', label: 'Services' },
   { id: 'about', label: 'À propos' },
   { id: 'fleet', label: 'Notre flotte' },
+  { id: 'faq', label: 'FAQ' },
   { id: 'contact', label: 'Contact' }
 ]
 
@@ -360,6 +269,9 @@ const aboutFeatures: FeatureItem[] = [
 
 interface VehicleItem {
   image: string
+  /** Dimensions intrinsèques de l'image (évite le décalage de mise en page au chargement). */
+  width: number
+  height: number
   alt: string
   /** Dimensions indicatives affichées dans la fiche technique. */
   lengthM: number
@@ -379,6 +291,8 @@ const formatMeters = (meters: number) =>
 const fleet: VehicleItem[] = [
   {
     image: masterImg,
+    width: 1200,
+    height: 676,
     alt: 'Fourgon AVTRANS Concept pour coursier et messagerie express en Bretagne',
     lengthM: 6.3,
     heightM: 3.15,
@@ -394,6 +308,8 @@ const fleet: VehicleItem[] = [
   },
   {
     image: porteurImg,
+    width: 1200,
+    height: 900,
     alt: 'Porteur poids lourd AVTRANS Concept pour transport de palettes et fret en Bretagne',
     lengthM: 9.8,
     heightM: 3.7,
@@ -430,6 +346,35 @@ const footerServices = [
   'Suivi temps réel',
   'Stockage & Affrètement'
 ]
+
+interface FaqItem {
+  question: string
+  answer: string
+}
+
+/** FAQ : contenu texte indexable (requêtes longue traîne) + données structurées FAQPage. */
+const faq: FaqItem[] = [
+  {
+    question: 'Quelles zones desservez-vous ?',
+    answer: 'AVTRANS Concept est basé à Pommeret (Hillion), entre Saint-Brieuc et Lamballe. Nos coursiers interviennent chaque jour dans les Côtes-d\'Armor (Saint-Brieuc, Lamballe, Dinan, Guingamp, Lannion, Loudéac), sur les quatre départements bretons, vers Rennes et le Grand Ouest, ainsi qu\'en national et à l\'international.'
+  },
+  {
+    question: 'Quels types de marchandises transportez-vous ?',
+    answer: 'Du simple pli au chargement complet : colis, palettes jusqu\'à 1 000 kg, lots volumineux et fret en poids lourd. Nous transportons aussi des produits pharmaceutiques et des marchandises sensibles sous température dirigée, avec une chaîne du froid maîtrisée.'
+  },
+  {
+    question: 'Proposez-vous un service de coursier urgent ?',
+    answer: 'Oui. La course urgente et la livraison express sont au cœur de notre activité : un fourgon part rapidement depuis Saint-Brieuc ou Lamballe, et chaque envoi est suivi en temps réel par géolocalisation, avec une traçabilité complète à chaque étape.'
+  },
+  {
+    question: 'Quels véhicules composent votre flotte ?',
+    answer: 'Des fourgons et utilitaires de 1 m³ à 20 m³, dont une version frigorifique, et un porteur poids lourd de 60 m³ équipé d\'un hayon élévateur pour livrer les palettes sans quai de déchargement.'
+  },
+  {
+    question: 'Comment obtenir un devis ?',
+    answer: 'Le devis est gratuit et sans engagement. Appelez-nous au 02 57 77 07 77 (ou au 06 66 58 13 21), ou écrivez à contact@avtrans-concept.com en précisant la nature de l\'envoi, les adresses de départ et d\'arrivée et le délai souhaité.'
+  }
+]
 </script>
 
 <template>
@@ -448,8 +393,8 @@ const footerServices = [
         <div class="flex h-16 items-center justify-between lg:h-20">
 
           <!-- Logo -->
-          <div class="flex items-center gap-3">
-            <img :src="logoImg" alt="AVTRANS Concept — Coursier et transport en Bretagne" class="size-10 rounded-xl shadow-lg" />
+          <RouterLink to="/" class="flex items-center gap-3" aria-label="AVTRANS Concept — Accueil">
+            <img :src="logoImg" alt="Logo AVTRANS Concept" width="40" height="40" class="size-10 rounded-xl shadow-lg" />
             <div class="flex flex-col">
               <span
                 class="text-lg font-bold tracking-tight transition-colors duration-300"
@@ -464,21 +409,22 @@ const footerServices = [
                 Solutions Transport
               </span>
             </div>
-          </div>
+          </RouterLink>
 
-          <!-- Desktop Navigation -->
-          <nav class="hidden items-center gap-1 lg:flex">
-            <button
+          <!-- Desktop Navigation : vrais liens d'ancre (crawlables, accessibles), défilement doux en JS -->
+          <nav class="hidden items-center gap-1 lg:flex" aria-label="Navigation principale">
+            <a
               v-for="link in navLinks"
               :key="link.id"
-              @click="scrollTo(link.id)"
+              :href="`#${link.id}`"
+              @click.prevent="scrollTo(link.id)"
               class="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
               :class="isScrolled
                 ? 'text-muted-foreground hover:text-foreground hover:bg-accent'
                 : 'text-white/70 hover:text-white hover:bg-white/10'"
             >
               {{ link.label }}
-            </button>
+            </a>
           </nav>
 
           <!-- Desktop CTA -->
@@ -508,6 +454,9 @@ const footerServices = [
           <!-- Mobile Menu Toggle -->
           <button
             @click="mobileMenuOpen = !mobileMenuOpen"
+            :aria-expanded="mobileMenuOpen"
+            aria-controls="mobile-menu"
+            :aria-label="mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'"
             class="inline-flex items-center justify-center rounded-lg p-2 transition-colors lg:hidden"
             :class="isScrolled
               ? 'text-foreground hover:bg-accent'
@@ -527,16 +476,17 @@ const footerServices = [
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 -translate-y-2"
       >
-        <div v-if="mobileMenuOpen" class="border-b border-border bg-background/95 backdrop-blur-xl lg:hidden">
-          <div class="mx-auto max-w-7xl space-y-1 px-4 py-4">
-            <button
+        <div v-if="mobileMenuOpen" id="mobile-menu" class="border-b border-border bg-background/95 backdrop-blur-xl lg:hidden">
+          <nav class="mx-auto max-w-7xl space-y-1 px-4 py-4" aria-label="Navigation mobile">
+            <a
               v-for="link in navLinks"
               :key="link.id"
-              @click="scrollTo(link.id)"
+              :href="`#${link.id}`"
+              @click.prevent="scrollTo(link.id)"
               class="block w-full rounded-lg px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent"
             >
               {{ link.label }}
-            </button>
+            </a>
             <div class="my-3 h-px bg-border" />
             <div class="flex gap-3 px-4">
               <RouterLink to="/login" class="flex-1">
@@ -550,13 +500,14 @@ const footerServices = [
                 </button>
               </a>
             </div>
-          </div>
+          </nav>
         </div>
       </Transition>
     </header>
 
+    <main>
     <!-- ════════════════════════ HERO ════════════════════════ -->
-    <section class="relative flex min-h-[100dvh] items-center overflow-hidden">
+    <section id="hero" class="relative flex min-h-[100dvh] items-center overflow-hidden" aria-label="Présentation">
       <!-- Background -->
       <div class="absolute inset-0">
         <div
@@ -565,6 +516,12 @@ const footerServices = [
         >
           <img
             :src="locauxImg"
+            :srcset="`${locauxImgSm} 800w, ${locauxImg} 1600w`"
+            sizes="100vw"
+            width="1600"
+            height="1200"
+            fetchpriority="high"
+            decoding="async"
             alt="Flotte de véhicules AVTRANS Concept devant les locaux à Pommeret, Côtes-d'Armor — coursier et transport Bretagne"
             class="hero-bg size-full object-cover object-center"
           />
@@ -619,20 +576,22 @@ const footerServices = [
             </p>
 
             <div class="reveal flex flex-col gap-4 sm:flex-row">
-              <button
-                @click="scrollTo('services')"
+              <a
+                href="#services"
+                @click.prevent="scrollTo('services')"
                 class="group inline-flex items-center justify-center gap-2.5 rounded-xl bg-white px-8 py-3.5 text-base font-semibold text-gray-900 shadow-lg shadow-white/10 transition-all hover:shadow-xl hover:shadow-white/20 hover:bg-white/90"
               >
                 Découvrir nos services
                 <ArrowRight class="size-5 transition-transform group-hover:translate-x-0.5" />
-              </button>
-              <button
-                @click="scrollTo('contact')"
+              </a>
+              <a
+                href="#contact"
+                @click.prevent="scrollTo('contact')"
                 class="inline-flex items-center justify-center gap-2.5 rounded-xl border border-white/20 px-8 py-3.5 text-base font-semibold text-white backdrop-blur-sm transition-all hover:border-white/40 hover:bg-white/10"
               >
                 <Phone class="size-5" />
                 Nous contacter
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -640,18 +599,19 @@ const footerServices = [
 
       <!-- Scroll indicator -->
       <div class="absolute inset-x-0 bottom-8 flex justify-center">
-        <button
-          @click="scrollTo('services')"
-          class="animate-bounce text-white/40 transition-colors hover:text-white/70"
-          aria-label="Défiler vers le bas"
+        <a
+          href="#services"
+          @click.prevent="scrollTo('services')"
+          class="inline-flex animate-bounce text-white/40 transition-colors hover:text-white/70"
+          aria-label="Défiler vers nos services"
         >
           <ChevronDown class="size-8" />
-        </button>
+        </a>
       </div>
     </section>
 
     <!-- ════════════════════════ SERVICES ════════════════════════ -->
-    <section id="services" class="scroll-mt-20 bg-background py-24 sm:py-32">
+    <section id="services" class="scroll-mt-20 bg-background py-24 sm:py-32" aria-labelledby="services-title">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
         <!-- Section Header -->
@@ -660,7 +620,7 @@ const footerServices = [
             <Truck class="size-4" />
             Nos services
           </span>
-          <h2 class="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <h2 id="services-title" class="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Coursier, messagerie et transport en Bretagne
           </h2>
           <p class="text-lg text-muted-foreground">
@@ -700,7 +660,10 @@ const footerServices = [
                 <img
                   :src="porteurImg"
                   alt="Porteur poids lourd AVTRANS Concept — livraison de palettes et fret en Bretagne"
+                  width="1200"
+                  height="900"
                   loading="lazy"
+                  decoding="async"
                   class="size-full object-cover drop-shadow-xl transition-transform duration-500 group-hover:scale-[1.03]"
                 />
               </div>
@@ -724,14 +687,22 @@ const footerServices = [
     </section>
 
     <!-- ════════════════════════ ABOUT ════════════════════════ -->
-    <section id="about" class="scroll-mt-20 border-y border-border bg-muted/50 py-24 sm:py-32">
+    <section id="about" class="scroll-mt-20 border-y border-border bg-muted/50 py-24 sm:py-32" aria-labelledby="about-title">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
 
           <!-- Image -->
           <div class="reveal relative">
             <div class="overflow-hidden rounded-2xl shadow-2xl">
-              <img :src="expertiseImg" alt="Livraison AVTRANS en Bretagne — coursier express Côtes-d'Armor" class="size-full object-cover" />
+              <img
+                :src="expertiseImg"
+                alt="Livraison AVTRANS en Bretagne — coursier express Côtes-d'Armor"
+                width="1200"
+                height="899"
+                loading="lazy"
+                decoding="async"
+                class="size-full object-cover"
+              />
             </div>
             <!-- Floating badge -->
             <div class="absolute -bottom-6 -right-2 rounded-xl border border-border bg-card p-4 shadow-xl sm:-right-6">
@@ -752,7 +723,7 @@ const footerServices = [
             <span class="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
               À propos
             </span>
-            <h2 class="mb-6 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            <h2 id="about-title" class="mb-6 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
               Votre coursier et transporteur en Bretagne
             </h2>
             <p class="mb-8 text-lg leading-relaxed text-muted-foreground">
@@ -790,7 +761,7 @@ const footerServices = [
     </section>
 
     <!-- ════════════════════════ FLEET ════════════════════════ -->
-    <section id="fleet" class="scroll-mt-20 bg-background py-24 sm:py-32">
+    <section id="fleet" class="scroll-mt-20 bg-background py-24 sm:py-32" aria-labelledby="fleet-title">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
         <!-- Section Header -->
@@ -799,7 +770,7 @@ const footerServices = [
             <Truck class="size-4" />
             Notre flotte
           </span>
-          <h2 class="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <h2 id="fleet-title" class="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Flotte de véhicules pour coursier et fret en Bretagne
           </h2>
           <p class="text-lg text-muted-foreground">
@@ -821,7 +792,10 @@ const footerServices = [
               <img
                 :src="vehicle.image"
                 :alt="vehicle.alt"
+                :width="vehicle.width"
+                :height="vehicle.height"
                 loading="lazy"
+                decoding="async"
                 class="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               />
             </div>
@@ -870,7 +844,7 @@ const footerServices = [
     </section>
 
     <!-- ════════════════════════ STATS ════════════════════════ -->
-    <section data-stats-section class="relative overflow-hidden bg-primary py-20 sm:py-24">
+    <section data-stats-section class="relative overflow-hidden bg-primary py-20 sm:py-24" aria-label="Chiffres clés">
       <!-- Decorative background -->
       <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent_70%)]" />
       <div class="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.05),transparent_50%)]" />
@@ -885,11 +859,47 @@ const footerServices = [
       </div>
     </section>
 
+    <!-- ════════════════════════ FAQ ════════════════════════ -->
+    <section id="faq" class="scroll-mt-20 bg-background py-24 sm:py-32" aria-labelledby="faq-title">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+        <!-- Section Header -->
+        <div class="reveal mx-auto mb-12 max-w-2xl text-center sm:mb-16">
+          <span class="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
+            <CircleHelp class="size-4" />
+            Questions fréquentes
+          </span>
+          <h2 id="faq-title" class="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            Vos questions sur nos services de transport
+          </h2>
+          <p class="text-lg text-muted-foreground">
+            Zones desservies, marchandises acceptées, véhicules, devis : l'essentiel à savoir
+            avant de confier vos envois à AVTRANS Concept.
+          </p>
+        </div>
+
+        <!-- Questions : <details> natif = contenu indexable et accessible sans JavaScript -->
+        <div class="reveal mx-auto max-w-3xl space-y-4">
+          <details
+            v-for="item in faq"
+            :key="item.question"
+            class="group rounded-2xl border border-border bg-card transition-colors open:border-primary/30 open:shadow-lg open:shadow-primary/5"
+          >
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 p-6 text-left [&::-webkit-details-marker]:hidden">
+              <h3 class="text-base font-semibold text-foreground">{{ item.question }}</h3>
+              <ChevronDown class="size-5 shrink-0 text-muted-foreground transition-transform duration-300 group-open:rotate-180" />
+            </summary>
+            <p class="px-6 pb-6 text-sm leading-relaxed text-muted-foreground">{{ item.answer }}</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
     <!-- ════════════════════════ CONTACT CTA ════════════════════════ -->
-    <section id="contact" class="scroll-mt-20 border-t border-border bg-muted/50 py-24 sm:py-32">
+    <section id="contact" class="scroll-mt-20 border-t border-border bg-muted/50 py-24 sm:py-32" aria-labelledby="contact-title">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="reveal mx-auto max-w-3xl text-center">
-          <h2 class="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <h2 id="contact-title" class="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Besoin d'un coursier ou d'un transport en Bretagne ?
           </h2>
           <p class="mb-10 text-lg text-muted-foreground">
@@ -953,6 +963,8 @@ const footerServices = [
       </div>
     </section>
 
+    </main>
+
     <!-- ════════════════════════ FOOTER ════════════════════════ -->
     <footer class="border-t border-border bg-background py-12 sm:py-16">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -961,7 +973,7 @@ const footerServices = [
           <!-- Brand -->
           <div class="sm:col-span-2 lg:col-span-1">
             <div class="mb-4 flex items-center gap-3">
-              <img :src="logoImg" alt="AVTRANS Concept — Coursier Bretagne" class="size-10 rounded-xl" />
+              <img :src="logoImg" alt="Logo AVTRANS Concept" width="40" height="40" loading="lazy" class="size-10 rounded-xl" />
               <div>
                 <span class="text-lg font-bold text-foreground">AVTRANS</span>
                 <p class="text-xs text-muted-foreground">Coursier &amp; Transport</p>
@@ -975,7 +987,7 @@ const footerServices = [
 
           <!-- Services -->
           <div>
-            <h4 class="mb-4 text-sm font-semibold text-foreground">Services</h4>
+            <h3 class="mb-4 text-sm font-semibold text-foreground">Services</h3>
             <ul class="space-y-2.5">
               <li v-for="service in footerServices" :key="service">
                 <span class="text-sm text-muted-foreground">{{ service }}</span>
@@ -985,7 +997,7 @@ const footerServices = [
 
           <!-- Zones desservies (Local SEO) -->
           <div>
-            <h4 class="mb-4 text-sm font-semibold text-foreground">Zones desservies</h4>
+            <h3 class="mb-4 text-sm font-semibold text-foreground">Zones desservies</h3>
             <ul class="space-y-2.5">
               <li class="text-sm text-muted-foreground">Saint-Brieuc</li>
               <li class="text-sm text-muted-foreground">Lamballe</li>
@@ -1000,7 +1012,7 @@ const footerServices = [
 
           <!-- Quick links -->
           <div>
-            <h4 class="mb-4 text-sm font-semibold text-foreground">Accès rapide</h4>
+            <h3 class="mb-4 text-sm font-semibold text-foreground">Accès rapide</h3>
             <ul class="space-y-2.5">
               <li>
                 <RouterLink to="/login" class="text-sm text-muted-foreground transition-colors hover:text-foreground">
@@ -1008,12 +1020,12 @@ const footerServices = [
                 </RouterLink>
               </li>
               <li>
-                <RouterLink to="/register" class="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                <RouterLink to="/register" rel="nofollow" class="text-sm text-muted-foreground transition-colors hover:text-foreground">
                   Inscription
                 </RouterLink>
               </li>
               <li>
-                <RouterLink to="/download" class="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                <RouterLink to="/download" rel="nofollow" class="text-sm text-muted-foreground transition-colors hover:text-foreground">
                   Application mobile
                 </RouterLink>
               </li>
@@ -1032,7 +1044,7 @@ const footerServices = [
 
           <!-- Contact -->
           <div>
-            <h4 class="mb-4 text-sm font-semibold text-foreground">Contact</h4>
+            <h3 class="mb-4 text-sm font-semibold text-foreground">Contact</h3>
             <address class="not-italic">
               <ul class="space-y-2.5">
                 <li class="flex items-center gap-2 text-sm text-muted-foreground">
