@@ -74,13 +74,33 @@ pip install paramiko
 
 python deploy/deploy.py            # bump patch + build + upload SSH
 python deploy/deploy.py --minor    # bump minor (ou --major)
-python deploy/deploy.py --no-bump  # redeploie la version courante
+python deploy/deploy.py --no-bump  # redeploie la version courante (sans bump ni tag)
+python deploy/deploy.py --no-git   # bump + deploiement, sans commit ni tag
 python deploy/deploy.py --dry-run  # build + etat distant, sans rien modifier
 ```
 
-La version de `package.json` est incrementee avant le build, injectee dans `dist/version.json`
-par Vite, puis verifiee sur le serveur et en ligne. En cas d'echec, le bump est annule et le site
-distant restaure depuis son backup.
+Flux conseille : committer le travail, lancer le script, puis `git push --follow-tags`.
+
+### Versionning
+
+- `package.json` est la source unique de la version (semver `X.Y.Z`).
+- `deploy/deploy.py` incremente la version, lance le build, deploie, verifie le site en ligne
+  (version servie + en-tetes de cache), puis cree le commit `chore: bump version X.Y.Z` et le
+  tag annote `vX.Y.Z` (sans push). En cas d'echec avant la mise en ligne, le bump est annule
+  et le site distant restaure depuis son backup.
+- Vite injecte la version dans le bundle (`__APP_VERSION__`, voir `src/config/version.ts`) et
+  ecrit `dist/version.json` (`version`, `buildTime`, `commit`).
+- Cote client, `useVersionCheck` compare la version du bundle a `/version.json` au chargement,
+  au retour au premier plan, au focus, au retour en ligne, a chaque navigation et toutes les
+  5 minutes (au plus une verification par minute). Au chargement, l'application se recharge
+  d'elle-meme si elle est perimee ; ensuite un bandeau propose la mise a jour. La version qui
+  tourne est affichee dans le menu avatar.
+- Le serveur doit servir `index.html` et `version.json` sans cache navigateur : directives
+  Apache dans `deploy/apache-cache-headers.conf`, installees sur le VPS par
+  `python deploy/install_apache_headers.py` (idempotent, `--dry-run` disponible) et verifiees
+  par `deploy.py` apres chaque deploiement.
+- Le popup « Nouveautes » (`src/data/changelog.ts`) est independant de la version deployee :
+  il s'affiche quand une nouvelle entree est ajoutee a ce fichier.
 
 ## Structure du projet
 

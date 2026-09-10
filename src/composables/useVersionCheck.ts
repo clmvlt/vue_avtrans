@@ -1,152 +1,228 @@
-import { ref, onMounted, onUnmounted } from 'vue'
-
-const VERSION_CHECK_INTERVAL = 300000 // 5 minutes
-const VERSION_STORAGE_KEY = 'app_version'
-const DISMISSED_VERSION_KEY = 'dismissed_update_version'
-
-interface VersionInfo {
-  version: string
-  buildTime: string
-}
-
-// État global partagé entre les instances
-const newVersionAvailable = ref(false)
-const newVersion = ref<string | null>(null)
-const currentVersion = ref<string | null>(null)
-
-let checkInterval: ReturnType<typeof setInterval> | null = null
-let isInitialized = false
+import { onMounted, onUnmounted, ref } from 'vue'
+import { useRouter, type Router } from 'vue-router'
+import { APP_VERSION } from '@/config/version'
 
 /**
- * Récupère la version depuis le serveur (avec cache-busting)
+ * Détection des mises à jour de l'application.
+ *
+ * Principe : le bundle en cours d'exécution connaît sa propre version (APP_VERSION, injectée
+ * au build depuis package.json). On la compare à `/version.json`, écrit par Vite à chaque build
+ * et servi sans cache. Si les deux diffèrent, le serveur a été redéployé depuis le chargement
+ * de cette page.
+ *
+ * Déclencheurs : chargement initial, retour au premier plan (PWA en arrière-plan), focus de la
+ * fenêtre, retour en ligne, restauration depuis le bfcache, navigation entre pages, et un
+ * intervalle de secours. Les vérifications sont espacées d'au moins une minute.
+ *
+ * Comportement :
+ *  - au chargement initial : rechargement silencieux, une seule fois par version serveur
+ *    (si le navigateur ressert un index.html périmé, on affiche le bandeau au lieu de boucler) ;
+ *  - ensuite : bandeau « nouvelle version », que l'utilisateur applique ou ignore pour la session.
  */
-const fetchVersion = async (): Promise<VersionInfo | null> => {
+
+const CHECK_INTERVAL_MS = 5 * 60 * 1000
+const MIN_DELAY_BETWEEN_CHECKS_MS = 60 * 1000
+const RELOADED_FOR_KEY = 'version_check_reloaded_for'
+const DISMISSED_KEY = 'version_check_dismissed'
+/** Clés de l'ancienne implémentation (comparaison via localStorage), nettoyées au démarrage */
+const LEGACY_LOCAL_KEYS = ['app_version']
+const LEGACY_SESSION_KEYS = ['dismissed_update_version']
+
+interface CheckOptions {
+  /** Vérification au chargement de la page : rechargement silencieux si périmé */
+  initial?: boolean
+  /** Ignore l'espacement minimal entre deux vérifications */
+  force?: boolean
+}
+
+// État partagé : le composable est instancié une seule fois (App.vue)
+const newVersionAvailable = ref(false)
+const newVersion = ref<string | null>(null)
+
+let started = false
+let lastCheckAt = 0
+let inFlight: Promise<void> | null = null
+let stop: (() => void) | null = null
+
+// sessionStorage peut être indisponible (navigation privée, quotas) : on ne bloque jamais dessus
+const sessionGet = (key: string): string | null => {
+  try {
+    return sessionStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+const sessionSet = (key: string, value: string): void => {
+  try {
+    sessionStorage.setItem(key, value)
+  } catch {
+    /* stockage indisponible */
+  }
+}
+const sessionRemove = (key: string): void => {
+  try {
+    sessionStorage.removeItem(key)
+  } catch {
+    /* stockage indisponible */
+  }
+}
+
+/**
+ * Version actuellement servie par le serveur, ou null si injoignable / illisible.
+ */
+const fetchServerVersion = async (): Promise<string | null> => {
   try {
     const response = await fetch(`/version.json?t=${Date.now()}`, {
-      cache: 'no-store'
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
     })
     if (!response.ok) return null
-    return await response.json()
+    // Si le fichier manque, le fallback SPA renvoie index.html : on l'ignore
+    const contentType = response.headers.get('content-type') ?? ''
+    if (!contentType.includes('json')) return null
+    const data: unknown = await response.json()
+    const version = (data as { version?: unknown } | null)?.version
+    return typeof version === 'string' && version.length > 0 ? version : null
   } catch {
-    console.warn('[VersionCheck] Impossible de récupérer la version')
     return null
   }
 }
 
 /**
- * Effectue la mise à jour : vide le cache et recharge la page
+ * Recharge l'application (après avoir vidé la Cache API si un jour un service worker l'utilise).
  */
-const performUpdate = async () => {
-  // Mettre à jour la version stockée avant le refresh
-  if (newVersion.value) {
-    localStorage.setItem(VERSION_STORAGE_KEY, newVersion.value)
-  }
-
-  // Nettoyer la version ignorée
-  sessionStorage.removeItem(DISMISSED_VERSION_KEY)
-
-  // Vider tous les caches (Service Worker, Cache API)
+const reloadApp = async (): Promise<void> => {
   if ('caches' in window) {
     try {
-      const cacheNames = await caches.keys()
-      await Promise.all(cacheNames.map(name => caches.delete(name)))
+      const names = await caches.keys()
+      await Promise.all(names.map((name) => caches.delete(name)))
     } catch {
-      console.warn('[VersionCheck] Impossible de vider le cache')
+      /* rien à vider */
     }
   }
-
-  // Hard refresh
   window.location.reload()
 }
 
 /**
- * Vérifie si une nouvelle version est disponible
- * @param isInitialCheck - true si c'est la vérification au chargement de la page
+ * Compare la version du bundle exécuté à celle servie par le serveur.
  */
-const checkVersion = async (isInitialCheck = false) => {
-  const versionInfo = await fetchVersion()
-  if (!versionInfo) return
+const checkVersion = (options: CheckOptions = {}): Promise<void> => {
+  if (inFlight) return inFlight
+  const now = Date.now()
+  if (!options.force && now - lastCheckAt < MIN_DELAY_BETWEEN_CHECKS_MS) return Promise.resolve()
+  lastCheckAt = now
 
-  const storedVersion = localStorage.getItem(VERSION_STORAGE_KEY)
+  inFlight = (async () => {
+    const serverVersion = await fetchServerVersion()
+    if (!serverVersion) return // hors ligne ou fichier illisible : on réessaiera
 
-  if (!storedVersion) {
-    // Première visite : stocker la version actuelle
-    localStorage.setItem(VERSION_STORAGE_KEY, versionInfo.version)
-    currentVersion.value = versionInfo.version
-  } else if (storedVersion !== versionInfo.version) {
-    // Nouvelle version détectée
-    if (isInitialCheck) {
-      // Chargement initial : mise à jour automatique
-      console.log('[VersionCheck] Nouvelle version détectée au chargement, mise à jour automatique...')
-      newVersion.value = versionInfo.version
-      await performUpdate()
-    } else {
-      // Polling : vérifier si l'utilisateur n'a pas déjà ignoré cette version
-      const dismissedVersion = sessionStorage.getItem(DISMISSED_VERSION_KEY)
-      if (dismissedVersion !== versionInfo.version) {
-        newVersionAvailable.value = true
-        newVersion.value = versionInfo.version
-        currentVersion.value = storedVersion
-      }
+    if (serverVersion === APP_VERSION) {
+      newVersionAvailable.value = false
+      newVersion.value = null
+      return
     }
-  }
+
+    if (options.initial && sessionGet(RELOADED_FOR_KEY) !== serverVersion) {
+      // Premier constat pour cette version : on recharge sans déranger l'utilisateur
+      sessionSet(RELOADED_FOR_KEY, serverVersion)
+      console.info(`[VersionCheck] ${APP_VERSION} → ${serverVersion} : rechargement`)
+      await reloadApp()
+      return
+    }
+
+    if (sessionGet(DISMISSED_KEY) === serverVersion) return
+    newVersion.value = serverVersion
+    newVersionAvailable.value = true
+  })().finally(() => {
+    inFlight = null
+  })
+
+  return inFlight
 }
 
 /**
- * Ignorer la mise à jour pour cette session
+ * Applique la mise à jour (bouton du bandeau).
  */
-const dismissUpdate = () => {
-  if (newVersion.value) {
-    sessionStorage.setItem(DISMISSED_VERSION_KEY, newVersion.value)
-  }
+const performUpdate = async (): Promise<void> => {
+  sessionRemove(DISMISSED_KEY)
+  // Si après ce rechargement le bundle est toujours périmé (index.html en cache navigateur),
+  // le bandeau sera ré-affiché plutôt que de recharger en boucle
+  if (newVersion.value) sessionSet(RELOADED_FOR_KEY, newVersion.value)
+  await reloadApp()
+}
+
+/**
+ * Ignore cette version pour la session en cours.
+ */
+const dismissUpdate = (): void => {
+  if (newVersion.value) sessionSet(DISMISSED_KEY, newVersion.value)
   newVersionAvailable.value = false
 }
 
-/**
- * Démarre la vérification périodique
- */
-const startVersionCheck = async () => {
-  if (isInitialized) return
-  isInitialized = true
+const start = (router: Router): void => {
+  if (started) return
+  started = true
 
-  // Vérification initiale (avec auto-update si nouvelle version)
-  await checkVersion(true)
-
-  // Vérification périodique (affiche le bandeau sans auto-update)
-  checkInterval = setInterval(() => checkVersion(false), VERSION_CHECK_INTERVAL)
-}
-
-/**
- * Arrête la vérification périodique
- */
-const stopVersionCheck = () => {
-  if (checkInterval) {
-    clearInterval(checkInterval)
-    checkInterval = null
+  for (const key of LEGACY_LOCAL_KEYS) {
+    try {
+      localStorage.removeItem(key)
+    } catch {
+      /* stockage indisponible */
+    }
   }
+  for (const key of LEGACY_SESSION_KEYS) sessionRemove(key)
+
+  const onVisibilityChange = () => {
+    if (document.visibilityState === 'visible') void checkVersion()
+  }
+  const onFocus = () => void checkVersion()
+  const onOnline = () => void checkVersion({ force: true })
+  const onPageShow = (event: PageTransitionEvent) => {
+    if (event.persisted) void checkVersion({ force: true })
+  }
+
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  window.addEventListener('focus', onFocus)
+  window.addEventListener('online', onOnline)
+  window.addEventListener('pageshow', onPageShow)
+  const removeAfterEach = router.afterEach(() => void checkVersion())
+  const intervalId = setInterval(() => void checkVersion(), CHECK_INTERVAL_MS)
+
+  stop = () => {
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+    window.removeEventListener('focus', onFocus)
+    window.removeEventListener('online', onOnline)
+    window.removeEventListener('pageshow', onPageShow)
+    removeAfterEach()
+    clearInterval(intervalId)
+    stop = null
+    started = false
+  }
+
+  void checkVersion({ initial: true, force: true })
 }
 
 /**
- * Composable pour la vérification de version
- * Active uniquement en production
+ * Composable de détection des mises à jour — à instancier une seule fois (App.vue).
+ * Actif uniquement sur un build de production (version.json n'existe pas en dev).
  */
 export function useVersionCheck() {
+  const router = useRouter()
+
   onMounted(() => {
-    // Actif uniquement en production
-    if (import.meta.env.PROD) {
-      startVersionCheck()
-    }
+    if (import.meta.env.PROD) start(router)
   })
 
   onUnmounted(() => {
-    stopVersionCheck()
+    stop?.()
   })
 
   return {
+    appVersion: APP_VERSION,
     newVersionAvailable,
     newVersion,
-    currentVersion,
+    checkForUpdate: () => checkVersion({ force: true }),
     performUpdate,
-    dismissUpdate
+    dismissUpdate,
   }
 }

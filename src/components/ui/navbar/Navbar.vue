@@ -60,6 +60,7 @@
               <div class="flex flex-col gap-1">
                 <p class="text-sm font-medium leading-none">{{ userName }}</p>
                 <p class="text-xs leading-none text-muted-foreground">{{ userEmail }}</p>
+                <p class="text-[11px] leading-none text-muted-foreground/70">Version {{ APP_VERSION }}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -229,6 +230,7 @@ import { usePermissions } from '@/composables/usePermissions'
 import { useTheme } from '@/composables/useTheme'
 import { usePendingUsers } from '@/composables/usePendingUsers'
 import { mainNavLinks, fullNavSections } from '@/config/navConfig'
+import { APP_VERSION } from '@/config/version'
 import faviconUrl from '@/assets/favicon.png'
 
 // shadcn components
