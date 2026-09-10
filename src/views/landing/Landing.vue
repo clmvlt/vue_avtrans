@@ -4,12 +4,14 @@ import { RouterLink } from 'vue-router'
 import {
   Truck, Snowflake, MapPin, Warehouse,
   Phone, Mail, ChevronDown, ArrowRight, Menu, X,
-  Shield, Zap, Globe, Package, Locate, Smartphone
+  Shield, Zap, Globe, Package, Locate, Smartphone,
+  Container, Weight, Boxes, ArrowUpFromLine
 } from 'lucide-vue-next'
 
 import locauxImg from '@/assets/images/locaux.jpg'
 import expertiseImg from '@/assets/images/expertise-image.jpg'
 import masterImg from '@/assets/images/master.png'
+import porteurImg from '@/assets/images/porteur.png'
 import logoImg from '@/assets/favicon.png'
 
 // --- State ---
@@ -89,7 +91,7 @@ const injectJsonLd = () => {
         '@id': 'https://app.avtrans-concept.com/#business',
         name: 'AVTRANS Concept',
         alternateName: 'AVTRANS',
-        description: 'Coursier et transporteur en Bretagne. Messagerie express, fret et température dirigée à Saint-Brieuc, Lamballe, Pommeret et dans tout le Grand Ouest.',
+        description: 'Coursier et transporteur en Bretagne. Messagerie express, fret, livraison en poids lourd et température dirigée à Saint-Brieuc, Lamballe, Pommeret et dans tout le Grand Ouest.',
         url: 'https://app.avtrans-concept.com',
         telephone: '+33257770777',
         email: 'contact@avtrans-concept.com',
@@ -160,6 +162,14 @@ const injectJsonLd = () => {
               '@type': 'Offer',
               itemOffered: {
                 '@type': 'Service',
+                name: 'Transport Poids Lourd',
+                description: 'Livraison en poids lourd avec porteur jusqu\'à 60 m³ : palettes, lots volumineux et chargements complets depuis la Bretagne vers le Grand Ouest et la France entière.'
+              }
+            },
+            {
+              '@type': 'Offer',
+              itemOffered: {
+                '@type': 'Service',
                 name: 'Stockage & Entreposage',
                 description: 'Entrepôt sécurisé dans les Côtes-d\'Armor pour solutions de stockage ponctuelles ou récurrentes.'
               }
@@ -183,7 +193,7 @@ const injectJsonLd = () => {
         '@id': 'https://app.avtrans-concept.com/#webpage',
         url: 'https://app.avtrans-concept.com/',
         name: 'AVTRANS Concept — Coursier & Transport en Bretagne | Saint-Brieuc, Lamballe',
-        description: 'Coursier et transporteur en Bretagne. Messagerie express, fret et température dirigée à Saint-Brieuc, Lamballe et Grand Ouest.',
+        description: 'Coursier et transporteur en Bretagne. Messagerie express, fret, poids lourd et température dirigée à Saint-Brieuc, Lamballe et Grand Ouest.',
         isPartOf: { '@id': 'https://app.avtrans-concept.com/#website' },
         about: { '@id': 'https://app.avtrans-concept.com/#business' },
         inLanguage: 'fr-FR'
@@ -318,6 +328,23 @@ const services: ServiceItem[] = [
   }
 ]
 
+interface ServicePoint {
+  icon: Component
+  label: string
+}
+
+/** Service mis en avant : occupe deux colonnes de la grille services. */
+const heavyService = {
+  badge: 'Poids lourd',
+  title: 'Livraison en poids lourd',
+  description: 'Palettes, lots volumineux ou chargement complet : notre porteur prend le relais des fourgons pour vos flux les plus importants, en Bretagne, dans le Grand Ouest et vers la France entière.',
+  points: [
+    { icon: Boxes, label: 'Palettes, lots volumineux et chargements complets' },
+    { icon: Weight, label: 'Porteur poids lourd jusqu\'à 60 m³' },
+    { icon: ArrowUpFromLine, label: 'Hayon élévateur pour livrer sans quai' }
+  ] satisfies ServicePoint[]
+}
+
 interface FeatureItem {
   icon: Component
   title: string
@@ -329,6 +356,57 @@ const aboutFeatures: FeatureItem[] = [
   { icon: Zap, title: 'Réactivité', description: 'Courses urgentes et livraisons express' },
   { icon: Globe, title: 'Couverture', description: 'Bretagne, Grand Ouest et international' },
   { icon: Truck, title: 'Flotte variée', description: 'Fourgons et porteurs de 1m³ à 60m³' }
+]
+
+interface VehicleItem {
+  image: string
+  alt: string
+  /** Dimensions indicatives affichées dans la fiche technique. */
+  lengthM: number
+  heightM: number
+  volume: string
+  badge: string
+  badgeIcon: Component
+  title: string
+  description: string
+  specs: ServicePoint[]
+}
+
+/** Formate une dimension en mètres à la française (ex. « 6,30 m »). */
+const formatMeters = (meters: number) =>
+  `${meters.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m`
+
+const fleet: VehicleItem[] = [
+  {
+    image: masterImg,
+    alt: 'Fourgon AVTRANS Concept pour coursier et messagerie express en Bretagne',
+    lengthM: 6.3,
+    heightM: 3.15,
+    volume: '20 m³',
+    badge: 'Véhicule léger',
+    badgeIcon: Truck,
+    title: 'Fourgons & utilitaires',
+    description: 'Coursier express, colis et palettes : la solution réactive pour vos livraisons urgentes à Saint-Brieuc, Lamballe et dans tout le Grand Ouest.',
+    specs: [
+      { icon: Package, label: 'De 1 m³ à 20 m³ de capacité' },
+      { icon: Snowflake, label: 'Version frigorifique disponible' }
+    ]
+  },
+  {
+    image: porteurImg,
+    alt: 'Porteur poids lourd AVTRANS Concept pour transport de palettes et fret en Bretagne',
+    lengthM: 9.8,
+    heightM: 3.7,
+    volume: '60 m³',
+    badge: 'Poids lourd',
+    badgeIcon: Container,
+    title: 'Porteur poids lourd',
+    description: 'Palettes, lots volumineux et chargements complets : le fret en poids lourd depuis les Côtes-d\'Armor vers la Bretagne et la France entière.',
+    specs: [
+      { icon: Boxes, label: 'Jusqu\'à 60 m³ de capacité' },
+      { icon: ArrowUpFromLine, label: 'Hayon élévateur, livraison sans quai' }
+    ]
+  }
 ]
 
 interface StatItem {
@@ -347,6 +425,7 @@ const stats = ref<StatItem[]>([
 const footerServices = [
   'Coursier express',
   'Fret & Messagerie',
+  'Transport poids lourd',
   'Température dirigée',
   'Suivi temps réel',
   'Stockage & Affrètement'
@@ -525,6 +604,8 @@ const footerServices = [
               <span class="size-1 rounded-full bg-violet-400" />
               <span>Fret</span>
               <span class="size-1 rounded-full bg-violet-400" />
+              <span>Poids lourd</span>
+              <span class="size-1 rounded-full bg-violet-400" />
               <span>Température dirigée</span>
             </p>
           </div>
@@ -533,7 +614,8 @@ const footerServices = [
           <div :style="parallaxEnabled ? { transform: parallaxCta } : {}">
             <p class="reveal mb-10 max-w-xl text-lg leading-relaxed text-white/70 sm:text-xl">
               Coursier et messagerie express depuis Saint-Brieuc, Lamballe et les Côtes-d'Armor
-              vers la France entière. Fret et température dirigée pour vos marchandises sensibles.
+              vers la France entière. Fret, livraison en poids lourd et température dirigée
+              pour toutes vos marchandises.
             </p>
 
             <div class="reveal flex flex-col gap-4 sm:flex-row">
@@ -582,18 +664,54 @@ const footerServices = [
             Coursier, messagerie et transport en Bretagne
           </h2>
           <p class="text-lg text-muted-foreground">
-            Du simple pli à la palette de 1000 kg, de la course urgente au transport frigorifique.
-            Votre coursier à Saint-Brieuc, Lamballe et dans tout le Grand Ouest.
+            Du simple pli au chargement complet en poids lourd, de la course urgente au transport frigorifique.
+            Votre coursier et transporteur à Saint-Brieuc, Lamballe et dans tout le Grand Ouest.
           </p>
         </div>
 
         <!-- Grid -->
         <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+
+          <!-- Carte mise en avant : livraison en poids lourd (2 colonnes) -->
+          <article class="reveal group relative overflow-hidden rounded-2xl border border-primary/20 bg-card transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 sm:col-span-2">
+            <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent" />
+            <div class="relative grid gap-8 p-8 md:grid-cols-2 md:items-center">
+              <div>
+                <span class="mb-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground">
+                  <Container class="size-3.5" />
+                  {{ heavyService.badge }}
+                </span>
+                <h3 class="mb-3 text-xl font-bold tracking-tight text-foreground sm:text-2xl">{{ heavyService.title }}</h3>
+                <p class="mb-6 text-sm leading-relaxed text-muted-foreground">{{ heavyService.description }}</p>
+                <ul class="space-y-3">
+                  <li
+                    v-for="point in heavyService.points"
+                    :key="point.label"
+                    class="flex items-center gap-3 text-sm font-medium text-foreground"
+                  >
+                    <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                      <component :is="point.icon" class="size-4 text-primary" />
+                    </div>
+                    {{ point.label }}
+                  </li>
+                </ul>
+              </div>
+              <div class="aspect-[16/9] w-full overflow-hidden">
+                <img
+                  :src="porteurImg"
+                  alt="Porteur poids lourd AVTRANS Concept — livraison de palettes et fret en Bretagne"
+                  loading="lazy"
+                  class="size-full object-cover drop-shadow-xl transition-transform duration-500 group-hover:scale-[1.03]"
+                />
+              </div>
+            </div>
+          </article>
+
           <div
             v-for="(service, index) in services"
             :key="service.title"
             class="reveal group service-card rounded-2xl border border-border bg-card p-8 transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
-            :style="{ transitionDelay: `${index * 80}ms` }"
+            :style="{ transitionDelay: `${(index + 1) * 80}ms` }"
           >
             <div :class="['mb-5 inline-flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors duration-300 group-hover:bg-primary group-hover:text-primary-foreground', service.animation]">
               <component :is="service.icon" class="size-6" />
@@ -641,7 +759,7 @@ const footerServices = [
               Implantée à Pommeret dans les Côtes-d'Armor, entre Saint-Brieuc et Lamballe,
               AVTRANS Concept est votre partenaire pour le transport et la messagerie express.
               Nous collaborons étroitement avec vous pour fournir des solutions sur mesure,
-              de la course urgente au fret régulier.
+              de la course urgente au fret régulier en poids lourd.
             </p>
             <p class="mb-8 text-base leading-relaxed text-muted-foreground">
               Coursier quotidien de Saint-Brieuc à Rennes, de Lamballe à Dinan, en passant
@@ -685,46 +803,68 @@ const footerServices = [
             Flotte de véhicules pour coursier et fret en Bretagne
           </h2>
           <p class="text-lg text-muted-foreground">
-            Fourgons et porteurs de 1m³ à 60m³, équipés pour la messagerie express,
-            le fret standard et le transport sous température dirigée dans tout le Grand Ouest.
+            Du fourgon au porteur poids lourd, de 1m³ à 60m³ : des véhicules équipés pour la messagerie express,
+            le fret en poids lourd et le transport sous température dirigée dans tout le Grand Ouest.
           </p>
         </div>
 
-        <!-- Fleet photo + Specs -->
+        <!-- Cartes véhicules : fourgon + porteur poids lourd -->
         <div class="grid items-stretch gap-6 lg:grid-cols-2">
-          <!-- Real fleet photo -->
-          <div class="reveal overflow-hidden rounded-2xl border border-border">
-            <img
-              :src="masterImg"
-              alt="Camion AVTRANS Concept pour livraison et messagerie en Bretagne"
-              class="size-full object-cover transition-transform duration-500 hover:scale-[1.02]"
-            />
-          </div>
+          <article
+            v-for="(vehicle, index) in fleet"
+            :key="vehicle.title"
+            class="reveal group flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
+            :style="{ transitionDelay: `${index * 80}ms` }"
+          >
+            <!-- Photo du véhicule -->
+            <div class="aspect-[16/9] w-full overflow-hidden bg-gradient-to-b from-muted to-card p-6">
+              <img
+                :src="vehicle.image"
+                :alt="vehicle.alt"
+                loading="lazy"
+                class="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              />
+            </div>
 
-          <!-- Fleet specs card -->
-          <div class="reveal flex flex-col justify-center rounded-2xl border border-border bg-card p-8">
-            <h3 class="mb-5 text-base font-semibold text-foreground">Caractéristiques</h3>
-            <ul class="space-y-4">
-              <li class="flex items-center gap-3 text-sm text-muted-foreground">
-                <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <Package class="size-4 text-primary" />
+            <!-- Caractéristiques -->
+            <div class="flex flex-1 flex-col p-8">
+              <span class="mb-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground">
+                <component :is="vehicle.badgeIcon" class="size-3.5" />
+                {{ vehicle.badge }}
+              </span>
+              <h3 class="mb-2 text-lg font-semibold text-foreground">{{ vehicle.title }}</h3>
+              <p class="mb-6 text-sm leading-relaxed text-muted-foreground">{{ vehicle.description }}</p>
+
+              <!-- Cotes -->
+              <dl class="mb-6 grid grid-cols-3 divide-x divide-border overflow-hidden rounded-lg border border-border bg-muted/40 text-center">
+                <div class="px-2 py-2.5">
+                  <dt class="text-[0.625rem] font-semibold uppercase tracking-widest text-muted-foreground">Longueur</dt>
+                  <dd class="mt-1 font-mono text-sm font-bold text-foreground">{{ formatMeters(vehicle.lengthM) }}</dd>
                 </div>
-                De 1m³ à 60m³ de capacité
-              </li>
-              <li class="flex items-center gap-3 text-sm text-muted-foreground">
-                <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <Snowflake class="size-4 text-primary" />
+                <div class="px-2 py-2.5">
+                  <dt class="text-[0.625rem] font-semibold uppercase tracking-widest text-muted-foreground">Hauteur</dt>
+                  <dd class="mt-1 font-mono text-sm font-bold text-foreground">{{ formatMeters(vehicle.heightM) }}</dd>
                 </div>
-                Véhicules frigorifiques disponibles
-              </li>
-              <li class="flex items-center gap-3 text-sm text-muted-foreground">
-                <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                  <Locate class="size-4 text-primary" />
+                <div class="px-2 py-2.5">
+                  <dt class="text-[0.625rem] font-semibold uppercase tracking-widest text-muted-foreground">Volume</dt>
+                  <dd class="mt-1 font-mono text-sm font-bold text-primary">{{ vehicle.volume }}</dd>
                 </div>
-                Géolocalisation embarquée
-              </li>
-            </ul>
-          </div>
+              </dl>
+
+              <ul class="mt-auto space-y-3">
+                <li
+                  v-for="spec in vehicle.specs"
+                  :key="spec.label"
+                  class="flex items-center gap-3 text-sm text-muted-foreground"
+                >
+                  <div class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <component :is="spec.icon" class="size-4 text-primary" />
+                  </div>
+                  {{ spec.label }}
+                </li>
+              </ul>
+            </div>
+          </article>
         </div>
       </div>
     </section>
@@ -991,6 +1131,7 @@ const footerServices = [
     transform: scale(1);
   }
 }
+
 
 /* Scroll reveal animation */
 .reveal {
