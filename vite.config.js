@@ -39,6 +39,56 @@ const versionPlugin = () => ({
   }
 })
 
+// ── Sitemap ──────────────────────────────────────────────────────────────────
+// Seules la landing et la page de connexion sont indexables (voir public/robots.txt).
+// <lastmod> = date du dernier commit touchant les fichiers de la page (repli : date du build).
+const SITE_URL = 'https://pointage.avtrans-concept.com'
+const SITEMAP_PAGES = [
+  { loc: '/', sources: ['index.html', 'src/views/landing', 'src/components/landing', 'src/assets/images'], changefreq: 'monthly', priority: '1.0' },
+  { loc: '/login', sources: ['src/views/auth/Login.vue'], changefreq: 'yearly', priority: '0.3' }
+]
+
+const lastCommitDate = (sources) => {
+  try {
+    const quoted = sources.map((s) => `"${s}"`).join(' ')
+    const out = execSync(`git log -1 --format=%cI -- ${quoted}`, { cwd: __dirname, stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim()
+    return out ? out.slice(0, 10) : null
+  } catch {
+    return null
+  }
+}
+
+const sitemapPlugin = () => ({
+  name: 'sitemap-generator',
+  apply: 'build',
+  writeBundle(options) {
+    const outDir = options.dir || path.resolve(__dirname, 'dist')
+    const today = new Date().toISOString().slice(0, 10)
+    const urls = SITEMAP_PAGES.map((page) => {
+      const lastmod = lastCommitDate(page.sources) || today
+      return [
+        '  <url>',
+        `    <loc>${SITE_URL}${page.loc}</loc>`,
+        `    <lastmod>${lastmod}</lastmod>`,
+        `    <changefreq>${page.changefreq}</changefreq>`,
+        `    <priority>${page.priority}</priority>`,
+        '  </url>'
+      ].join('\n')
+    })
+    const xml = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+      ...urls,
+      '</urlset>',
+      ''
+    ].join('\n')
+    fs.writeFileSync(path.join(outDir, 'sitemap.xml'), xml)
+    console.log(`✓ sitemap.xml generated (${SITEMAP_PAGES.length} URLs)`)
+  }
+})
+
 // https://vite.dev/config/
 export default defineConfig({
   define: {
@@ -49,6 +99,7 @@ export default defineConfig({
     vueDevTools(),
     tailwindcss(),
     versionPlugin(),
+    sitemapPlugin(),
     // Pré-compression des assets au build (gzip + brotli)
     compression({ algorithm: 'gzip', exclude: [/\.(br)$/] }),
     compression({ algorithm: 'brotliCompress', exclude: [/\.(gz)$/] })
