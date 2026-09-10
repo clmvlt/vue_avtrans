@@ -1,19 +1,10 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import LegalLayout from '@/components/legal/LegalLayout.vue'
+import { usePageMeta } from '@/composables/usePageMeta'
 
-let robotsMeta: HTMLMetaElement | null = null
-onMounted(() => {
-  document.title = 'Politique de confidentialité — AVTRANS Concept'
-  robotsMeta = document.createElement('meta')
-  robotsMeta.name = 'robots'
-  robotsMeta.content = 'noindex, follow'
-  document.head.appendChild(robotsMeta)
-})
-onUnmounted(() => {
-  robotsMeta?.remove()
-})
+// SEO : page légale non prioritaire — éviter qu'elle capte le référencement
+usePageMeta({ title: 'Politique de confidentialité — AVTRANS Concept', robots: 'noindex, follow' })
 </script>
 
 <template>

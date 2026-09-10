@@ -261,6 +261,9 @@ import {
   Plane, LoaderCircle, Info, Sparkles
 } from 'lucide-vue-next'
 import logoUrl from '@/assets/favicon.png'
+import { usePageMeta } from '@/composables/usePageMeta'
+
+usePageMeta({ title: 'Application mobile AVTRANS — Téléchargement', robots: 'noindex, follow' })
 
 const deviceType = computed(() => {
   const ua = navigator.userAgent.toLowerCase()

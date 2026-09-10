@@ -102,6 +102,9 @@ import { ApiError } from '@/api'
 import { Button } from '@/components/ui/button'
 import { LoaderCircle, User, Mail } from 'lucide-vue-next'
 import { InputField } from '@/components/ui/input-field'
+import { usePageMeta } from '@/composables/usePageMeta'
+
+usePageMeta({ title: 'Inscription avec Google — AVTRANS Concept', robots: 'noindex, follow' })
 
 const router = useRouter()
 const { idToken, profile, hasRegistration, clearRegistration } = useGoogleRegistration()

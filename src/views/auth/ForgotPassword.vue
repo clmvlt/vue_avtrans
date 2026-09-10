@@ -63,6 +63,9 @@ import { authService } from '@/services/auth'
 import { Button } from '@/components/ui/button'
 import { LoaderCircle, Mail } from 'lucide-vue-next'
 import { InputField } from '@/components/ui/input-field'
+import { usePageMeta } from '@/composables/usePageMeta'
+
+usePageMeta({ title: 'Mot de passe oublié — AVTRANS Concept', robots: 'noindex, follow' })
 
 const email = ref('')
 const loading = ref(false)

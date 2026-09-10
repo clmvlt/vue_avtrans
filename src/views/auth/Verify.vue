@@ -79,6 +79,9 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authService } from '@/services/auth'
 import { Button } from '@/components/ui/button'
+import { usePageMeta } from '@/composables/usePageMeta'
+
+usePageMeta({ title: 'Vérification de l\'email — AVTRANS Concept', robots: 'noindex, follow' })
 
 const route = useRoute()
 const router = useRouter()

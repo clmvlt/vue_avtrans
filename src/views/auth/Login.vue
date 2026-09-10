@@ -98,6 +98,14 @@ import { InputField } from '@/components/ui/input-field'
 import HomeScreenPrompt from '@/components/home-screen/HomeScreenPrompt.vue'
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton.vue'
 import { useGoogleSignIn } from '@/composables/useGoogleSignIn'
+import { usePageMeta } from '@/composables/usePageMeta'
+
+// Page indexable (voir robots.txt) : titre, description et canonique propres
+usePageMeta({
+  title: 'Connexion à l\'espace employé — AVTRANS Concept',
+  description: 'Connectez-vous à l\'espace employé AVTRANS Concept : pointage, planning, absences et acomptes.',
+  canonicalPath: '/login'
+})
 
 const router = useRouter()
 const authStore = useAuthStore()

@@ -86,6 +86,9 @@ import { authService } from '@/services/auth'
 import { Button } from '@/components/ui/button'
 import { LoaderCircle, Lock, Shield } from 'lucide-vue-next'
 import { InputField } from '@/components/ui/input-field'
+import { usePageMeta } from '@/composables/usePageMeta'
+
+usePageMeta({ title: 'Réinitialisation du mot de passe — AVTRANS Concept', robots: 'noindex, follow' })
 
 const route = useRoute()
 const router = useRouter()

@@ -187,6 +187,9 @@ import { LoaderCircle, User, Mail, Lock, Shield } from 'lucide-vue-next'
 import { InputField } from '@/components/ui/input-field'
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton.vue'
 import { useGoogleSignIn } from '@/composables/useGoogleSignIn'
+import { usePageMeta } from '@/composables/usePageMeta'
+
+usePageMeta({ title: 'Inscription — AVTRANS Concept', robots: 'noindex, follow' })
 
 const router = useRouter()
 const authStore = useAuthStore()

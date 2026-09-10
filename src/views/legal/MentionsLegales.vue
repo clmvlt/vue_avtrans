@@ -1,20 +1,10 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import LegalLayout from '@/components/legal/LegalLayout.vue'
+import { usePageMeta } from '@/composables/usePageMeta'
 
 // SEO : page légale non prioritaire — éviter qu'elle capte le référencement
-let robotsMeta: HTMLMetaElement | null = null
-onMounted(() => {
-  document.title = 'Mentions légales — AVTRANS Concept'
-  robotsMeta = document.createElement('meta')
-  robotsMeta.name = 'robots'
-  robotsMeta.content = 'noindex, follow'
-  document.head.appendChild(robotsMeta)
-})
-onUnmounted(() => {
-  robotsMeta?.remove()
-})
+usePageMeta({ title: 'Mentions légales — AVTRANS Concept', robots: 'noindex, follow' })
 </script>
 
 <template>

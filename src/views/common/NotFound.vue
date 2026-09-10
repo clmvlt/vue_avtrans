@@ -57,6 +57,10 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Home, LogIn } from 'lucide-vue-next'
+import { usePageMeta } from '@/composables/usePageMeta'
+
+// Une SPA renvoie HTTP 200 sur les URL inconnues : le noindex évite les « soft 404 » indexées
+usePageMeta({ title: 'Page non trouvée — AVTRANS Concept', robots: 'noindex, nofollow' })
 
 const router = useRouter()
 const authStore = useAuthStore()

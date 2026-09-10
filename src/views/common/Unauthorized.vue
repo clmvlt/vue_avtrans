@@ -40,6 +40,9 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { Button } from '@/components/ui/button'
+import { usePageMeta } from '@/composables/usePageMeta'
+
+usePageMeta({ title: 'Accès non autorisé — AVTRANS Concept', robots: 'noindex, nofollow' })
 
 const router = useRouter()
 const authStore = useAuthStore()
